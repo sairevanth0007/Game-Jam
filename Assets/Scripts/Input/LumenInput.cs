@@ -21,6 +21,42 @@ namespace LumenWave
 
         public InputActionAsset Actions => actions;
 
+        /// <summary>
+        /// Creates the LumenInput object from code (used by GameBootstrap). If one already exists
+        /// (e.g. it persisted from an earlier scene), that one is returned instead.
+        /// </summary>
+        public static LumenInput Create(InputActionAsset asset)
+        {
+            if (Instance != null)
+                return Instance;
+
+            var go = new GameObject("LumenInput");
+            go.SetActive(false); // so Awake/OnEnable run after the asset is assigned
+            var input = go.AddComponent<LumenInput>();
+            input.actions = asset;
+            go.SetActive(true);
+            return input;
+        }
+
+        /// <summary>
+        /// Finds an action by "Map/Action" path in the active LumenControls, e.g. FindAction("Player/Move").
+        /// Scripts use this as the fallback when their InputActionReference field is empty (code-built scenes).
+        /// </summary>
+        public static InputAction FindAction(string path)
+        {
+            if (Instance == null || Instance.actions == null)
+                return null;
+            return Instance.actions.FindAction(path, false);
+        }
+
+        /// <summary>The reference's action if set, otherwise the action at the given path.</summary>
+        public static InputAction Resolve(InputActionReference reference, string fallbackPath)
+        {
+            if (reference != null && reference.action != null)
+                return reference.action;
+            return FindAction(fallbackPath);
+        }
+
         void Awake()
         {
             if (Instance != null && Instance != this)

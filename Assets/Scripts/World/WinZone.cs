@@ -3,12 +3,12 @@ using UnityEngine.Events;
 
 namespace LumenWave
 {
-    /// <summary>Trigger at the top of the tower. Tells GameManager the player won.</summary>
+    /// <summary>The level-end door. Tells GameManager the level is complete when the player walks in.</summary>
     [RequireComponent(typeof(Collider2D))]
     public class WinZone : MonoBehaviour
     {
-        [Tooltip("Layers that count as the player.")]
-        [SerializeField] LayerMask playerLayers = 1 << 0;
+        [Tooltip("Layers that may count as the player (the object must also have PlayerMovement). Everything by default.")]
+        [SerializeField] LayerMask playerLayers = ~0;
         [Tooltip("Leave empty to use GameManager.Instance.")]
         [SerializeField] GameManager gameManager;
 
@@ -26,7 +26,7 @@ namespace LumenWave
 
         void OnTriggerEnter2D(Collider2D other)
         {
-            if ((playerLayers.value & (1 << other.gameObject.layer)) == 0)
+            if ((playerLayers.value & (1 << other.gameObject.layer)) == 0 || !PlayerMovement.IsPlayer(other))
                 return;
 
             if (gameManager == null) gameManager = GameManager.Instance;
@@ -39,7 +39,7 @@ namespace LumenWave
             if (gameManager.State != GameState.Playing)
                 return;
 
-            gameManager.Win();
+            gameManager.CompleteLevel();
             onPlayerEntered.Invoke();
         }
     }

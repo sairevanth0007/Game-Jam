@@ -16,7 +16,7 @@ namespace LumenWave
     {
         public static NoteInput Instance { get; private set; }
 
-        [Header("Input (drag from LumenControls > Notes)")]
+        [Header("Input (drag from LumenControls > Notes; empty = use LumenInput's actions)")]
         [SerializeField] InputActionReference noteLowAction;
         [SerializeField] InputActionReference noteMidAction;
         [SerializeField] InputActionReference noteHighAction;
@@ -51,18 +51,25 @@ namespace LumenWave
                 Instance = null;
         }
 
+        // Resolved actions: the Inspector reference, or the LumenControls action of the same name.
+        InputAction lowAction, midAction, highAction;
+
         void OnEnable()
         {
-            Bind(noteLowAction, OnLowPerformed, OnLowCanceled);
-            Bind(noteMidAction, OnMidPerformed, OnMidCanceled);
-            Bind(noteHighAction, OnHighPerformed, OnHighCanceled);
+            lowAction = LumenInput.Resolve(noteLowAction, "Notes/NoteLow");
+            midAction = LumenInput.Resolve(noteMidAction, "Notes/NoteMid");
+            highAction = LumenInput.Resolve(noteHighAction, "Notes/NoteHigh");
+
+            Bind(lowAction, OnLowPerformed, OnLowCanceled);
+            Bind(midAction, OnMidPerformed, OnMidCanceled);
+            Bind(highAction, OnHighPerformed, OnHighCanceled);
         }
 
         void OnDisable()
         {
-            Unbind(noteLowAction, OnLowPerformed, OnLowCanceled);
-            Unbind(noteMidAction, OnMidPerformed, OnMidCanceled);
-            Unbind(noteHighAction, OnHighPerformed, OnHighCanceled);
+            Unbind(lowAction, OnLowPerformed, OnLowCanceled);
+            Unbind(midAction, OnMidPerformed, OnMidCanceled);
+            Unbind(highAction, OnHighPerformed, OnHighCanceled);
 
             // We no longer hear canceled for notes held right now, so release them here.
             for (int i = 0; i < NoteCount; i++)
@@ -78,6 +85,7 @@ namespace LumenWave
             {
                 if (logNotes) Debug.Log($"[NoteInput] {note} pressed", this);
                 NotePressed?.Invoke(note);
+                GameEvents.RaiseNotePressed(note);
             }
         }
 
@@ -96,6 +104,7 @@ namespace LumenWave
             {
                 if (logNotes) Debug.Log($"[NoteInput] {note} released", this);
                 NoteReleased?.Invoke(note);
+                GameEvents.RaiseNoteReleased(note);
             }
         }
 
@@ -118,22 +127,22 @@ namespace LumenWave
         void OnHighPerformed(InputAction.CallbackContext _) => SetHeldByActions(Note.High, true);
         void OnHighCanceled(InputAction.CallbackContext _) => SetHeldByActions(Note.High, false);
 
-        static void Bind(InputActionReference reference, Action<InputAction.CallbackContext> performed, Action<InputAction.CallbackContext> canceled)
+        static void Bind(InputAction action, Action<InputAction.CallbackContext> performed, Action<InputAction.CallbackContext> canceled)
         {
-            if (reference == null || reference.action == null)
+            if (action == null)
                 return;
 
-            reference.action.performed += performed;
-            reference.action.canceled += canceled;
+            action.performed += performed;
+            action.canceled += canceled;
         }
 
-        static void Unbind(InputActionReference reference, Action<InputAction.CallbackContext> performed, Action<InputAction.CallbackContext> canceled)
+        static void Unbind(InputAction action, Action<InputAction.CallbackContext> performed, Action<InputAction.CallbackContext> canceled)
         {
-            if (reference == null || reference.action == null)
+            if (action == null)
                 return;
 
-            reference.action.performed -= performed;
-            reference.action.canceled -= canceled;
+            action.performed -= performed;
+            action.canceled -= canceled;
         }
     }
 }

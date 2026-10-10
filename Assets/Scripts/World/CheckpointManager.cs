@@ -22,11 +22,19 @@ namespace LumenWave
 
         public event Action<Checkpoint> CheckpointReached;
 
-        public Vector2 InitialSpawnPosition => initialSpawnPoint != null ? (Vector2)initialSpawnPoint.position : (Vector2)transform.position;
+        public Vector2 InitialSpawnPosition
+        {
+            get
+            {
+                if (spawnOverride.HasValue) return spawnOverride.Value;
+                return initialSpawnPoint != null ? (Vector2)initialSpawnPoint.position : (Vector2)transform.position;
+            }
+        }
         public Vector2 RespawnPosition { get; private set; }
         public Checkpoint CurrentCheckpoint { get; private set; }
 
         readonly List<Checkpoint> checkpoints = new List<Checkpoint>();
+        Vector2? spawnOverride;
 
         void Awake()
         {
@@ -57,6 +65,14 @@ namespace LumenWave
             RespawnPosition = checkpoint.RespawnPosition;
             CheckpointReached?.Invoke(checkpoint);
             onCheckpointReached.Invoke(checkpoint);
+        }
+
+        /// <summary>New level: its start position becomes the initial spawn, and the respawn point is reset to it.</summary>
+        public void SetInitialSpawn(Vector2 position)
+        {
+            spawnOverride = position;
+            CurrentCheckpoint = null;
+            RespawnPosition = position;
         }
 
         /// <summary>Back to the initial spawn, with every checkpoint re-armed (used on restart).</summary>

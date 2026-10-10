@@ -4,14 +4,15 @@ using UnityEngine.Events;
 namespace LumenWave
 {
     /// <summary>
-    /// Trigger that sets the respawn point the first time the player touches it.
-    /// Needs a Collider2D with Is Trigger on (set automatically).
+    /// Shadow rune: trigger that sets the respawn point the first time the player touches it.
+    /// Needs a Collider2D with Is Trigger on (set automatically). The player is recognised by its
+    /// PlayerMovement component, optionally narrowed down with Player Layers.
     /// </summary>
     [RequireComponent(typeof(Collider2D))]
     public class Checkpoint : MonoBehaviour
     {
-        [Tooltip("Layers that count as the player.")]
-        [SerializeField] LayerMask playerLayers = 1 << 0;
+        [Tooltip("Layers that may count as the player (the object must also have PlayerMovement). Everything by default.")]
+        [SerializeField] LayerMask playerLayers = ~0;
         [Tooltip("Where the player respawns. If empty, this checkpoint's position is used.")]
         [SerializeField] Transform respawnPoint;
         [Tooltip("Leave empty to use CheckpointManager.Instance.")]
@@ -49,15 +50,24 @@ namespace LumenWave
             if (manager != null) manager.Unregister(this);
         }
 
+        /// <summary>Visuals for code-built checkpoints (LevelLoader).</summary>
+        public void SetVisuals(GameObject inactive, GameObject active)
+        {
+            inactiveVisual = inactive;
+            activeVisual = active;
+            UpdateVisuals();
+        }
+
         void OnTriggerEnter2D(Collider2D other)
         {
-            if (IsActivated || (playerLayers.value & (1 << other.gameObject.layer)) == 0)
+            if (IsActivated || (playerLayers.value & (1 << other.gameObject.layer)) == 0 || !PlayerMovement.IsPlayer(other))
                 return;
 
             IsActivated = true;
             UpdateVisuals();
             if (manager != null) manager.ReachCheckpoint(this);
             OnCheckpointReached.Invoke();
+            GameEvents.RaiseCheckpointReached(RespawnPosition);
         }
 
         /// <summary>Re-arm this checkpoint (called by CheckpointManager.ResetAll on restart).</summary>

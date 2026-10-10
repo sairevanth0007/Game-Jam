@@ -1,6 +1,6 @@
 namespace LumenWave
 {
-    /// <summary>The three playable notes. Low = blue lamp, Mid = red lamp, High = yellow lamp.</summary>
+    /// <summary>The three playable notes. Mostly: Low drives blue lamps, Mid yellow, High red (see ColorLamp resonance).</summary>
     public enum Note
     {
         Low = 0,

@@ -1,5 +1,20 @@
 # LumenWave – Setup
 
+## Quick start (branch lumenwave-v2)
+
+1. Open the project in Unity 6.2 and wait for the import.
+2. Menu **LumenWave > Create Game Scene**. This saves `Assets/Scenes/LumenWave.unity` with a single `GameBootstrap`
+   object and makes it Build Settings scene 0.
+3. Press Play.
+
+`GameBootstrap` builds everything else from code, so you don't need to drag anything into fields. That includes
+LumenInput, NoteInput, the camera, lights, the level loader, Umbra, the HUD and the GameManager.
+You can also drop `GameBootstrap` into any empty scene and press Play. Levels are text files in `Assets/Levels`
+(see `Assets/Levels/LEGEND.md`). Every script still has Inspector fields, and an empty `InputActionReference`
+falls back to the LumenControls action with the same name.
+
+The sections below describe the scripts for anyone building a scene by hand.
+
 All controls go through the Unity Input System asset `Assets/Scripts/Input/LumenControls.inputactions`.
 No script reads keys or devices directly, so keys and devices can change without touching gameplay code.
 
@@ -7,7 +22,7 @@ No script reads keys or devices directly, so keys and devices can change without
 
 | Map    | Action   | Keyboard                    | Gamepad                 |
 |--------|----------|-----------------------------|-------------------------|
-| Player | Move     | A / D, Left / Right arrows  | Left stick, D-pad       |
+| Player | Move     | WASD, arrow keys (S / ↓ = down: fast fall, drop through ledges) | Left stick, D-pad |
 | Player | Jump     | Space, W, Up arrow          | South (A / Cross)       |
 | Notes  | NoteLow  | J                           | West (X / Square)       |
 | Notes  | NoteMid  | K                           | North (Y / Triangle)    |
@@ -124,7 +139,7 @@ Binding indices count composite parts too:
 
 | Action                | Index → binding |
 |-----------------------|-----------------|
-| Move                  | 0 AD Keys (composite, can't rebind), 1 A, 2 D, 3 Arrow Keys (composite), 4 ←, 5 →, 6 Left stick, 7 D-pad |
+| Move                  | 0 WASD (composite, can't rebind), 1 W, 2 S, 3 A, 4 D, 5 Arrow Keys (composite), 6 ↑, 7 ↓, 8 ←, 9 →, 10 Left stick, 11 D-pad |
 | Jump                  | 0 Space, 1 W, 2 ↑, 3 South |
 | NoteLow / Mid / High  | 0 J / K / L, 1 West / North / East |
 | Pause                 | 0 Esc, 1 Start |

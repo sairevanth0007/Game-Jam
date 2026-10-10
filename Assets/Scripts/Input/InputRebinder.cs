@@ -19,7 +19,7 @@ namespace LumenWave
 
         [Header("Used by the no-argument StartRebind()")]
         [SerializeField] InputActionReference targetAction;
-        [Tooltip("Index into the action's binding list. Composite parts count, e.g. Move: 0 = AD Keys, 1 = A, 2 = D.")]
+        [Tooltip("Index into the action's binding list. Composite parts count, e.g. Move: 0 = WASD, 1 = W, 2 = S, 3 = A, 4 = D.")]
         [SerializeField] int targetBindingIndex;
 
         [Header("Rebind options")]
