@@ -1,0 +1,37 @@
+name: Echo Path
+intro: Sound can become solid. Sing across the void.
+fog: 0.035
+drone: 2
+---
+##                                                                                                                    ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+##                                                                                      C                         E   ##
+##                                                                               ################           ############
+##  P                         C                           C                      ################           ############
+################          ##############              #################          ################           ############
+################          ##############              #################          ################^^^^^^^^^^^############
+################          ##############              #################          #######################################
+---
+tutorial 9.5 3 text=Press_{Echo}_at_the_edge:_your_song_becomes_a_bridge radius=3
+bot 15.0 3 do=echo
+bot 21.6 3 do=jump
+tutorial 35.5 3 text=Bridges_fade._Sing_again_from_a_bridge_to_go_further radius=3
+bot 39.2 3 do=echo
+bot 45.8 3 do=echo
+orb 47.5 7.2
+bot 52.6 3 do=jump
+tutorial 64.5 3 text=Resonance_refills_in_darkness._Watch_the_ring. radius=3
+bot 70.2 3 do=echo
+bot 76.4 3 do=jump t=0.5
+bot 96.2 5 do=echo
+bot 102.9 5 do=jump
+orb 110.5 9
+lamp 114.5 10 color=white radius=6 intensity=0.6

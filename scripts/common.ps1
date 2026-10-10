@@ -15,11 +15,19 @@ function Enter-UnityLock([int]$TimeoutMinutes = 40) {
         try {
             New-Item -ItemType Directory -Path $lock -ErrorAction Stop | Out-Null
             Set-Content -Path (Join-Path $lock 'owner.txt') -Value "$PID $(Get-Date -Format o)"
+            # Belt and braces: also wait for any Unity editor still open on this project
+            # (e.g. a run whose lock was removed by hand).
+            while (Get-CimInstance Win32_Process -Filter "Name='Unity.exe'" -ErrorAction SilentlyContinue |
+                   Where-Object { $_.CommandLine -and $_.CommandLine -like '*-projectPath*Game-Jam*' }) {
+                if ((Get-Date) -gt $deadline) { Remove-Item -Recurse -Force $lock -ErrorAction SilentlyContinue; throw 'Timed out waiting for running Unity' }
+                Start-Sleep -Seconds 5
+            }
             return
         } catch {
             # Stale lock: older than 30 min and no Unity batch process alive.
             $age = (Get-Date) - (Get-Item $lock).CreationTime
-            $unity = Get-Process -Name Unity -ErrorAction SilentlyContinue
+            $unity = Get-CimInstance Win32_Process -Filter "Name='Unity.exe'" -ErrorAction SilentlyContinue |
+                     Where-Object { $_.CommandLine -and $_.CommandLine -like '*-projectPath*Game-Jam*' }
             if ($age.TotalMinutes -gt 30 -and -not $unity) {
                 Remove-Item -Recurse -Force $lock -ErrorAction SilentlyContinue
                 continue
@@ -38,12 +46,12 @@ function Exit-UnityLock {
 # Runs Unity in batchmode with the given extra args. Returns the exit code.
 function Invoke-UnityBatch([string[]]$UnityArgs, [string]$LogName, [switch]$Graphics, [int]$TimeoutMinutes = 45) {
     $log = Join-Path $LW_Logs $LogName
-    if (Test-Path $log) { Remove-Item $log -Force }
     $all = @('-batchmode', '-projectPath', $LW_Root, '-logFile', $log)
     if (-not $Graphics) { $all += '-nographics' }
     $all += $UnityArgs
     Enter-UnityLock
     try {
+        if (Test-Path $log) { Remove-Item $log -Force }
         # Note: Start-Process -Wait also waits for Unity's lingering child processes (licensing client,
         # bee backend) and can hang forever, so wait on the Unity process itself.
         $p = Start-Process -FilePath $LW_Unity -ArgumentList ($all | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -PassThru -NoNewWindow

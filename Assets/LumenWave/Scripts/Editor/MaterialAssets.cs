@@ -28,6 +28,12 @@ namespace LumenWave.EditorTools
                 m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
                 m.SetColor("_EmissionColor", Color.white);
             }),
+            // Matte level stone: no specular highlights / environment reflections (they read as ice at grazing angles).
+            new Spec("Stone", "Universal Render Pipeline/Lit", m => {
+                m.SetFloat("_Smoothness", 0.05f);
+                m.SetFloat("_SpecularHighlights", 0f); m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+                m.SetFloat("_EnvironmentReflections", 0f); m.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+            }),
             new Spec("Unlit", "Universal Render Pipeline/Unlit"),
             new Spec("UnlitTransparent", "Universal Render Pipeline/Unlit", m => {
                 m.SetFloat("_Surface", 1f); m.SetFloat("_Blend", 0f);

@@ -5,14 +5,14 @@ param([ValidateSet('EditMode', 'PlayMode', 'All')][string]$Platform = 'All', [st
 $platforms = if ($Platform -eq 'All') { @('EditMode', 'PlayMode') } else { @($Platform) }
 $failed = 0
 foreach ($pf in $platforms) {
-    $xml = Join-Path $LW_Logs "results-$pf.xml"
+    $xml = Join-Path $LW_Logs "results-$pf-$PID.xml"
     if (Test-Path $xml) { Remove-Item $xml -Force }
     $a = @('-runTests', '-testPlatform', $pf, '-testResults', $xml)
     if ($Filter) { $a += @('-testFilter', $Filter) }
     # PlayMode tests need graphics off too; rendering is not required for logic tests.
-    $code = Invoke-UnityBatch -UnityArgs $a -LogName "test-$pf.log"
-    $n = Show-CompileErrors "test-$pf.log"
-    if (-not (Test-Path $xml)) { Write-Host "$pf : NO RESULTS (exit $code, compile errors $n). See Logs/test-$pf.log"; $failed++; continue }
+    $code = Invoke-UnityBatch -UnityArgs $a -LogName "test-$pf-$PID.log"
+    $n = Show-CompileErrors "test-$pf-$PID.log"
+    if (-not (Test-Path $xml)) { Write-Host "$pf : NO RESULTS (exit $code, compile errors $n). See Logs/test-$pf-$PID.log"; $failed++; continue }
     [xml]$r = Get-Content $xml
     $run = $r.'test-run'
     Write-Host ("{0}: total={1} passed={2} failed={3} skipped={4}" -f $pf, $run.total, $run.passed, $run.failed, $run.skipped)

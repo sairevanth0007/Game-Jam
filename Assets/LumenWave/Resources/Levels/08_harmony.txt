@@ -1,0 +1,33 @@
+name: Harmony
+intro: Sing, Umbra. Let every light become music.
+fog: 0.03
+drone: 8
+---
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                            ##
+##                                                      E     ##
+##  P                     ######################################
+################################################################
+################################################################
+################################################################
+---
+lamp 14.5 10 color=red radius=5 intensity=0.5
+lamp 22.5 10 color=green radius=5 intensity=0.5
+lamp 30.5 10 color=blue radius=5 intensity=0.5
+lamp 38.5 10 color=yellow radius=5 intensity=0.5
+tutorial 10.5 3 text=The_lights_are_listening... radius=3
+bot 24.4 3 do=jump
+ending 44.5 4 time=7
+bot 44.6 4 do=wait t=9
+orb 50.5 7

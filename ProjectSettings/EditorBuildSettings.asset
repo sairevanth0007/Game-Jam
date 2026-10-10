@@ -6,8 +6,35 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 8c9cfa26abfee488c85f1582747f6a02
+    path: Assets/LumenWave/Scenes/Title.unity
+    guid: e28d3fc7be0ad0744a8cfbd041f09ce0
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/Level01.unity
+    guid: e8225d54522efb24890221201caade0f
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/Level02.unity
+    guid: 89db23e0a3280d2449763391c7c9193a
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/Level03.unity
+    guid: c308b298ac4c3b544963019241dbe0c8
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/Level04.unity
+    guid: 86bb13355ae2def4c81bf43bf1b5e64b
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/Level05.unity
+    guid: 566ac73869ec000489259557c165dfad
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/Level06.unity
+    guid: f4312bfebe64cb840896ce54e237446f
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/Level07.unity
+    guid: e847944e3291a064d9597f9808ff7086
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/Level08.unity
+    guid: aa09a91ef3f9253498eeb7184e559bff
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/End.unity
+    guid: f11f2b640ae38b34c88774012c9189af
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

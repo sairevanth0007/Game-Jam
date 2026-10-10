@@ -5,9 +5,9 @@ param([switch]$Setup)
 
 $args2 = @('-quit')
 if ($Setup) { $args2 += @('-executeMethod', 'LumenWave.EditorTools.ProjectSetup.RunBatch') }
-$code = Invoke-UnityBatch -UnityArgs $args2 -LogName 'compile.log'
-$n = Show-CompileErrors 'compile.log'
-$log = Join-Path $LW_Logs 'compile.log'
+$code = Invoke-UnityBatch -UnityArgs $args2 -LogName "compile-$PID.log"
+$n = Show-CompileErrors "compile-$PID.log"
+$log = Join-Path $LW_Logs "compile-$PID.log"
 Select-String -Path $log -Pattern '\[LumenWave\]' | ForEach-Object { Write-Host $_.Line.Trim() }
 if ($n -gt 0) { Write-Host "COMPILE FAILED: $n error(s). Log: $log"; exit 1 }
 if ($code -ne 0) { Write-Host "Unity exited with $code (see $log)"; exit $code }

@@ -4,6 +4,7 @@
     "references": [
         "LumenWave.Runtime",
         "Unity.InputSystem",
+        "UnityEngine.UI",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
