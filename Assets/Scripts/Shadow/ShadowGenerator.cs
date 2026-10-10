@@ -7,6 +7,7 @@ public class ShadowGenerator : MonoBehaviour
     public float shadowWidth = 2f;
 
     private BeamSpline beam;
+    private LightController lightController;
 
     public Vector3[] shadowPoints;
 
@@ -14,6 +15,7 @@ public class ShadowGenerator : MonoBehaviour
     void Awake()
     {
         beam = GetComponent<BeamSpline>();
+        lightController = GetComponent<LightController>();
     }
 
 
@@ -34,8 +36,11 @@ public class ShadowGenerator : MonoBehaviour
 
         for(int i = 0; i < beamPoints.Length; i++)
         {
+            var curve = lightController != null && lightController.profile != null ? lightController.profile.spreadCurve : null;
+            float t = i / (float)(beamPoints.Length - 1);
+            float spread = curve != null && curve.length > 0 ? Mathf.Max(0, curve.Evaluate(t)) : 1;
             Vector3 offset =
-                Vector3.right * shadowWidth;
+                Vector3.right * Mathf.Max(0, shadowWidth) * spread;
 
             shadowPoints[i] =
                 beamPoints[i] + offset;

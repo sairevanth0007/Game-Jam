@@ -7,8 +7,8 @@ namespace LumenWave.Demo
     public sealed class ChordAudio : MonoBehaviour
     {
         [Range(0, .3f)] [SerializeField] float volume = .09f;
-        readonly AudioSource[] voices = new AudioSource[5];
-        readonly float[] frequencies = { 130.8128f, 164.8138f, 130.8128f, 164.8138f, 195.9977f };
+        readonly AudioSource[] voices = new AudioSource[3];
+        readonly float[] frequencies = { 130.8128f, 164.8138f, 195.9977f };
         ChordInput input;
         void Awake()
         {

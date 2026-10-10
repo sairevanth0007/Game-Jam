@@ -23,6 +23,28 @@ namespace LumenWave.Demo.Editor
         static Material unlit;
         static TMP_FontAsset font;
 
+        static void SetDemoBeamShape(LightProfile profile)
+        {
+            profile.spreadCurve = AnimationCurve.Linear(0, profile.lightColor == LightColorType.Green ? .65f : .25f, 1, 1);
+            profile.useCustomBendCurve = true;
+            profile.bendCurve = profile.lightColor == LightColorType.Red
+                ? new AnimationCurve(new Keyframe(0,0), new Keyframe(.12f,0,0,1/.24f), new Keyframe(.36f,1,1/.24f,0), new Keyframe(1,1))
+                : AnimationCurve.EaseInOut(0,0,1,1);
+        }
+
+        [MenuItem("Tools/LumenWave/Apply Demo Beam Shapes")]
+        public static void ApplyDemoBeamShapes()
+        {
+            foreach (var guid in AssetDatabase.FindAssets("t:LightProfile",new[] { Root+"/Data" }))
+            {
+                var profile=AssetDatabase.LoadAssetAtPath<LightProfile>(AssetDatabase.GUIDToAssetPath(guid));
+                SetDemoBeamShape(profile);
+                EditorUtility.SetDirty(profile);
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log("PASS: Demo light profiles now have tapered spread and editable bend curves.");
+        }
+
         static ChordDemoBuilder()
         {
             if (SessionState.GetBool("LumenWave.BuildPending",false)) EditorApplication.update += BuildWhenReady;
@@ -49,6 +71,53 @@ namespace LumenWave.Demo.Editor
         {
             if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset") == null)
                 TMP_PackageResourceImporter.ImportResources(true, false, false);
+        }
+
+        static Material SoftLightMaterial()
+        {
+            const string path = Root + "/Resources/LumenWaveSoftLight.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material != null) return material;
+            Directory.CreateDirectory(Root + "/Resources"); AssetDatabase.Refresh();
+            var shader = AssetDatabase.LoadAssetAtPath<Shader>(Root + "/Art/SoftLight.shader");
+            if (shader == null) throw new InvalidOperationException("Soft light shader is missing.");
+            material = new Material(shader);
+            AssetDatabase.CreateAsset(material,path);
+            return material;
+        }
+
+        [MenuItem("Tools/LumenWave/Update Demo Light Appearance")]
+        public static void UpdateLightAppearance()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            for (int i=0; i<SceneManager.sceneCount; i++)
+                if (SceneManager.GetSceneAt(i).isDirty) throw new InvalidOperationException("Save open scene edits before updating demo lighting.");
+            var material=SoftLightMaterial();
+            Scene previous=SceneManager.GetActiveScene();
+            foreach (var path in new[] { TowerPath,LabPath })
+            {
+                var scene=SceneManager.GetSceneByPath(path);
+                bool wasLoaded=scene.IsValid() && scene.isLoaded;
+                if (!wasLoaded) scene=EditorSceneManager.OpenScene(path,OpenSceneMode.Additive);
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    foreach (var visual in root.GetComponentsInChildren<BeamAreaVisual>())
+                    {
+                        visual.emissionMaterial=material;
+                        visual.GetComponent<MeshRenderer>().sharedMaterial=material;
+                        foreach (var line in visual.source.GetComponentsInChildren<LineRenderer>()) line.enabled=false;
+                        var emitter=visual.source.transform.Find("Light emitter");
+                        if (emitter!=null) emitter.GetComponent<SpriteRenderer>().enabled=false;
+                    }
+                    // Pixel Perfect may temporarily letterbox the batch preview on load.
+                    foreach (var camera in root.GetComponentsInChildren<Camera>()) camera.rect=new Rect(0,0,1,1);
+                }
+                EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene);
+                if (!wasLoaded) EditorSceneManager.CloseScene(scene,true);
+            }
+            if (previous.IsValid() && previous.isLoaded) SceneManager.SetActiveScene(previous);
+            AssetDatabase.SaveAssets();
+            Debug.Log("PASS: Both demo scenes use soft additive beams and emitter halos; gameplay geometry is unchanged.");
         }
 
         public static void BuildWindowsBatch()
@@ -269,7 +338,7 @@ namespace LumenWave.Demo.Editor
             var eyeRoot=new GameObject("Eyes").transform; eyeRoot.SetParent(obj.transform,false);
             Rect("Left eye",spawn+new Vector2(-.10f,.08f),new Vector2(.065f,.095f),new Color(.84f,1,1),22,eyeRoot);
             Rect("Right eye",spawn+new Vector2(.10f,.08f),new Vector2(.065f,.095f),new Color(.84f,1,1),22,eyeRoot);
-            obj.AddComponent<ChordInput>(); obj.AddComponent<ChordAudio>();
+            obj.AddComponent<ChordInput>().Configure(ChordDemoInputSetup.GetActions()); obj.AddComponent<ChordAudio>();
             var motor=obj.AddComponent<ChordMotor>(); motor.Configure(eyeRoot); return motor;
         }
         static DemoLightField CreateLight(string name,LightColorType kind,Vector2 position,float length,float bend,ChordInput input)
@@ -297,7 +366,7 @@ namespace LumenWave.Demo.Editor
             {
                 profile=controller.profile!=null ? UnityEngine.Object.Instantiate(controller.profile) : ScriptableObject.CreateInstance<LightProfile>();
                 profile.lightColor=kind; profile.beamLength=length; profile.beamWidth=kind==LightColorType.Green?1.25f:.6f;
-                profile.maxBend=bend; profile.chordPersonality=true; AssetDatabase.CreateAsset(profile,assetPath);
+                profile.maxBend=bend; profile.chordPersonality=true; SetDemoBeamShape(profile); AssetDatabase.CreateAsset(profile,assetPath);
             }
             controller.profile=profile;
             var spline=clone.GetComponent<BeamSpline>(); spline.pointCount=25; spline.length=length; spline.Rebuild();
@@ -312,9 +381,11 @@ namespace LumenWave.Demo.Editor
             }
             var area=new GameObject("Visible exposure boundary",typeof(MeshFilter),typeof(MeshRenderer));
             area.transform.SetParent(clone.transform,false);
-            area.GetComponent<MeshRenderer>().sharedMaterial=unlit; area.GetComponent<MeshRenderer>().sortingOrder=12;
-            var visual=area.AddComponent<BeamAreaVisual>(); visual.source=contour; visual.tint=new Color(color.r,color.g,color.b,.25f);
+            area.GetComponent<MeshRenderer>().sharedMaterial=SoftLightMaterial(); area.GetComponent<MeshRenderer>().sortingOrder=12;
+            var visual=area.AddComponent<BeamAreaVisual>(); visual.source=contour; visual.tint=new Color(color.r,color.g,color.b,.25f); visual.emissionMaterial=SoftLightMaterial();
+            foreach(var line in clone.GetComponentsInChildren<LineRenderer>()) line.enabled=false;
             var lamp=Rect("Light emitter",position,new Vector2(.52f,.16f),color,18,clone.transform);
+            lamp.GetComponent<SpriteRenderer>().enabled=false;
             var glow=lamp.AddComponent<Light2D>(); glow.lightType=Light2D.LightType.Point; glow.color=color; glow.intensity=.65f; glow.pointLightOuterRadius=1.5f;
             var field=clone.AddComponent<DemoLightField>(); field.Configure(input); return field;
         }
@@ -339,10 +410,10 @@ namespace LumenWave.Demo.Editor
             var fill=Panel("Fill",health.transform,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero,Vector2.zero,new Color(.4f,.95f,.72f)).GetComponent<UnityEngine.UI.Image>();
             fill.type=UnityEngine.UI.Image.Type.Filled; fill.fillMethod=UnityEngine.UI.Image.FillMethod.Horizontal;
             var footer=Panel("Footer",canvasObj.transform,Vector2.zero,new Vector2(1,0),Vector2.zero,Vector2.zero,new Vector2(0,100),new Color(.025f,.04f,.07f,.94f));
-            Text("Controls",footer.transform,"Q + W  LEFT     O + P  RIGHT     + SPACE  JUMP / RED FOLD     R  RETRY",new Vector2(25,-16),new Vector2(1200,27),18,Color.white);
+            var controls=Text("Controls",footer.transform,input.ControlsHint,new Vector2(25,-16),new Vector2(1200,27),18,Color.white);
             Text("Rules",footer.transform,"C + E bends BLUE / C + E + G folds RED / effects last 3s / GREEN heals",new Vector2(25,-46),new Vector2(1200,24),16,new Color(.6f,.74f,.82f));
             var message=Text("Hint",footer.transform,"",new Vector2(25,-72),new Vector2(1200,23),16,new Color(.87f,.77f,.5f));
-            var hud=canvasObj.AddComponent<DemoHud>(); hud.session=session; hud.input=input; hud.status=status; hud.notes=notes; hud.message=message; hud.healthFill=fill;
+            var hud=canvasObj.AddComponent<DemoHud>(); hud.session=session; hud.input=input; hud.status=status; hud.notes=notes; hud.message=message; hud.healthFill=fill; hud.controls=controls;
         }
         static GameObject Panel(string name,Transform parent,Vector2 min,Vector2 max,Vector2 pivot,Vector2 pos,Vector2 size,Color color)
         {

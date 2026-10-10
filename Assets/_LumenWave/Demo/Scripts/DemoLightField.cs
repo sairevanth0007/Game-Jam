@@ -25,14 +25,18 @@ namespace LumenWave.Demo
         }
         public void TriggerChord(bool major)
         {
-            if ((Kind == LightColorType.Blue) || (Kind == LightColorType.Red && major)) until = Time.time + duration;
+            if ((Kind == LightColorType.Blue) || (Kind == LightColorType.Red && major))
+            {
+                if (playerInput != null) controller.BendAwayFrom(playerInput.transform.position);
+                until = Time.time + duration;
+            }
         }
         void Update()
         {
             if (controller.profile == null) return;
             if (playerInput != null && Vector2.Distance(transform.position, playerInput.transform.position) <= hearingRadius)
             {
-                if (playerInput.PairPressed || playerInput.JumpPressed) TriggerChord(playerInput.JumpPressed);
+                if (playerInput.ChordPressed || playerInput.MajorPressed) TriggerChord(playerInput.MajorPressed);
             }
             float target = Remaining > .4f ? 1 : Remaining / .4f;
             strength = Mathf.MoveTowards(strength, target, Time.deltaTime / .10f);

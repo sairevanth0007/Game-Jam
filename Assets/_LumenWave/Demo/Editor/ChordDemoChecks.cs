@@ -69,6 +69,7 @@ namespace LumenWave.Demo.Editor
                 switch(stage++)
                 {
                     case 0:
+                        CheckBeamGeometry();
                         Capture("Logs/ChordDemoEntrance.png");
                         Require(player.Grounded,"Player lands on Cainos platform");
                         foreach (var sprite in player.GetComponentsInChildren<SpriteRenderer>())
@@ -76,17 +77,29 @@ namespace LumenWave.Demo.Editor
                         Require(ChordInput.Direction(1)==0 && ChordInput.Direction(3)==-1 && ChordInput.Direction(12)==1 && ChordInput.Direction(15)==0,"Chord direction and opposing-pair cancellation");
                         Keys(Key.Q); break;
                     case 1:
-                        Require(Mathf.Abs(player.Body.linearVelocity.x)<.01f,"Single note does not move player");
-                        Require(player.GetComponents<AudioSource>().Length==5,"Five note voices are initialized");
+                        Require(Mathf.Abs(player.Body.linearVelocity.x)<.01f,"One movement key does not move player");
+                        Require(player.GetComponents<AudioSource>().Length==3,"Three independent note voices are initialized");
                         Keys(Key.O,Key.P); break;
                     case 2:
                         Require(player.Body.linearVelocity.x>2,"O+P moves right via keyboard input (held="+player.GetComponent<ChordInput>().Held+", vx="+player.Body.linearVelocity.x+")");
-                        Require(session.Lights[1].Remaining>2,"Movement pair triggers blue timer");
+                        Require(session.Lights[1].Remaining==0 && player.GetComponent<ChordInput>().Held==0,"Movement pair does not play notes or bend blue light");
                         Keys(Key.O,Key.P,Key.Space); delay=.2; break;
                     case 3:
                         Require(player.Body.linearVelocity.y>2,"Adding Space performs a physics jump");
-                        Require(session.Lights[3].Remaining>2,"Major chord triggers red timer");
-                        Keys(); player.Teleport(new Vector2(-4.8f,.55f)); delay=3.4; break;
+                        Require(session.Lights[3].Remaining==0 && player.GetComponent<ChordInput>().Held==0,"Jump does not play notes or fold red light");
+                        player.Teleport(new Vector2(-4.8f,.55f)); Keys(Key.J); stage=19; break;
+                    case 19:
+                        Require(player.GetComponent<ChordInput>().Held==ChordInput.C && player.GetComponent<ChordInput>().Horizontal==0,"J plays only C while standing still");
+                        Require(session.Lights[1].Remaining==0,"A single note does not trigger a chord");
+                        Keys(Key.J,Key.K); break;
+                    case 20:
+                        Require(session.Lights[1].Remaining>2 && session.Lights[3].Remaining==0,"J+K bends blue without folding red");
+                        Require(Mathf.Abs(player.Body.linearVelocity.x)<.01f,"Musical chord does not move player");
+                        Keys(Key.J,Key.K,Key.L); break;
+                    case 21:
+                        Require(session.Lights[3].Remaining>2 && player.GetComponent<ChordInput>().Held==7,"Adding L folds red without jumping");
+                        Require(player.Grounded,"Musical major chord does not jump");
+                        Keys(); stage=4; delay=3.4; break;
                     case 4:
                         Require(session.Lights[1].Remaining==0 && session.Lights[3].Remaining==0,"Effects expire without repeated activation");
                         player.Teleport(new Vector2(0,2.05f)); delay=.4; break;
@@ -120,6 +133,32 @@ namespace LumenWave.Demo.Editor
                         if (!DriveRoute()) { stage=13; delay=0; break; }
                         Require(session.Completed,"Full tower completed using chord keyboard input without teleports");
                         Capture("Logs/ChordDemoGoal.png");
+                        Keys(Key.R); break;
+                    case 14:
+                        var remap=player.GetComponent<ChordInput>().RuntimeActions.FindActionMap(ChordInput.MapName);
+                        remap.FindAction("LeftFirst").ApplyBindingOverride("<Keyboard>/a");
+                        remap.FindAction("LeftSecond").ApplyBindingOverride("<Keyboard>/s");
+                        remap.FindAction("Jump").ApplyBindingOverride("<Keyboard>/u");
+                        remap.FindAction("NoteC").ApplyBindingOverride("<Keyboard>/z");
+                        Keys(Key.Q,Key.W); break;
+                    case 15:
+                        Require(player.GetComponent<ChordInput>().Horizontal==0 && Mathf.Abs(player.Body.linearVelocity.x)<.01f,"Original keys stop moving after binding overrides");
+                        Keys(Key.A,Key.S); break;
+                    case 16:
+                        Require(player.GetComponent<ChordInput>().Held==0 && player.Body.linearVelocity.x < -2,"Rebound A+S moves without playing musical notes");
+                        var hud=UnityEngine.Object.FindFirstObjectByType<DemoHud>();
+                        Require(hud.controls.text==player.GetComponent<ChordInput>().ControlsHint && hud.controls.text.Contains("A + S") && hud.controls.text.Contains("U") && hud.controls.text.Contains("Z"),"HUD follows rebound action bindings");
+                        Keys(Key.A,Key.S,Key.U); delay=.2; break;
+                    case 17:
+                        Require(player.Body.linearVelocity.y>2,"Rebound Jump action performs the movement jump");
+                        Keys(Key.Z); stage=22; break;
+                    case 22:
+                        Require(player.GetComponent<ChordInput>().Held==ChordInput.C && player.GetComponent<ChordInput>().Horizontal==0,"Rebound musical note remains independent of movement");
+                        player.GetComponent<ChordInput>().RuntimeActions.RemoveAllBindingOverrides();
+                        stage=18;
+                        Keys(Key.Q,Key.W); break;
+                    case 18:
+                        Require(player.GetComponent<ChordInput>().Horizontal==-1,"Default bindings restore without changing gameplay code");
                         Keys(); Directory.CreateDirectory("Logs");
                         File.WriteAllText("Logs/ChordDemoChecks.txt",report);
                         SessionState.SetBool(KeyName,false); EditorApplication.update-=Tick; EditorApplication.Exit(0); return;
@@ -151,9 +190,56 @@ namespace LumenWave.Demo.Editor
             if (Mathf.Abs(dx)<.08f) { Keys(); return false; }
             if (player.Grounded && !jumping)
             { jumping=true; jumpUntil=Time.time+.10f; }
-            if (Time.time<jumpUntil) Keys(right?Key.O:Key.Q,right?Key.P:Key.W,Key.Space);
-            else Keys(right?Key.O:Key.Q,right?Key.P:Key.W);
+            if (Time.time<jumpUntil) Keys(right?Key.O:Key.Q,right?Key.P:Key.W,Key.Space,Key.J,Key.K,Key.L);
+            else Keys(right?Key.O:Key.Q,right?Key.P:Key.W,Key.J,Key.K,Key.L);
             return false;
+        }
+        static void CheckBeamGeometry()
+        {
+            var fixture = new GameObject("Beam geometry check");
+            fixture.SetActive(false);
+            fixture.transform.position = new Vector3(100,100,0);
+            fixture.transform.rotation = Quaternion.Euler(0,0,30);
+            var spline = fixture.AddComponent<BeamSpline>(); spline.pointCount=25; spline.length=4;
+            var controller = fixture.AddComponent<LightController>();
+            var contour = fixture.AddComponent<ShadowGenerator>(); contour.shadowWidth=.5f;
+            var field = fixture.AddComponent<DemoLightField>(); field.Configure(player.GetComponent<ChordInput>());
+            var profile = ScriptableObject.CreateInstance<LightProfile>();
+            profile.lightColor=LightColorType.Blue; profile.maxBend=-3; profile.chordPersonality=true;
+            profile.spreadCurve=AnimationCurve.Linear(0,.25f,1,1);
+            profile.useCustomBendCurve=true; profile.bendCurve=AnimationCurve.Linear(0,0,1,1);
+            controller.profile=profile;
+            var position=player.transform.position;
+            try
+            {
+                fixture.SetActive(true);
+                player.transform.position=fixture.transform.TransformPoint(new Vector3(-2,-2,0));
+                field.TriggerChord(false); controller.SetResonance(1); controller.SendMessage("Update");
+                Require(controller.BendDirection==1 && spline.points[24].x>2.9f,"Player left of a rotated fixture bends light right in local space");
+                player.transform.position=fixture.transform.TransformPoint(new Vector3(2,-2,0));
+                field.SendMessage("Update");
+                Require(controller.BendDirection==1,"Bend direction stays locked when the player crosses during an effect");
+                field.TriggerChord(false); controller.SetResonance(1); controller.SendMessage("Update");
+                Require(controller.BendDirection==-1 && spline.points[24].x < -2.9f,"A fresh chord on the right bends light left");
+                player.transform.position=fixture.transform.position;
+                field.TriggerChord(false);
+                Require(controller.BendDirection==-1,"Centered player retains the previous direction without jitter");
+                Require(profile.maxBend==-3,"Direction changes never modify the shared light profile");
+                Require(Mathf.Abs(spline.points[12].x+1.5f)<.001f,"Custom bend curve controls the centerline shape");
+                contour.SendMessage("Update");
+                var points=contour.shadowPoints;
+                Require(Mathf.Abs((points[0]-points[49]).magnitude-.25f)<.001f && Mathf.Abs((points[24]-points[25]).magnitude-1)<.001f,"Spread curve makes a narrow emitter and wider beam end");
+                var world=fixture.transform.TransformPoint(spline.points[12]);
+                Require(field.Overlaps(new Bounds(world,new Vector3(.02f,.02f,0))),"Exposure boundary follows the bent tapered beam");
+                var outside=fixture.transform.TransformPoint(spline.points[12]+Vector3.right*3);
+                Require(!field.Overlaps(new Bounds(outside,new Vector3(.02f,.02f,0))),"Exposure excludes space outside the beam shape");
+            }
+            finally
+            {
+                player.transform.position=position;
+                UnityEngine.Object.DestroyImmediate(fixture);
+                UnityEngine.Object.DestroyImmediate(profile);
+            }
         }
         static void Capture(string path)
         {

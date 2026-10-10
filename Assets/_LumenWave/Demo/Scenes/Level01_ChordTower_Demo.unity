@@ -1162,7 +1162,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 70033649}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -1581,6 +1581,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 463513292}
   tint: {r: 1, g: 0.22, b: 0.35, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &77413263
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1604,7 +1605,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2663,7 +2664,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 208724739}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -6272,7 +6273,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 463513290}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -7635,6 +7636,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 70033651}
   tint: {r: 1, g: 0.22, b: 0.35, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &581879557
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -7658,7 +7660,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -8563,6 +8565,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 800081362}
   tint: {r: 0.23, g: 0.66, b: 1, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &667380760
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -8586,7 +8589,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9397,6 +9400,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46ce46d368e9447faa35e20bd931499a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputActions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
 --- !u!114 &747613536
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10323,7 +10327,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 800081360}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -11072,6 +11076,7 @@ MonoBehaviour:
   status: {fileID: 1507243801}
   notes: {fileID: 1675571453}
   message: {fileID: 2038248323}
+  controls: {fileID: 2021145382}
   healthFill: {fileID: 1656526669}
 --- !u!114 &827076345
 MonoBehaviour:
@@ -11357,6 +11362,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 208724741}
   tint: {r: 0.3, g: 1, b: 0.65, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &841801948
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -11380,7 +11386,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -11950,7 +11956,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 889718985}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -12441,7 +12447,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 912064923}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -14347,7 +14353,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1084706760}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -17103,7 +17109,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1240126748}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -20182,7 +20188,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1487145226}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -20399,7 +20405,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1488106328}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -20495,6 +20501,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 1084706762}
   tint: {r: 0.3, g: 1, b: 0.65, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &1489498717
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -20518,7 +20525,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -20601,7 +20608,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1500581342}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -21739,7 +21746,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1553740813}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -22188,7 +22195,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1632724139}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -22942,6 +22949,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 1487145228}
   tint: {r: 0.23, g: 0.66, b: 1, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &1682369614
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -22965,7 +22973,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -23375,7 +23383,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1697291713}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -24108,7 +24116,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1745172761}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -24354,7 +24362,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1773571183}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -25107,7 +25115,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1798112396}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -25368,7 +25376,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1800830937}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -25947,7 +25955,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1833771606}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -28122,6 +28130,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 1697291715}
   tint: {r: 0.3, g: 1, b: 0.65, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &2001812411
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -28145,7 +28154,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -28627,7 +28636,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Q + W  LEFT     O + P  RIGHT     + SPACE  JUMP / RED FOLD     R  RETRY
+  m_text: Q + W LEFT / O + P RIGHT / + Space JUMP     J C / K E / L G / R RETRY
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -29537,7 +29546,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2060403415}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -29677,7 +29686,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2061420343}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1

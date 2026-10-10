@@ -1900,7 +1900,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 199988896}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -3092,7 +3092,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 358148636}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -5005,7 +5005,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Q + W  LEFT     O + P  RIGHT     + SPACE  JUMP / RED FOLD     R  RETRY
+  m_text: Q + W LEFT / O + P RIGHT / + Space JUMP     J C / K E / L G / R RETRY
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5482,6 +5482,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 1323546307}
   tint: {r: 1, g: 0.22, b: 0.35, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &630533579
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5505,7 +5506,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -7271,7 +7272,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 828898629}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -8188,7 +8189,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 966739307}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -9105,7 +9106,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1032879186}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -9621,6 +9622,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46ce46d368e9447faa35e20bd931499a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputActions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
 --- !u!114 &1054866943
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11672,7 +11674,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1323546305}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -11937,7 +11939,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1341034278}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -12525,7 +12527,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1441205739}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -15454,7 +15456,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1705561100}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -16042,6 +16044,7 @@ MonoBehaviour:
   status: {fileID: 1122763848}
   notes: {fileID: 1633474587}
   message: {fileID: 1117448743}
+  controls: {fileID: 583494863}
   healthFill: {fileID: 1587529453}
 --- !u!114 &1742490122
 MonoBehaviour:
@@ -18160,6 +18163,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 1032879188}
   tint: {r: 0.23, g: 0.66, b: 1, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &1922056738
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -18183,7 +18187,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -19334,6 +19338,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   source: {fileID: 1705561102}
   tint: {r: 0.3, g: 1, b: 0.65, a: 0.25}
+  emissionMaterial: {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
 --- !u!23 &2025661708
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -19357,7 +19362,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3ae5a63200f09a1429c42f743774c581, type: 2}
+  - {fileID: 2100000, guid: 5973f1dea404d7343a50f972efb70f65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

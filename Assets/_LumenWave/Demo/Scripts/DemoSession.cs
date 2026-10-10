@@ -44,7 +44,7 @@ namespace LumenWave.Demo
                 blue |= light.Kind == LightColorType.Blue;
                 green |= light.Kind == LightColorType.Green;
             }
-            if (blue) { Health = Mathf.Max(0, Health - blueDamage * Time.deltaTime); Message = "Blue light burns! Complete a movement pair to bend it."; }
+            if (blue) { Health = Mathf.Max(0, Health - blueDamage * Time.deltaTime); Message = "Blue light burns! Play C + E to bend it."; }
             else if (green) { Health = Mathf.Min(100, Health + greenHealing * Time.deltaTime); Message = "Green light restores your shadow."; }
             if (Health <= 0) Fail("Your shadow faded. Returning to safety...");
         }
