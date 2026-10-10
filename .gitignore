@@ -26,3 +26,10 @@ Recordings/
 
 .DS_Store
 Thumbs.db
+# LumenWave
+[Oo]bj/
+.vs/
+*.slnx
+.unitylock/
+Logs/
+Release/*.tmp

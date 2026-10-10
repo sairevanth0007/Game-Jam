@@ -1,0 +1,10 @@
+name: First Light
+intro: Umbra wakes in the dark.
+---
+
+
+
+  P                 C               E
+########    ###########     ############
+########    ###########     ############
+---
