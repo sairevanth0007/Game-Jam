@@ -119,22 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!115 &171488741
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: SceneBootstrap
-  m_Namespace: LumenWave
-  m_AssemblyName: LumenWave.Runtime
---- !u!1 &972933740
+--- !u!1 &419304826
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -142,8 +127,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 972933742}
-  - component: {fileID: 972933741}
+  - component: {fileID: 419304828}
+  - component: {fileID: 419304827}
   m_Layer: 0
   m_Name: SceneBootstrap
   m_TagString: Untagged
@@ -151,27 +136,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &972933741
+--- !u!114 &419304827
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 972933740}
+  m_GameObject: {fileID: 419304826}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 171488741}
+  m_Script: {fileID: 11500000, guid: 132c337586fd3ca4693c2e0fab81115e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: LumenWave.Runtime::LumenWave.SceneBootstrap
   kind: level
   levelNumber: 6
---- !u!4 &972933742
+--- !u!4 &419304828
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 972933740}
+  m_GameObject: {fileID: 419304826}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -184,4 +169,4 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 972933742}
+  - {fileID: 419304828}

@@ -59,6 +59,19 @@ namespace LumenWave
             var emission = mood.edge * 0.9f;
             go.GetComponent<MeshRenderer>().sharedMaterial = MaterialLibrary.Tinted("LitEmissive", mood.edge * 0.2f, emission);
             Backdrop.Shadowless(go);
+
+            // Faint moonlit sheen over the walkable top face so feet visibly rest on a surface.
+            var top2 = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            top2.name = "TopSheen";
+            Backdrop.RemoveCollider(top2);
+            top2.transform.SetParent(parent, false);
+            top2.transform.localPosition = new Vector3((xa + xb) * 0.5f, top + 0.004f, 0f);
+            top2.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            top2.transform.localScale = new Vector3(xb - xa, depth, 1f);
+            var sheen = mood.edge * 0.07f;
+            top2.GetComponent<MeshRenderer>().sharedMaterial = MaterialLibrary.Tinted("LitEmissive", mood.edge * 0.08f, sheen);
+            Backdrop.Shadowless(top2);
+            top2.GetComponent<MeshRenderer>().receiveShadows = true;
         }
     }
 }

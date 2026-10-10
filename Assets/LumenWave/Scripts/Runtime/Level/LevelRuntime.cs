@@ -10,46 +10,6 @@ namespace LumenWave
         void ResetState();
     }
 
-    /// <summary>
-    /// The only component placed in generated scenes. Decides what the scene is (title, end, level N)
-    /// and lets subsystems build the rest at runtime from code + data.
-    /// </summary>
-    public class SceneBootstrap : MonoBehaviour
-    {
-        public string kind = "level";   // "title", "end", "level"
-        public int levelNumber = 1;
-
-        /// <summary>Raised for every scene before content is built: (kind, level). Visual rigs, UI, audio hook in here.</summary>
-        public static event Action<string, int> Booting;
-
-        void Awake()
-        {
-            if (kind == "level") BootLevel(levelNumber);
-            else Boot(kind, 0);
-        }
-
-        /// <summary>Raises Booting for a non-level scene (title/end) — also usable from tests.</summary>
-        public static void Boot(string kind, int level)
-        {
-            var _ = GameSystems.Root;
-            Booting?.Invoke(kind, level);
-        }
-
-        /// <summary>Boots a level without needing a scene file (used by scenes and PlayMode tests).</summary>
-        public static LevelRuntime BootLevel(int levelNumber) => BootLevel(LevelDatabase.Load(levelNumber), levelNumber);
-
-        public static LevelRuntime BootLevel(LevelData data, int levelNumber)
-        {
-            Boot("level", levelNumber);
-            var go = new GameObject("LevelRuntime");
-            var rt = go.AddComponent<LevelRuntime>();
-            rt.Load(data, levelNumber);
-            return rt;
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() { Booting = null; }
-    }
 
     /// <summary>Owns a running level: builds it, spawns Umbra, tracks time, checkpoints and respawns.</summary>
     public class LevelRuntime : MonoBehaviour
