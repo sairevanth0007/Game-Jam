@@ -30,7 +30,7 @@ namespace LumenWave
             skyMat.SetColor("_HorizonColor", mood.skyHorizon);
             skyMat.SetColor("_BottomColor", mood.skyBottom);
             skyMat.SetColor("_MoonColor", mood.moon);
-            skyMat.SetVector("_MoonPos", new Vector4(0.5f + (float)rng.NextDouble() * 0.12f, 0.6f, 0, 0));
+            skyMat.SetVector("_MoonPos", new Vector4(0.6f + (float)rng.NextDouble() * 0.08f, 0.645f, 0, 0));
             skyMat.SetFloat("_MoonSize", 0.016f);
             skyMat.SetFloat("_Aspect", sky.transform.localScale.x / sky.transform.localScale.y);
             skyMat.SetFloat("_Horizon", 0.44f);

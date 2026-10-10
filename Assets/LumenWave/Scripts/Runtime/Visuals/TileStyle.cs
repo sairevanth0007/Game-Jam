@@ -22,14 +22,22 @@ namespace LumenWave
             var p = block.transform.localPosition;
             var s = block.transform.localScale;
             int variant = Mathf.Abs(Mathf.RoundToInt(p.x * 7f + p.y * 13f)) % Stone.Length;
+            var mood = SceneRig.Instance != null ? SceneRig.Instance.Mood : Mood.Get(ctx?.data?.Get("mood", "blue"));
             if (r != null)
             {
-                r.sharedMaterial = MaterialLibrary.Tinted("Stone", tile == '=' ? Stone[0] * 1.25f : Stone[variant]);
+                // Procedural masonry (LumenWave/StoneFace) that fades into darkness below the walkable lip.
+                var c = tile == '=' ? Stone[0] * 1.35f : Stone[variant] * 1.3f;
+                c.a = 1f;
+                r.sharedMaterial = MaterialLibrary.Tinted("StoneFace", c);
+                var mpb = new MaterialPropertyBlock();
+                r.GetPropertyBlock(mpb);
+                mpb.SetFloat("_TopY", p.y + s.y * 0.5f);
+                mpb.SetColor("_EdgeColor", mood.edge);
+                mpb.SetFloat("_Fade", tile == '=' ? 1f : 4.5f);
+                r.SetPropertyBlock(mpb);
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
                 r.receiveShadows = true;
             }
-
-            var mood = SceneRig.Instance != null ? SceneRig.Instance.Mood : Mood.Get(ctx?.data?.Get("mood", "blue"));
             float x0 = p.x - s.x * 0.5f, top = p.y + s.y * 0.5f;
             int cols = Mathf.RoundToInt(s.x);
             int topRow = Mathf.RoundToInt(top);

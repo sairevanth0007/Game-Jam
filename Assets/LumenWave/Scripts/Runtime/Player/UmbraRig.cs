@@ -10,7 +10,7 @@ namespace LumenWave
     /// </summary>
     public class UmbraRig : MonoBehaviour
     {
-        public static readonly Color RimColor = new Color(0.55f, 0.95f, 1.4f) * 1.6f;
+        public static readonly Color RimColor = new Color(0.7f, 0.95f, 1.25f) * 1.5f;
         public static readonly Color EyeColor = new Color(0.7f, 1.6f, 2.2f) * 2.2f;
 
         public enum State { Idle, Run, Jump, Fall, Dash, Dead }
@@ -22,6 +22,7 @@ namespace LumenWave
         UmbraController _ctl;
         PlayerHealth _health;
         Material _bodyMat;
+        Material _outlineMat;
         Material _ghostMatBase;
         readonly List<Renderer> _renderers = new List<Renderer>();
 
@@ -49,8 +50,16 @@ namespace LumenWave
             _bodyMat.name = "UmbraBody";
             if (_bodyMat.HasProperty("_BaseColor")) _bodyMat.SetColor("_BaseColor", Color.black);
             if (_bodyMat.HasProperty("_RimColor")) _bodyMat.SetColor("_RimColor", RimColor);
-            if (_bodyMat.HasProperty("_RimPower")) _bodyMat.SetFloat("_RimPower", 3f);
-            if (_bodyMat.HasProperty("_RimF0")) _bodyMat.SetFloat("_RimF0", 0.04f);
+            if (_bodyMat.HasProperty("_RimPower")) _bodyMat.SetFloat("_RimPower", 5.5f);
+            if (_bodyMat.HasProperty("_RimF0")) _bodyMat.SetFloat("_RimF0", 0.0f);
+            // The bright edge is a stencil-masked inverted hull around the union of all parts
+            // (LumenWave/UmbraOutline), so limbs overlapping each other never show inner outlines.
+            var outlineBase = Resources.Load<Material>("Materials/UmbraOutline");
+            if (outlineBase != null)
+            {
+                _outlineMat = new Material(outlineBase) { name = "UmbraOutline" };
+                _outlineMat.SetColor("_RimColor", RimColor);
+            }
             var eyeMat = MaterialLibrary.Tinted("Unlit", EyeColor);
 
             Visual = new GameObject("Visual").transform;
@@ -123,7 +132,8 @@ namespace LumenWave
             go.transform.localScale = scale;
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var r = go.AddComponent<MeshRenderer>();
-            r.sharedMaterial = mat != null ? mat : _bodyMat;
+            if (mat == null && _outlineMat != null) r.sharedMaterials = new[] { _bodyMat, _outlineMat };
+            else r.sharedMaterial = mat != null ? mat : _bodyMat;
             r.shadowCastingMode = shadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
             r.receiveShadows = false;
             _renderers.Add(r);
@@ -134,6 +144,7 @@ namespace LumenWave
             GameEvents.PowerUsed += OnPower;
             GameEvents.PlayerDamaged += OnDamaged;
             GameEvents.PlayerLanded += OnLanded;
+            GameEvents.PlayerHealed += OnHealed;
         }
 
         void OnDisable()
@@ -141,6 +152,7 @@ namespace LumenWave
             GameEvents.PowerUsed -= OnPower;
             GameEvents.PlayerDamaged -= OnDamaged;
             GameEvents.PlayerLanded -= OnLanded;
+            GameEvents.PlayerHealed -= OnHealed;
         }
 
         void OnPower(PowerType p)
@@ -148,7 +160,24 @@ namespace LumenWave
             if (p == PowerType.Echo || p == PowerType.Pulse) _castTimer = 0.38f;
         }
 
-        void OnDamaged(float amount, LightColor c) { _hurtTimer = 0.25f; }
+        float _sparkCooldown, _healCooldown;
+
+        void OnDamaged(float amount, LightColor c)
+        {
+            _hurtTimer = 0.25f;
+            // Coloured sparks in the colour of the light that burned us (throttled).
+            if (Time.time < _sparkCooldown) return;
+            _sparkCooldown = Time.time + 0.12f;
+            var col = c == LightColor.None ? new Color(1.6f, 1.6f, 1.8f) : LightMath.DisplayColor(c) * 2.2f;
+            UmbraFx.Sparks(transform.position + Vector3.up * 1.0f, col, Mathf.Clamp(Mathf.RoundToInt(amount * 1.5f), 6, 24));
+        }
+
+        void OnHealed(float amount)
+        {
+            if (Time.time < _healCooldown) return;
+            _healCooldown = Time.time + 0.18f;
+            UmbraFx.Motes(transform.position + Vector3.up * 0.6f, LightMath.DisplayColor(LightColor.Green) * 1.8f);
+        }
 
         void OnLanded()
         {
@@ -301,6 +330,7 @@ namespace LumenWave
                 if (_respawnTimer > 0f) rim = Color.Lerp(RimColor, RimColor * 3f, _respawnTimer / 0.45f);
                 if (cmd.shieldHeld && !dead) rim = Color.Lerp(rim, new Color(0.9f, 1.3f, 2.2f) * 2f, 0.5f);
                 _bodyMat.SetColor("_RimColor", rim);
+                if (_outlineMat != null) _outlineMat.SetColor("_RimColor", rim);
             }
 
             // Dash afterimages.
@@ -322,7 +352,7 @@ namespace LumenWave
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
             foreach (var r in ghost.GetComponentsInChildren<Renderer>())
             {
-                r.sharedMaterial = mat;
+                r.sharedMaterials = new[] { mat };
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             }
             ghost.AddComponent<UmbraGhost>().Init(mat, c, 0.28f);
@@ -331,6 +361,7 @@ namespace LumenWave
         void OnDestroy()
         {
             if (_bodyMat != null) Destroy(_bodyMat);
+            if (_outlineMat != null) Destroy(_outlineMat);
             if (_ghostMatBase != null) Destroy(_ghostMatBase);
         }
     }
@@ -363,6 +394,36 @@ namespace LumenWave
             main.gravityModifier = -0.15f;
             var shape = ps.shape; shape.shapeType = ParticleSystemShapeType.Sphere; shape.radius = 0.5f;
             ps.Emit(60);
+        }
+
+        /// <summary>Fast coloured sparks flying off Umbra when light burns them.</summary>
+        public static void Sparks(Vector3 pos, Color color, int count)
+        {
+            var ps = Make("UmbraSparks", pos, MaterialLibrary.Tinted("ParticleAdditive", Color.white), 0.6f);
+            var main = ps.main;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.18f, 0.45f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(3f, 8f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.08f);
+            main.startColor = color;
+            main.gravityModifier = 0.6f;
+            var shape = ps.shape; shape.shapeType = ParticleSystemShapeType.Sphere; shape.radius = 0.35f;
+            var r = ps.GetComponent<ParticleSystemRenderer>();
+            r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.05f; r.lengthScale = 1.5f;
+            ps.Emit(count);
+        }
+
+        /// <summary>Soft motes drifting upward while green light heals.</summary>
+        public static void Motes(Vector3 pos, Color color)
+        {
+            var ps = Make("UmbraHeal", pos, MaterialLibrary.Tinted("ParticleAdditive", Color.white), 1.2f);
+            var main = ps.main;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.1f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.11f);
+            main.startColor = color;
+            main.gravityModifier = -0.25f;
+            var shape = ps.shape; shape.shapeType = ParticleSystemShapeType.Box; shape.scale = new Vector3(0.6f, 1.2f, 0.3f);
+            ps.Emit(4);
         }
 
         public static void Dust(Vector3 pos, float strength)

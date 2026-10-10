@@ -14,7 +14,7 @@ namespace LumenWave
         public float distance = DefaultDistance;
         public float lookAhead = 2.6f;
         public float velocityLead = 0.22f;
-        public float verticalBias = 1.4f;
+        public float verticalBias = 3.0f;   // ground sits ~25–30% from the bottom of the screen
         public float deadZoneUp = 1.4f;
         public float deadZoneDown = 0.6f;
         public float smoothTimeX = 0.28f;
@@ -89,7 +89,7 @@ namespace LumenWave
         {
             var p = Target.position;
             float y = _focusY + verticalBias;
-            if (_body != null && _body.Velocity.y < -9f) y -= 1.6f;
+            if (_body != null && _body.Velocity.y < -9f) y -= 3.2f;   // peek below when falling
             return new Vector3(p.x + _lookX + extraOffset.x, y + extraOffset.y, p.z - distance - extraDistance);
         }
 

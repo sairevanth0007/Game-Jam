@@ -44,7 +44,13 @@ namespace LumenWave.Tests
         }
 
         [UnityTest, Timeout(600000)]
-        public IEnumerator Bot_CompletesLevel([ValueSource(nameof(Levels))] int level)
+        public IEnumerator Bot_CompletesLevel([ValueSource(nameof(Levels))] int level) => Run(level, TimeScale, 12);
+
+        /// <summary>Human-fairness check: real time (beat clock and physics in sync), at most 1 death.</summary>
+        [UnityTest, Timeout(900000)]
+        public IEnumerator Bot_CompletesLevel_RealTime([ValueSource(nameof(Levels))] int level) => Run(level, 1f, 1);
+
+        IEnumerator Run(int level, float timeScale, int maxDeaths)
         {
             LevelTestUtil.ClearScene();
             yield return null;
@@ -67,11 +73,11 @@ namespace LumenWave.Tests
                 deathLog.Append($"({pp.x:F1},{pp.y:F1}) ");
             };
             GameEvents.PlayerDied += onDied;
-            Time.timeScale = TimeScale;
+            Time.timeScale = timeScale;
             float t = 0f;
             int traced = 0;
             float maxX = rt.Player.transform.position.x;
-            while (!rt.Completed && t < TimeLimit && GameSession.Deaths - deathsBefore < 12)
+            while (!rt.Completed && t < TimeLimit && GameSession.Deaths - deathsBefore <= maxDeaths)
             {
                 t += Time.deltaTime;
                 maxX = Mathf.Max(maxX, rt.Player.transform.position.x);
@@ -87,9 +93,10 @@ namespace LumenWave.Tests
             GameEvents.PlayerDied -= onDied;
             int deaths = GameSession.Deaths - deathsBefore;
             var p = rt.Player.transform.position;
-            Debug.Log($"[LumenWave] BOT level {level} '{rt.Data.Name}': completed={rt.Completed} time={t:F1}s deaths={deaths} pos=({p.x:F1},{p.y:F1}) maxX={maxX:F1}/{rt.Data.Width} actions={bot.ActionsFired} last={bot.LastAction} deathsAt={deathLog}");
+            Debug.Log($"[LumenWave] BOT x{timeScale} level {level} '{rt.Data.Name}': completed={rt.Completed} time={t:F1}s deaths={deaths} pos=({p.x:F1},{p.y:F1}) maxX={maxX:F1}/{rt.Data.Width} actions={bot.ActionsFired} last={bot.LastAction} deathsAt={deathLog}");
             bot.Dispose();
-            Assert.IsTrue(rt.Completed, $"Bot did not finish level {level} '{rt.Data.Name}' in {TimeLimit}s (deaths {deaths}, reached x={maxX:F1} of {rt.Data.Width}, at ({p.x:F1},{p.y:F1}), last action {bot.LastAction}, deaths at {deathLog})");
+            Assert.LessOrEqual(deaths, maxDeaths, $"Too many deaths at x{timeScale} in level {level}: {deathLog}");
+            Assert.IsTrue(rt.Completed, $"[x{timeScale}] Bot did not finish level {level} '{rt.Data.Name}' in {TimeLimit}s (deaths {deaths}, reached x={maxX:F1} of {rt.Data.Width}, at ({p.x:F1},{p.y:F1}), last action {bot.LastAction}, deaths at {deathLog})");
         }
     }
 }

@@ -1,6 +1,7 @@
 name: Prism and Mirror
 intro: Light obeys laws. Bend it, split it, mix it.
 fog: 0.035
+mood: violet
 drone: 6
 ---
 ########################################################################################################################
@@ -24,7 +25,7 @@ drone: 6
 ##############################################################################                ##########################
 ##############################################################################^^^^^^^^^^^^^^^^##########################
 ---
-tutorial 8.5 3 text=Mirrors_reflect:_angle_in_=_angle_out._{Pulse}_turns_them. radius=3
+tutorial 8.5 3 text=The_mirror_throws_red_light_on_your_path._{Pulse}_to_turn_it_aside_(angle_in_=_angle_out) radius=3
 beam 14.5 16.9 color=red dir=-90 range=24 intensity=25 width=0.7
 mirror 14.5 9 angle=-67.5 rotatable=1
 bot 10.0 3 do=pulse
@@ -39,7 +40,7 @@ orb 41.5 15.5
 beam 66.5 16.9 color=red dir=-90 range=14 intensity=8 width=1.4
 beam 58.5 4.5 color=green dir=0 range=14 intensity=6 width=1.4
 crystal 61.5 3 h=3
-tutorial 57.5 3 text=Shatter_the_crystal_with_{Pulse}:_red_+_green_=_yellow radius=3.5
+tutorial 57.5 3 text={Pulse}_the_crystal._Red_+_green_light_mix_to_yellow:_cross_between_beats radius=3.5
 bot 56.0 3 do=pulse
 bot 56.1 3 do=wait t=0.6
 bot 64.6 3 do=waitbeat
@@ -52,3 +53,4 @@ bot 83.6 3 do=jump
 bot 86.8 3 do=pulse
 bot 88.6 3 do=jump
 orb 100.5 7
+checkpoint 96.5 3

@@ -8,7 +8,7 @@ Shader "LumenWave/Umbra"
     {
         _BaseColor("Base Color", Color) = (0.006, 0.006, 0.01, 1)
         [HDR] _RimColor("Rim Color", Color) = (0.6, 0.85, 2.2, 1)
-        _RimPower("Rim Power (Schlick exponent)", Range(0.5, 10)) = 4
+        _RimPower("Rim Power (Schlick exponent)", Range(0.5, 10)) = 5.5
         _RimF0("Rim F0", Range(0, 1)) = 0.02
         [HDR] _BackLight("Main light back rim", Color) = (0.35, 0.4, 0.6, 1)
     }
@@ -20,6 +20,9 @@ Shader "LumenWave/Umbra"
         {
             Name "ForwardLit"
             Tags { "LightMode" = "UniversalForward" }
+            // Mark Umbra's pixels so the outline pass (LumenWave/UmbraOutline) only draws OUTSIDE the
+            // union of all body parts: one clean silhouette edge, no inner outlines between limbs.
+            Stencil { Ref 2 Comp Always Pass Replace }
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -62,9 +65,9 @@ Shader "LumenWave/Umbra"
                 float3 v = GetWorldSpaceNormalizeViewDir(i.positionWS);
                 float cosT = saturate(dot(n, v));
                 float fresnel = _RimF0 + (1.0 - _RimF0) * pow(1.0 - cosT, _RimPower);
-                Light ml = GetMainLight();
-                float back = saturate(dot(n, ml.direction)) * pow(1.0 - cosT, 2.0);
-                half3 col = _BaseColor.rgb + _RimColor.rgb * fresnel + _BackLight.rgb * ml.color * back;
+                // Body stays near-black: only a faint Fresnel hint gives volume. The bright edge comes from
+                // the stencil-masked outline pass. Scene lights are ignored so nothing tints the silhouette.
+                half3 col = _BaseColor.rgb + _RimColor.rgb * fresnel * 0.12 * _BackLight.a;
                 col = MixFog(col, i.fogFactor);
                 return half4(col, 1);
             }

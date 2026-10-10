@@ -118,7 +118,8 @@ namespace LumenWave.UI
         public static TitleScreen Instance { get; private set; }
         public MenuStack Stack { get; private set; }
         public Button PlayButton { get; private set; }
-        Text _logo, _logoGlow;
+        Text _logo;
+        Image _logoHalo;
         GameObject _main;
 
         void Awake()
@@ -144,12 +145,17 @@ namespace LumenWave.UI
             Stack = gameObject.AddComponent<MenuStack>();
 
             // Logo
-            _logoGlow = UIKit.Label(root, UIKit.Spaced("LUMENWAVE", 2), 118, TextAnchor.MiddleCenter, new Color(0.45f, 0.95f, 1f, 0.25f), "LogoGlow");
-            UIKit.Place(_logoGlow.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -230), new Vector2(1600, 160), new Vector2(0.5f, 0.5f));
-            _logoGlow.rectTransform.localScale = new Vector3(1.02f, 1.08f, 1f);
+            // Soft halo behind the logo (a blurred glow sprite, not a second copy of the text, which
+            // read as a ghosted offset duplicate).
+            _logoHalo = UIKit.Image(root, "LogoHalo", new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.22f), UIKit.Glow, false);
+            UIKit.Place(_logoHalo.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -230), new Vector2(1500, 330), new Vector2(0.5f, 0.5f));
+            _logoHalo.raycastTarget = false;
             _logo = UIKit.Label(root, UIKit.Spaced("LUMENWAVE", 2), 112, TextAnchor.MiddleCenter, Color.white, "Logo");
             UIKit.Place(_logo.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -230), new Vector2(1600, 160), new Vector2(0.5f, 0.5f));
-            UIKit.GlowText(_logo, UIStyle.Accent, 3f);
+            // Tight symmetric glow: a 1.5 px outline in the accent colour (symmetric, so no offset ghost).
+            var glow = _logo.gameObject.AddComponent<Outline>();
+            glow.effectColor = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.28f);
+            glow.effectDistance = new Vector2(1.5f, 1.5f);
             var tag = UIKit.Label(root, UIKit.Spaced("a song of shadow and light"), 28, TextAnchor.MiddleCenter, UIStyle.TextDim, "Tagline");
             UIKit.Place(tag.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -330), new Vector2(1200, 40), new Vector2(0.5f, 0.5f));
             var line = UIKit.Image(root, "TitleLine", UIStyle.PanelLine);
@@ -225,12 +231,12 @@ namespace LumenWave.UI
         void Update()
         {
             float t = Time.unscaledTime;
-            if (_logoGlow != null)
+            if (_logoHalo != null)
             {
-                float a = 0.18f + 0.12f * Mathf.Sin(t * 2.1f);
-                _logoGlow.color = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, a);
-                float s = 1.02f + 0.015f * Mathf.Sin(t * 2.1f);
-                _logoGlow.rectTransform.localScale = new Vector3(s, s * 1.05f, 1f);
+                float a = 0.16f + 0.08f * Mathf.Sin(t * 2.1f);
+                _logoHalo.color = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, a);
+                float s = 1f + 0.03f * Mathf.Sin(t * 2.1f);
+                _logoHalo.rectTransform.localScale = new Vector3(s, s, 1f);
             }
             // Beat-synced shimmer if the clock runs.
             if (_logo != null && BeatClock.Instance != null)

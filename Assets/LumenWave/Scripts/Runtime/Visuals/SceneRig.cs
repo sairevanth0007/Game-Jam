@@ -139,7 +139,7 @@ namespace LumenWave
             ca.postExposure.Override(0.55f);
             ca.contrast.Override(18f);
             ca.saturation.Override(8f);
-            ca.colorFilter.Override(Color.Lerp(Color.white, mood.edge, 0.08f));
+            ca.colorFilter.Override(Color.Lerp(Color.white, mood.edge, 0.05f));
             var vig = p.Add<Vignette>(true);
             vig.intensity.Override(0.38f);
             vig.smoothness.Override(0.45f);
@@ -152,6 +152,13 @@ namespace LumenWave
             chroma.intensity.Override(0.08f);
             var smh = p.Add<ShadowsMidtonesHighlights>(true);
             smh.shadows.Override(new Vector4(0.95f, 0.98f, 1.08f, 0f));
+            // Per-mood split toning: shadows lean toward the fog hue, highlights toward the mood's edge light.
+            var split = p.Add<SplitToning>(true);
+            var sh = mood.fog; float shMax = Mathf.Max(0.001f, sh.maxColorComponent);
+            split.shadows.Override(Color.Lerp(Color.gray, new Color(sh.r / shMax, sh.g / shMax, sh.b / shMax), 0.55f));
+            var hi = mood.edge; float hiMax = Mathf.Max(0.001f, hi.maxColorComponent);
+            split.highlights.Override(Color.Lerp(Color.gray, new Color(hi.r / hiMax, hi.g / hiMax, hi.b / hiMax), 0.12f));   // subtle: light colours are gameplay rules
+            split.balance.Override(-15f);
             return p;
         }
 

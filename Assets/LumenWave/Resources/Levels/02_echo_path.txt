@@ -1,6 +1,7 @@
 name: Echo Path
 intro: Sound can become solid. Sing across the void.
 fog: 0.035
+mood: violet
 drone: 2
 ---
 ##                                                                                                                    ##

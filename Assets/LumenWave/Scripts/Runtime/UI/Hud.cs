@@ -129,17 +129,17 @@ namespace LumenWave.UI
             TimerText = UIKit.Label(root, "00:00.00", 22, TextAnchor.UpperRight, UIStyle.Accent, "Timer");
             UIKit.Place(TimerText.rectTransform, new Vector2(1f, 1f), new Vector2(-56, -84), new Vector2(400, 34), new Vector2(1f, 1f));
 
-            // Message banner (upper middle)
+            // Message banner (lower middle, over the dark ground so it never hides lights or enemies)
             var msg = UIKit.Rect(root, "Message");
-            UIKit.Place(msg, new Vector2(0.5f, 1f), new Vector2(0, -190), new Vector2(1300, 84), new Vector2(0.5f, 0.5f));
+            UIKit.Place(msg, new Vector2(0.5f, 0f), new Vector2(0, 150), new Vector2(1100, 70), new Vector2(0.5f, 0.5f));
             _messageGroup = msg.gameObject.AddComponent<CanvasGroup>();
             _messageGroup.alpha = 0f;
-            var mbg = UIKit.Image(msg, "Bg", new Color(0.02f, 0.03f, 0.06f, 0.6f), UIKit.Soft);
+            var mbg = UIKit.Image(msg, "Bg", new Color(0.02f, 0.03f, 0.06f, 0.45f), UIKit.Soft);
             UIKit.Stretch(mbg.rectTransform);
             var mline = UIKit.Image(msg, "Line", UIStyle.PanelLine);
             mline.rectTransform.anchorMin = new Vector2(0.1f, 0f); mline.rectTransform.anchorMax = new Vector2(0.9f, 0f);
             mline.rectTransform.sizeDelta = new Vector2(0, 2); mline.rectTransform.anchoredPosition = Vector2.zero;
-            MessageText = UIKit.Label(msg, "", 30, TextAnchor.MiddleCenter, Color.white, "Text");
+            MessageText = UIKit.Label(msg, "", 28, TextAnchor.MiddleCenter, Color.white, "Text");
             UIKit.Stretch(MessageText.rectTransform, 12);
 
             // Bottom-left legend

@@ -1,6 +1,7 @@
 name: Beat Lasers
 intro: Yellow light fires on the beat. Move between the pulses.
 fog: 0.04
+mood: gold
 drone: 5
 ---
 ##############################################################################################################
@@ -44,3 +45,4 @@ beam 84.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
 beam 88.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
 bot 82.9 3 do=waitbeat
 bot 86.9 3 do=waitbeat
+checkpoint 80.5 3

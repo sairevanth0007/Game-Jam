@@ -13,3 +13,10 @@ Format: time (Sun 11 Oct 2026) — decision — why.
 - 00:43 — Light rules as pure logic: White (R∧G∧B part) is neutral; overlapping Red+Green becomes Yellow (beat-gated damage); remaining Red burns, Green heals + refills, Blue lowers gravity. Darkness (total < 0.12) refills resonance.
 - 00:44 — Music in D, just intonation (1, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8). Echo = fifth, Shield = tonic, Pulse = major third. 100 BPM, beat on the DSP clock.
 - 00:50 — `Start-Process -Wait` hangs on Unity's lingering child processes; scripts now wait on the Unity process only (with timeout).
+- 01:00 — Parallel workers (forks) with strict folder ownership: visuals, player, light, sound, enemies, levels+bot, UI. The orchestrator commits; workers never touch git state.
+- 01:20 — The Unity lock also waits for any Unity.exe running on this project (CIM command-line check). A test run started without the lock once, after a lock dir was removed by hand.
+- 01:25 — Third enemy: **Echo Moth**. It is harmless until Umbra uses a power nearby, then it hunts and drains resonance, so players have to choose when to make noise. The Shield and Pulse stop it.
+- 01:40 — Prism splits per channel around its angle (blue bends most). White right at the prism is neutral, so the level 6 puzzle has to separate the blue ray with a mirror.
+- 01:50 — Visuals: a per-level `mood:` header (blue/violet/red/green/gold/dawn) sets the sky, fog and grading.
+- 01:55 — Moved the tutorial message banner from the upper sky to the lower middle so it never hides lamps or sentinels.
+- 01:55 — Windows MCP is still not exposed. "Play the first minute" verification is done with a built-player `-lw-autoplay` mode: the bot plays at 1× and takes screenshots every 5 s.

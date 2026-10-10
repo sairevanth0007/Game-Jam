@@ -1,6 +1,7 @@
 name: Red Light
 intro: Red light burns. Your song can shield you.
 fog: 0.04
+mood: red
 drone: 3
 ---
 ####################################################################################################################
@@ -39,3 +40,4 @@ bot 83.6 3 do=shield t=1.9
 lamp 97.5 7 color=green radius=4 intensity=1.2
 orb 99.5 9.5
 bot 98.6 3 do=jump t=0.5
+checkpoint 97.5 3

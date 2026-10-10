@@ -1,6 +1,7 @@
 name: Sentinels
 intro: The lamp-wardens sweep the dark. Stun them with a Pulse.
 fog: 0.045
+mood: red
 drone: 7
 ---
 ##                                                                                                                            ##
@@ -52,3 +53,5 @@ wisp 104.5 18
 bot 92.0 14 do=pulse
 bot 92.6 14 do=shield t=3.0
 orb 99.5 18
+tutorial 56.5 3 text=Echo_moths_hunt_any_song._Climb_in_silence. radius=3
+moth 70.5 13
