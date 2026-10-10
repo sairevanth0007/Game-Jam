@@ -33,3 +33,4 @@ Thumbs.db
 .unitylock/
 Logs/
 Release/*.tmp
+Assets/InitTestScene*.unity*
