@@ -44,6 +44,9 @@ Expand `LumenControls.inputactions` in the Project window to see its actions, th
 | NoteInput        | Note Low Action  | `Notes/NoteLow`            |
 | NoteInput        | Note Mid Action  | `Notes/NoteMid`            |
 | NoteInput        | Note High Action | `Notes/NoteHigh`           |
+| GameManager      | Pause Action     | `Game/Pause`               |
+| GameManager      | Respawn Action   | `Game/Respawn`             |
+| GameManager      | Confirm Action   | `Game/Confirm`             |
 | InputRebinder    | Actions          | the `LumenControls` asset (optional, falls back to LumenInput) |
 | InputRebinder    | Target Action    | whichever action that settings row rebinds |
 
@@ -65,6 +68,21 @@ NoteInput.Instance.NotePressed  += note => { /* note started */ };
 NoteInput.Instance.NoteReleased += note => { /* note stopped */ };
 bool held = NoteInput.Instance.IsHeld(Note.Low);
 ```
+
+### Scene checklist (Phase A)
+
+On a `GameSystems` object: `LumenInput`, `NoteInput`, `GameManager`, `CheckpointManager`, and `NoteSound`
+(it adds an `AudioSource`; there must be an `AudioListener` in the scene, normally on the Main Camera).
+
+- **CheckpointManager**: set **Initial Spawn Point** (an empty Transform where the run starts).
+- **Checkpoint**: any Collider2D (made a trigger automatically) + `Checkpoint`. Set **Player Layers** to the
+  player's layer. Optional **Respawn Point** child and active/inactive visuals. Fires **On Checkpoint Reached** once.
+- **WinZone**: Collider2D + `WinZone` at the top of the tower, **Player Layers** set the same way.
+- **GameManager**: starts on Title (untick **Start On Title** to skip it while testing). Confirm starts the run,
+  Pause toggles pause (`Time.timeScale = 0`), Respawn sends the player to the last checkpoint, Confirm after
+  winning restarts the run. Hook UI to **On Title / On Playing / On Paused / On Won**; read `RunTimeText`
+  and `BurnCount` for the HUD. LightDamage should call `GameManager.Instance.PlayerBurned()`.
+- **NoteSound**: tones default to C3 / G3 / E4; volume, harmonic, vibrato, attack and release are in the Inspector.
 
 ## How to change a key
 
