@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(-60)]
 [RequireComponent(typeof(BeamSpline))]
 public class ShadowGenerator : MonoBehaviour
 {
@@ -26,13 +27,15 @@ public class ShadowGenerator : MonoBehaviour
     {
         Vector3[] beamPoints = beam.points;
 
-        shadowPoints = new Vector3[beamPoints.Length * 2];
+        if (beamPoints == null) return;
+        if (shadowPoints == null || shadowPoints.Length != beamPoints.Length * 2)
+            shadowPoints = new Vector3[beamPoints.Length * 2];
 
 
         for(int i = 0; i < beamPoints.Length; i++)
         {
             Vector3 offset =
-                transform.right * shadowWidth;
+                Vector3.right * shadowWidth;
 
             shadowPoints[i] =
                 beamPoints[i] + offset;

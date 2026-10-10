@@ -4,7 +4,8 @@ public enum LightColorType
 {
     Blue,
     Red,
-    Yellow
+    Yellow,
+    Green
 }
 
 [CreateAssetMenu(menuName = "LumenWave/Light Profile")]
@@ -17,4 +18,5 @@ public class LightProfile : ScriptableObject
 
     public float maxBend = 1.5f;
     public float animationSpeed = 6f;
+    public bool chordPersonality;
 }

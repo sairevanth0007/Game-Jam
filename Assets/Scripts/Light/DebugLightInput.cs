@@ -7,7 +7,8 @@ public class DebugLightInput : MonoBehaviour
 
     void Update()
     {
-        if (Keyboard.current.jKey.isPressed)
+        if (lightController == null) return;
+        if (Keyboard.current != null && Keyboard.current.jKey.isPressed)
         {
             lightController.SetResonance(1f);
         }

@@ -11,10 +11,12 @@ public class BeamRenderer : MonoBehaviour
     {
         line = GetComponent<LineRenderer>();
         beam = GetComponent<BeamSpline>();
+        line.useWorldSpace = false;
     }
 
-    void Update()
+    void LateUpdate()
     {
+        if (beam.points == null) return;
         line.positionCount = beam.points.Length;
 
         for (int i = 0; i < beam.points.Length; i++)

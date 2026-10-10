@@ -17,9 +17,10 @@ public class ShadowRenderer : MonoBehaviour
     }
 
 
-    void Update()
+    void LateUpdate()
     {
-        if(generator.shadowPoints == null)
+        line.useWorldSpace = false;
+        if(generator == null || generator.shadowPoints == null || generator.shadowPoints.Length == 0)
             return;
 
 
