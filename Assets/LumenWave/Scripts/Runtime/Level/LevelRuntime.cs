@@ -24,15 +24,27 @@ namespace LumenWave
 
         void Awake()
         {
+            if (kind == "level") BootLevel(levelNumber);
+            else Boot(kind, 0);
+        }
+
+        /// <summary>Raises Booting for a non-level scene (title/end) — also usable from tests.</summary>
+        public static void Boot(string kind, int level)
+        {
             var _ = GameSystems.Root;
-            Booting?.Invoke(kind, levelNumber);
-            if (kind == "level")
-            {
-                // A test or menu may have chosen a different level to run in this shell scene.
-                var go = new GameObject("LevelRuntime");
-                var rt = go.AddComponent<LevelRuntime>();
-                rt.Load(levelNumber);
-            }
+            Booting?.Invoke(kind, level);
+        }
+
+        /// <summary>Boots a level without needing a scene file (used by scenes and PlayMode tests).</summary>
+        public static LevelRuntime BootLevel(int levelNumber) => BootLevel(LevelDatabase.Load(levelNumber), levelNumber);
+
+        public static LevelRuntime BootLevel(LevelData data, int levelNumber)
+        {
+            Boot("level", levelNumber);
+            var go = new GameObject("LevelRuntime");
+            var rt = go.AddComponent<LevelRuntime>();
+            rt.Load(data, levelNumber);
+            return rt;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -59,12 +71,15 @@ namespace LumenWave
         void Awake() { Current = this; }
         void OnDestroy() { if (Current == this) Current = null; }
 
-        public void Load(int levelNumber)
+        public void Load(int levelNumber) => Load(LevelDatabase.Load(levelNumber), levelNumber);
+
+        /// <summary>Loads arbitrary level data (PlayMode tests build tiny custom levels with this).</summary>
+        public void Load(LevelData data, int levelNumber)
         {
             LevelNumber = levelNumber;
             GameSession.CurrentLevel = levelNumber;
             GameSession.LevelTime = 0f;
-            Data = LevelDatabase.Load(levelNumber);
+            Data = data;
             Context = LevelBuilder.Build(Data, transform, levelNumber);
             RespawnPoint = Data.PlayerStart;
             if (Player == null && Context.byType.TryGetValue("player", out var ps) && ps.Count > 0) Player = ps[0];

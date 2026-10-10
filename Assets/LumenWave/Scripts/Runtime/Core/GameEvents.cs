@@ -25,7 +25,9 @@ namespace LumenWave
         public static event Action PlayerLanded;
         public static event Action<Vector3> CrystalShattered;
         public static event Action<Vector3> EnemyStunned;
-        public static event Action<string> Message;                     // tutorial / info text
+        public static event Action<string> Message;                     // tutorial / info text (may contain {Jump} etc.)
+        public static event Action<GameObject> PlayerSpawned;           // subsystems attach components to Umbra here
+        public static event Action FinaleStarted;                       // ending: Umbra sings, lights turn harmonious
 
         public static void RaisePlayerDamaged(float amount, LightColor c) => PlayerDamaged?.Invoke(amount, c);
         public static void RaisePlayerHealed(float amount) => PlayerHealed?.Invoke(amount);
@@ -42,6 +44,8 @@ namespace LumenWave
         public static void RaiseCrystalShattered(Vector3 p) => CrystalShattered?.Invoke(p);
         public static void RaiseEnemyStunned(Vector3 p) => EnemyStunned?.Invoke(p);
         public static void RaiseMessage(string m) => Message?.Invoke(m);
+        public static void RaisePlayerSpawned(GameObject p) => PlayerSpawned?.Invoke(p);
+        public static void RaiseFinale() => FinaleStarted?.Invoke();
 
         /// <summary>Clears all listeners (tests, domain reload off).</summary>
         public static void ResetAll()
@@ -50,7 +54,21 @@ namespace LumenWave
             PowerUsed = null; PowerFailed = null; CheckpointReached = null; LevelStarted = null;
             LevelCompleted = null; GameWon = null; PlayerJumped = null; PlayerLanded = null;
             CrystalShattered = null; EnemyStunned = null; Message = null;
+            PlayerSpawned = null; FinaleStarted = null;
         }
+    }
+
+    /// <summary>Live state of Umbra's resonance shield (written by the shield, read by enemies/projectiles).</summary>
+    public static class ShieldState
+    {
+        public static bool Active;
+        public static Vector3 Center;
+        public static float Radius;
+
+        public static bool Contains(Vector3 p) => Active && (p - Center).sqrMagnitude <= Radius * Radius;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() { Active = false; Radius = 0f; }
     }
 
     /// <summary>Anything that reacts when a Pulse wavefront passes over it.</summary>
