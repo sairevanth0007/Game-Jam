@@ -53,9 +53,10 @@ namespace LumenWave
             go.name = "EdgeGlow";
             Backdrop.RemoveCollider(go);
             go.transform.SetParent(parent, false);
-            go.transform.localPosition = new Vector3((xa + xb) * 0.5f, top + 0.015f, 0f);
-            go.transform.localScale = new Vector3(xb - xa, 0.05f, depth + 0.02f);
-            var emission = mood.edge * 0.55f;
+            // A thin glowing line along the front top edge (facing the camera) – reads as moss / moonlit rim.
+            go.transform.localPosition = new Vector3((xa + xb) * 0.5f, top - 0.02f, -depth * 0.5f - 0.01f);
+            go.transform.localScale = new Vector3(xb - xa, 0.07f, 0.06f);
+            var emission = mood.edge * 0.9f;
             go.GetComponent<MeshRenderer>().sharedMaterial = MaterialLibrary.Tinted("LitEmissive", mood.edge * 0.2f, emission);
             Backdrop.Shadowless(go);
         }

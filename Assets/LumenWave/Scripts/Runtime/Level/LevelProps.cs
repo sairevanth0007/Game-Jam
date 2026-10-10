@@ -316,11 +316,34 @@ namespace LumenWave
         public static int InLevel;
         public static event System.Action<int, int> Changed;  // collected, total in level
 
+        /// <summary>PlayerPrefs key read by the end screen: total shards collected this run.</summary>
+        public const string PrefsKey = "lw.secrets";
+
         public static void Collect()
         {
             TotalCollected++;
             CollectedInLevel++;
+            PlayerPrefs.SetInt(PrefsKey, TotalCollected);
             Changed?.Invoke(CollectedInLevel, InLevel);
+        }
+
+        /// <summary>New run (level 1 starting with a fresh timer): reset the run tally.</summary>
+        public static void ResetRun()
+        {
+            TotalCollected = 0;
+            PlayerPrefs.SetInt(PrefsKey, 0);
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void Install()
+        {
+            GameEvents.LevelStarted -= OnLevelStarted;
+            GameEvents.LevelStarted += OnLevelStarted;
+        }
+
+        static void OnLevelStarted(int level)
+        {
+            if (level == 1 && GameSession.TotalTime < 0.5f) ResetRun();
         }
 
         public static void ResetLevel() { CollectedInLevel = 0; InLevel = 0; }

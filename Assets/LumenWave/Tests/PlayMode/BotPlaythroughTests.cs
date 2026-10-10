@@ -29,6 +29,10 @@ namespace LumenWave.Tests
     {
         public static int[] Levels => Enumerable.Range(1, Mathf.Max(1, LevelDatabase.Count)).ToArray();
 
+        /// <summary>Debug aid: per-frame position trace for one level between two x values.</summary>
+        public static int TraceLevel = 0;
+        public static float TraceFromX = 39f, TraceToX = 53f;
+
         const float TimeLimit = 240f;   // game seconds per level
         const float TimeScale = 2.5f;
 
@@ -65,11 +69,18 @@ namespace LumenWave.Tests
             GameEvents.PlayerDied += onDied;
             Time.timeScale = TimeScale;
             float t = 0f;
+            int traced = 0;
             float maxX = rt.Player.transform.position.x;
             while (!rt.Completed && t < TimeLimit && GameSession.Deaths - deathsBefore < 12)
             {
                 t += Time.deltaTime;
                 maxX = Mathf.Max(maxX, rt.Player.transform.position.x);
+                var tp = rt.Player.transform.position;
+                if (TraceLevel == level && tp.x > TraceFromX && tp.x < TraceToX && traced < 400)
+                {
+                    traced++;
+                    Debug.Log($"[LumenWave] TRACE t={t:F2} pos=({tp.x:F2},{tp.y:F2}) v={body.Velocity} grounded={body.Grounded}");
+                }
                 yield return null;
             }
             Time.timeScale = 1f;
