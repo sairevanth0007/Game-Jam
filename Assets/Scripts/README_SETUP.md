@@ -18,18 +18,33 @@ No script reads keys or devices directly, so keys and devices can change without
 
 Control schemes: `Keyboard` and `Gamepad`.
 
+## LumenInput: one owner for enabling actions
+
+Put **one** `LumenInput` in the first scene (e.g. on a `GameSystems` object) and drag the `LumenControls`
+asset into **Actions**. It enables all actions once and keeps them enabled across scene loads.
+
+Rules for every other script:
+
+- Only subscribe / unsubscribe callbacks (`performed`, `canceled`) or call `ReadValue`.
+- Never call `Enable()` / `Disable()` on a shared action. Disabling it would switch it off for every script.
+- To block the player (pause, cutscene, death), call `PlayerMovement.SetControlEnabled(false)`, and `true` to give control back.
+
+The only exception is `InputRebinder`: the Input System can't rebind an enabled action, so it disables
+that one action while waiting for a key, then turns it back on.
+
 ## Wiring the scripts (drag these into the fields)
 
 Expand `LumenControls.inputactions` in the Project window to see its actions, then drag each one into the field.
 
 | Script           | Field            | Drag in                    |
 |------------------|------------------|----------------------------|
+| LumenInput       | Actions          | the `LumenControls` asset itself |
 | PlayerMovement   | Move Action      | `Player/Move`              |
 | PlayerMovement   | Jump Action      | `Player/Jump`              |
 | NoteInput        | Note Low Action  | `Notes/NoteLow`            |
 | NoteInput        | Note Mid Action  | `Notes/NoteMid`            |
 | NoteInput        | Note High Action | `Notes/NoteHigh`           |
-| InputRebinder    | Actions          | the `LumenControls` asset itself |
+| InputRebinder    | Actions          | the `LumenControls` asset (optional, falls back to LumenInput) |
 | InputRebinder    | Target Action    | whichever action that settings row rebinds |
 
 ### Player GameObject
@@ -100,7 +115,6 @@ Binding indices count composite parts too:
 
 ## Notes for the team
 
-- Actions are shared: if a script disables an action in `OnDisable`, it is disabled for every script using it.
 - `LumenControls.inputactions` has **Generate C# Class** on (`LumenWave.LumenControls`). Unity creates
   `LumenControls.cs` on first import. The first person to open the project should commit it with its `.meta`,
   so everyone gets the same GUID. Nothing depends on the generated class; scripts use `InputActionReference`.

@@ -8,6 +8,7 @@ namespace LumenWave
     /// Rigidbody2D platformer movement: run, jump, ground check, coyote time, jump buffer,
     /// variable jump height (release early = lower jump) and faster falling.
     /// Input comes only from InputActionReferences, or from an adapter via SetExternalMove / ExternalJump.
+    /// The actions are enabled by LumenInput; use SetControlEnabled(false) to block the player.
     /// </summary>
     [RequireComponent(typeof(Rigidbody2D))]
     public class PlayerMovement : MonoBehaviour
@@ -48,6 +49,7 @@ namespace LumenWave
         public bool IsGrounded { get; private set; }
         public float FacingDirection { get; private set; } = 1f;
         public Vector2 Velocity => body.linearVelocity;
+        public bool ControlEnabled { get; private set; } = true;
 
         Rigidbody2D body;
         Collider2D bodyCollider;
@@ -85,30 +87,44 @@ namespace LumenWave
 
         void OnEnable()
         {
-            if (moveAction != null && moveAction.action != null)
-                moveAction.action.Enable();
-
             if (jumpAction != null && jumpAction.action != null)
             {
                 jumpAction.action.performed += OnJumpPerformed;
                 jumpAction.action.canceled += OnJumpCanceled;
-                jumpAction.action.Enable();
             }
         }
 
         void OnDisable()
         {
-            if (moveAction != null && moveAction.action != null)
-                moveAction.action.Disable();
-
             if (jumpAction != null && jumpAction.action != null)
             {
-                jumpAction.action.Disable();
                 jumpAction.action.performed -= OnJumpPerformed;
                 jumpAction.action.canceled -= OnJumpCanceled;
             }
 
             actionJumpHeld = false;
+        }
+
+        // ---------- Control ----------
+
+        /// <summary>false = ignore all input (actions and adapters). Physics keeps running.</summary>
+        public void SetControlEnabled(bool enabled)
+        {
+            ControlEnabled = enabled;
+            if (!enabled)
+                jumpBufferTimer = 0f;
+        }
+
+        /// <summary>Moves the player to a point and clears velocity and jump state (respawn, checkpoints).</summary>
+        public void Teleport(Vector2 position)
+        {
+            body.position = position;
+            transform.position = position;
+            body.linearVelocity = Vector2.zero;
+            jumpBufferTimer = 0f;
+            coyoteTimer = 0f;
+            jumpCutPending = false;
+            Physics2D.SyncTransforms();
         }
 
         // ---------- External input (adapters, see InputSourceTemplate) ----------
@@ -137,12 +153,19 @@ namespace LumenWave
 
         void OnJumpCanceled(InputAction.CallbackContext _) => actionJumpHeld = false;
 
-        void QueueJump() => jumpBufferTimer = jumpBufferTime;
+        void QueueJump()
+        {
+            if (ControlEnabled)
+                jumpBufferTimer = jumpBufferTime;
+        }
 
         // ---------- Movement ----------
 
         float ReadMoveX()
         {
+            if (!ControlEnabled)
+                return 0f;
+
             Vector2 move = Vector2.zero;
             if (externalMove.HasValue)
                 move = externalMove.Value;
@@ -186,7 +209,7 @@ namespace LumenWave
             }
 
             // Variable jump height: cut once when the button is released while rising.
-            if (jumpCutPending && !JumpHeld)
+            if (jumpCutPending && (!JumpHeld || !ControlEnabled))
             {
                 if (velocity.y > 0f)
                     velocity.y *= jumpCutMultiplier;

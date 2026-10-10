@@ -9,7 +9,9 @@ namespace LumenWave
     /// PressNote / ReleaseNote so other sources (mic, MIDI, OSC, ...) can drive notes too.
     /// Presses are counted per note, so a note stays held until every source has let go.
     /// Gameplay scripts subscribe to NotePressed / NoteReleased or poll IsHeld.
+    /// The actions are enabled by LumenInput; this script only subscribes to them.
     /// </summary>
+    [DefaultExecutionOrder(-50)]
     public class NoteInput : MonoBehaviour
     {
         public static NoteInput Instance { get; private set; }
@@ -62,7 +64,7 @@ namespace LumenWave
             Unbind(noteMidAction, OnMidPerformed, OnMidCanceled);
             Unbind(noteHighAction, OnHighPerformed, OnHighCanceled);
 
-            // Disabling an action normally fires canceled, but make sure nothing stays stuck.
+            // We no longer hear canceled for notes held right now, so release them here.
             for (int i = 0; i < NoteCount; i++)
                 SetHeldByActions((Note)i, false);
         }
@@ -123,7 +125,6 @@ namespace LumenWave
 
             reference.action.performed += performed;
             reference.action.canceled += canceled;
-            reference.action.Enable();
         }
 
         static void Unbind(InputActionReference reference, Action<InputAction.CallbackContext> performed, Action<InputAction.CallbackContext> canceled)
@@ -131,8 +132,6 @@ namespace LumenWave
             if (reference == null || reference.action == null)
                 return;
 
-            // Disable first so a held note still reaches our canceled handler.
-            reference.action.Disable();
             reference.action.performed -= performed;
             reference.action.canceled -= canceled;
         }

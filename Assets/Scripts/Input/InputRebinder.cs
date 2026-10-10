@@ -13,7 +13,7 @@ namespace LumenWave
     /// </summary>
     public class InputRebinder : MonoBehaviour
     {
-        [Tooltip("The LumenControls asset. If empty, the asset of Target Action is used.")]
+        [Tooltip("The LumenControls asset. If empty, LumenInput's asset or Target Action's asset is used.")]
         [SerializeField] InputActionAsset actions;
         [SerializeField] string playerPrefsKey = "LumenWave.BindingOverrides";
 
@@ -44,6 +44,7 @@ namespace LumenWave
             get
             {
                 if (actions != null) return actions;
+                if (LumenInput.Instance != null && LumenInput.Instance.Actions != null) return LumenInput.Instance.Actions;
                 if (targetAction != null && targetAction.action != null) return targetAction.action.actionMap?.asset;
                 return null;
             }
@@ -88,7 +89,8 @@ namespace LumenWave
 
             CancelRebind();
 
-            // Actions must be disabled while rebinding; restore the previous state afterwards.
+            // The Input System refuses to rebind an enabled action, so this is the one place besides
+            // LumenInput that disables an action. Only for the rebind; the previous state is restored after.
             bool wasEnabled = action.enabled;
             action.Disable();
 
