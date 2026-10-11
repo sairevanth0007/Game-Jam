@@ -23,6 +23,7 @@ namespace LumenWave.EditorTools
             EnsurePipeline();
             ConfigurePlayer();
             MaterialAssets.EnsureAll();
+            HeroSetup.Ensure();
             AssetDatabase.SaveAssets();
             Debug.Log("[LumenWave] Project setup complete");
         }

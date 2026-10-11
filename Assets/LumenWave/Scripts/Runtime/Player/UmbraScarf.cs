@@ -9,7 +9,7 @@ namespace LumenWave
     /// </summary>
     public class UmbraScarf : MonoBehaviour
     {
-        public int points = 11;
+        public int points = 13;
         public float segment = 0.15f;
         public float damping = 0.93f;
         public float gravity = 4.5f;
@@ -20,6 +20,8 @@ namespace LumenWave
         UmbraController _ctl;
         Vector3[] _p, _prev;
         LineRenderer _line;
+        TrailRenderer _trail;
+        UmbraRig _rig;
         bool _init;
 
         public void Init(Transform anchor, UmbraController ctl)
@@ -36,12 +38,29 @@ namespace LumenWave
             _line.alignment = LineAlignment.View;
             _line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             _line.receiveShadows = false;
-            _line.widthCurve = new AnimationCurve(new Keyframe(0f, 0.16f), new Keyframe(0.6f, 0.11f), new Keyframe(1f, 0.03f));
+            _line.widthCurve = new AnimationCurve(new Keyframe(0f, 0.2f), new Keyframe(0.35f, 0.17f), new Keyframe(0.75f, 0.1f), new Keyframe(1f, 0.025f));
             _line.sharedMaterial = MaterialLibrary.Tinted("ParticleAlpha", Color.white);
             var g = new Gradient();
             g.SetKeys(new[] { new GradientColorKey(new Color(0.01f, 0.01f, 0.02f), 0f), new GradientColorKey(new Color(0.02f, 0.03f, 0.05f), 0.75f), new GradientColorKey(new Color(0.3f, 0.75f, 1f), 1f) },
                       new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 0.85f), new GradientAlphaKey(0.85f, 1f) });
             _line.colorGradient = g;
+
+            // Faint glowing trail off the scarf tip.
+            var tip = new GameObject("ScarfTrail");
+            tip.layer = gameObject.layer;
+            tip.transform.SetParent(transform, false);
+            _trail = tip.AddComponent<TrailRenderer>();
+            _trail.time = 0.22f;
+            _trail.minVertexDistance = 0.04f;
+            _trail.widthCurve = new AnimationCurve(new Keyframe(0f, 0.07f), new Keyframe(1f, 0f));
+            _trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _trail.receiveShadows = false;
+            _trail.alignment = LineAlignment.View;
+            _trail.sharedMaterial = MaterialLibrary.Tinted("ParticleAdditive", Color.white);
+            var tg = new Gradient();
+            tg.SetKeys(new[] { new GradientColorKey(new Color(0.35f, 0.8f, 1f), 0f), new GradientColorKey(new Color(0.2f, 0.5f, 1f), 1f) },
+                       new[] { new GradientAlphaKey(0.35f, 0f), new GradientAlphaKey(0f, 1f) });
+            _trail.colorGradient = tg;
             Reset();
         }
 
@@ -55,6 +74,7 @@ namespace LumenWave
                 _p[i] = a + new Vector3(-f * segment * i, -0.03f * i, 0f);
                 _prev[i] = _p[i];
             }
+            if (_trail != null) { _trail.transform.position = _p[points - 1]; _trail.Clear(); }
             _init = true;
         }
 
@@ -105,7 +125,14 @@ namespace LumenWave
             }
             _line.SetPositions(_p);
             bool visible = _anchor.lossyScale.y > 0.05f;
+            if (_rig == null && _ctl != null) _rig = _ctl.GetComponent<UmbraRig>();
+            if (_rig != null && _rig.Hero != null && _rig.Hero.Dissolve > 0.35f) visible = false;
             _line.enabled = visible;
+            if (_trail != null)
+            {
+                _trail.transform.position = _p[points - 1];
+                _trail.emitting = visible;
+            }
         }
     }
 }

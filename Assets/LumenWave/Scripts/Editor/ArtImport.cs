@@ -60,6 +60,13 @@ namespace LumenWave.EditorTools
                 c.keepOriginalOrientation = true;
                 c.keepOriginalPositionY = true;
                 c.keepOriginalPositionXZ = true;
+                // Hero runtime fixes (gameplay moves the body, the clip must not):
+                // Idle/Punch are authored ~45° off forward → align to body orientation.
+                if (n.EndsWith("idle") || n.EndsWith("punch")) c.keepOriginalOrientation = false;
+                // Jump: the clip's own vertical travel becomes (discarded) root motion; the controller does the rise.
+                if (n.EndsWith("jump")) c.lockRootHeightY = false;
+                // Death: keep the fall to the floor but not the forward slide out of the collider.
+                if (n.EndsWith("death")) c.lockRootPositionXZ = false;
             }
             mi.clipAnimations = clips;
         }
@@ -81,6 +88,14 @@ namespace LumenWave.EditorTools
                 ti.wrapModeV = TextureWrapMode.Clamp;
                 ti.maxTextureSize = 2048;
                 ti.textureCompression = TextureImporterCompression.CompressedHQ;
+            }
+            if (assetPath.EndsWith("_Color.jpg"))
+            {
+                // Tiling surface textures (triplanar rock): plain 2D textures with mipmaps, not sprites.
+                ti.textureType = TextureImporterType.Default;
+                ti.sRGBTexture = true;
+                ti.mipmapEnabled = true;
+                ti.alphaSource = TextureImporterAlphaSource.None;
             }
             if (assetPath.EndsWith(".jpg"))
             {

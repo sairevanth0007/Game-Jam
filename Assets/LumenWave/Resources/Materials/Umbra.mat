@@ -25,11 +25,21 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _Dissolve: 0
+    - _DissolveHeight: 2
+    - _DissolveMinY: 0
+    - _DissolveScale: 9
+    - _FogAmount: 1
+    - _KeyAmbient: 0.3
     - _RimF0: 0.02
     - _RimPower: 4
+    - _RimStrength: 0.12
     m_Colors:
+    - _Ambient: {r: 0, g: 0, b: 0, a: 1}
     - _BackLight: {r: 0.35, g: 0.4, b: 0.6, a: 1}
     - _BaseColor: {r: 0.006, g: 0.006, b: 0.01, a: 1}
+    - _DissolveEdge: {r: 1.2, g: 2.2, b: 3.2, a: 1}
+    - _KeyDir: {r: -0.45, g: 0.85, b: 0, a: 0}
     - _RimColor: {r: 0.6, g: 0.85, b: 2.2, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
