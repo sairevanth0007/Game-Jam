@@ -86,18 +86,18 @@ namespace LumenWave
                 if (!crossed || !heightOk) continue;
                 _fired[i] = true;
                 if (m.delay > 0f) _scheduled.Add((now + m.delay, m.action, m.duration));
-                else Do(m.action, m.duration, now);
+                else Do(m.action, m.duration, now, m.anyHeight);
             }
             for (int i = _scheduled.Count - 1; i >= 0; i--)
             {
                 if (now < _scheduled[i].time) continue;
-                Do(_scheduled[i].action, _scheduled[i].t, now);
+                Do(_scheduled[i].action, _scheduled[i].t, now, false);
                 _scheduled.RemoveAt(i);
             }
             _prevX = pos.x;
 
-            // A jump hint reached in mid-air (e.g. at the end of a long jump) is kept until Umbra lands,
-            // instead of being lost when the input buffer expires. Makes bot runs independent of sub-frame timing.
+            // An any-height jump hint (any=1) reached in mid-air (e.g. at the end of a long jump) is kept until Umbra
+            // lands, instead of being lost when the input buffer expires. Other hints behave exactly as before.
             if (_pendingJumpUntil > 0f)
             {
                 if (now > _pendingJumpUntil) _pendingJumpUntil = -1f;
@@ -145,7 +145,7 @@ namespace LumenWave
             return _cached;
         }
 
-        void Do(string action, float t, float now)
+        void Do(string action, float t, float now, bool keepUntilLanded = false)
         {
             ActionsFired++;
             LastAction = action;
@@ -153,7 +153,7 @@ namespace LumenWave
             {
                 case "jump":
                     _jump = true; _jumpHoldUntil = now + (t > 0f ? t : 0.45f);
-                    if (_body != null && !_body.Grounded) { _pendingJumpUntil = now + 0.35f; _pendingJumpHold = t > 0f ? t : 0.45f; }
+                    if (keepUntilLanded && _body != null && !_body.Grounded) { _pendingJumpUntil = now + 0.35f; _pendingJumpHold = t > 0f ? t : 0.45f; }
                     break;
                 case "tap": _jump = true; _jumpHoldUntil = now + (t > 0f ? t : 0.08f); break;
                 case "dash": _dash = true; break;

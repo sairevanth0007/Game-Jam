@@ -10,6 +10,7 @@ Audio is fully synthesised in code. Shaders, VFX and many meshes are procedural;
 |---|---|---|---|---|
 | Unity Legacy Runtime font (LegacyRuntime.ttf) | Unity Technologies | Unity built-in | — | UI text |
 | Animated Human (low poly, rigged; Idle/Run/Walk/Jump/Punch/Death clips) | Quaternius | CC0 1.0 | https://opengameart.org/content/animated-human-low-poly | Umbra's body and animations (`ThirdParty/QuaterniusHuman`) |
+| Universal Animation Library 1 + 2 (Standard): mannequin + 250+ humanoid clips (idle, walk/jog/sprint, jump start/loop/land, roll, slide, spell cast, shield, hit reactions, death, …) | Quaternius | CC0 1.0 | https://opengameart.org/content/universal-animation-library , https://opengameart.org/content/universal-animation-library-2 | Umbra's body (mannequin) and all hero animation clips (`ThirdParty/QuaterniusUAL`) |
 | Nature Kit (trees, rocks, stones, grass, plants, cliffs, statues, stumps) | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/nature-kit | Playfield dressing, mid/background layers (`ThirdParty/KenneyNature`) |
 | Graveyard Kit (crooked pines, iron fences, pillars, crypts, walls, lamp posts) | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/graveyard-kit | Ruins, foreground and background silhouettes (`ThirdParty/KenneyGraveyard`) |
 | Castle Kit (towers, walls, gates, bridges) | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/castle-kit | Fortress and ruin layers (`ThirdParty/KenneyCastle`) |

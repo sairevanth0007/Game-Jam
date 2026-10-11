@@ -2,26 +2,30 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using UnityEngine.Animations;
-using UnityEngine.Playables;
 
 namespace LumenWave.EditorTools
 {
     /// <summary>
-    /// Builds Umbra's skinned hero assets from the CC0 Quaternius "Animated Human":
-    ///  - Resources/Hero/UmbraAnimator.controller (base layer: Idle, Locomotion walk→run blend, Jump, Fall,
-    ///    Land, Dash, Death, Respawn; override layer "Cast" with an arms+head mask playing Punch)
-    ///  - Resources/Hero/UmbraModel.prefab (model + Animator + controller) loaded at runtime by UmbraRig.
-    /// Idempotent: assets are only rebuilt when missing or when <see cref="Version"/> changes.
-    /// Called from ProjectSetup.Run (scripts/compile.ps1 -Setup) and menu LumenWave/Build Hero.
+    /// Builds Umbra's hero assets the standard Unity way from the CC0 Quaternius Universal Animation Library
+    /// (UAL1 mannequin + UAL1/UAL2 Humanoid clips):
+    ///  - Resources/Hero/UmbraAnimator.controller: a parameter-driven Animator Controller.
+    ///      Base layer: Idle, Locomotion (1D blend on Speed: walk / jog / sprint), Jump, Fall, Land, Dash,
+    ///      Death, Sing. Upper-body override layer "Actions" (arms + spine + head mask): Empty, Cast, Shield, Hurt.
+    ///      Parameters: Speed, VerticalSpeed, Grounded, Dash, Cast (trigger), Shield, Hurt (trigger), Dead, Sing,
+    ///      plus LocoRate (playback-rate multiplier for the locomotion state).
+    ///  - Resources/Hero/UmbraModel.prefab: mannequin + Animator (avatar, controller, no root motion) +
+    ///      <see cref="LumenWave.UmbraAnimEvents"/> (receives the footstep / land animation events that
+    ///      ArtImport adds to the clips).
+    /// Idempotent: rebuilt only when missing or when <see cref="Version"/> changes. Called from ProjectSetup.Run.
     /// </summary>
     public static class HeroSetup
     {
-        public const string ModelPath = "Assets/LumenWave/ThirdParty/QuaterniusHuman/Resources/Art/QuaterniusHuman/AnimatedHuman.fbx";
+        public const string Ual1 = "Assets/LumenWave/ThirdParty/QuaterniusUAL/UAL1_Standard.fbx";
+        public const string Ual2 = "Assets/LumenWave/ThirdParty/QuaterniusUAL/UAL2_Standard.fbx";
         public const string Dir = "Assets/LumenWave/Resources/Hero";
         public const string ControllerPath = Dir + "/UmbraAnimator.controller";
         public const string PrefabPath = Dir + "/UmbraModel.prefab";
-        const int Version = 3;
+        const int Version = 10;
         static string VersionParam => "v" + Version;
 
         [MenuItem("LumenWave/Build Hero")]
@@ -29,124 +33,166 @@ namespace LumenWave.EditorTools
 
         public static void Ensure(bool force)
         {
-            var model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
-            if (model == null) { Debug.LogWarning("[LumenWave] Hero model missing: " + ModelPath + " (runtime falls back to the primitive rig)"); return; }
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(Ual1) == null) { Debug.LogError("[LumenWave] Hero model missing: " + Ual1); return; }
             System.IO.Directory.CreateDirectory(Dir);
-
             var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
             bool rebuild = force || ctrl == null || !ctrl.parameters.Any(p => p.name == VersionParam)
                            || AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) == null;
             if (!rebuild) { Debug.Log("[LumenWave] Hero assets up to date (" + VersionParam + ")"); return; }
 
-            // Re-import the model so ArtImport's per-clip root settings are current before we reference clips.
-            AssetDatabase.ImportAsset(ModelPath, ImportAssetOptions.ForceUpdate);
-            model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
+            // Re-import so ArtImport's clip settings (loops, root baking, animation events) are current.
+            AssetDatabase.ImportAsset(Ual1, ImportAssetOptions.ForceUpdate);
+            AssetDatabase.ImportAsset(Ual2, ImportAssetOptions.ForceUpdate);
             if (ctrl != null) AssetDatabase.DeleteAsset(ControllerPath);
             ctrl = BuildController();
-            BuildPrefab(model, ctrl);
+            BuildPrefab(ctrl);
             AssetDatabase.SaveAssets();
-            Debug.Log("[LumenWave] Hero assets built: " + ControllerPath + ", " + PrefabPath);
+            Debug.Log("[LumenWave] Hero assets built (UAL): " + ControllerPath + ", " + PrefabPath);
         }
 
-        static AnimationClip Clip(string shortName)
+        static AnimationClip Clip(string name)
         {
-            var clip = AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<AnimationClip>()
-                .FirstOrDefault(c => c.name == "Human Armature|" + shortName);
-            if (clip == null) Debug.LogWarning("[LumenWave] Hero clip missing: " + shortName);
-            return clip;
+            foreach (var path in new[] { Ual1, Ual2 })
+            {
+                var c = AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>()
+                    .FirstOrDefault(x => x.name.EndsWith("|" + name));
+                if (c != null) return c;
+            }
+            Debug.LogError("[LumenWave] Hero clip missing: " + name);
+            return null;
+        }
+
+        static AnimatorStateTransition To(AnimatorState from, AnimatorState to, float duration, bool exit = false, float exitTime = 0f)
+        {
+            var t = from.AddTransition(to);
+            t.duration = duration; t.hasExitTime = exit; t.exitTime = exitTime; t.hasFixedDuration = true;
+            return t;
+        }
+
+        static AnimatorStateTransition Any(AnimatorStateMachine sm, AnimatorState to, float duration)
+        {
+            var t = sm.AddAnyStateTransition(to);
+            t.duration = duration; t.hasExitTime = false; t.hasFixedDuration = true; t.canTransitionToSelf = false;
+            return t;
         }
 
         static AnimatorController BuildController()
         {
             var ctrl = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
             ctrl.AddParameter(VersionParam, AnimatorControllerParameterType.Bool);
-            ctrl.AddParameter("Speed", AnimatorControllerParameterType.Float);     // |vx| / maxSpeed (0..1+)
-            ctrl.AddParameter("LocoRate", AnimatorControllerParameterType.Float);  // playback rate of locomotion
-            ctrl.AddParameter("AirTime", AnimatorControllerParameterType.Float);   // normalized time in the jump clip
-            ctrl.AddParameter("CastTime", AnimatorControllerParameterType.Float);  // normalized time in the punch clip
-
-            var idle = Clip("Idle"); var walk = Clip("Walk"); var run = Clip("Run");
-            var jump = Clip("Jump"); var punch = Clip("Punch"); var death = Clip("Death");
+            ctrl.AddParameter("Speed", AnimatorControllerParameterType.Float);
+            ctrl.AddParameter("VerticalSpeed", AnimatorControllerParameterType.Float);
+            ctrl.AddParameter("Grounded", AnimatorControllerParameterType.Bool);
+            ctrl.AddParameter("Dash", AnimatorControllerParameterType.Bool);
+            ctrl.AddParameter("Cast", AnimatorControllerParameterType.Trigger);
+            ctrl.AddParameter("Shield", AnimatorControllerParameterType.Bool);
+            ctrl.AddParameter("Hurt", AnimatorControllerParameterType.Trigger);
+            ctrl.AddParameter("Dead", AnimatorControllerParameterType.Bool);
+            ctrl.AddParameter("Sing", AnimatorControllerParameterType.Bool);
+            ctrl.AddParameter("LocoRate", AnimatorControllerParameterType.Float);
+            var gp = ctrl.parameters; foreach (var p in gp) if (p.name == "Grounded") p.defaultBool = true; if (gp.Any(p => p.name == "LocoRate")) gp.First(p => p.name == "LocoRate").defaultFloat = 1f; ctrl.parameters = gp;
 
             var layer = ctrl.layers[0];
             layer.name = "Base";
-            layer.iKPass = true;
             var sm = layer.stateMachine;
 
-            var sIdle = sm.AddState("Idle", new Vector3(300, 0));
-            sIdle.motion = idle;
-
-            var tree = new BlendTree { name = "WalkRun", blendParameter = "Speed", useAutomaticThresholds = false, hideFlags = HideFlags.HideInHierarchy };
+            var idle = sm.AddState("Idle", new Vector3(300, 0)); idle.motion = Clip("Idle_Loop"); idle.iKOnFeet = true;
+            var tree = new BlendTree { name = "WalkJogSprint", blendParameter = "Speed", useAutomaticThresholds = false, hideFlags = HideFlags.HideInHierarchy };
             AssetDatabase.AddObjectToAsset(tree, ctrl);
-            tree.AddChild(walk, 0.15f);
-            tree.AddChild(run, 0.8f);
-            var sLoco = sm.AddState("Locomotion", new Vector3(300, 80));
-            sLoco.motion = tree;
-            sLoco.speedParameterActive = true; sLoco.speedParameter = "LocoRate";
+            tree.AddChild(Clip("Walk_Loop"), 0.12f);
+            tree.AddChild(Clip("Jog_Fwd_Loop"), 0.55f);
+            tree.AddChild(Clip("Sprint_Loop"), 1.0f);
+            var loco = sm.AddState("Locomotion", new Vector3(300, 90)); loco.motion = tree; loco.iKOnFeet = true;
+            loco.speedParameterActive = true; loco.speedParameter = "LocoRate";
+            var jump = sm.AddState("Jump", new Vector3(600, 0)); jump.motion = Clip("Jump_Start"); jump.cycleOffset = 0.1f; jump.speed = 1.3f;
+            var fall = sm.AddState("Fall", new Vector3(600, 90)); fall.motion = Clip("Jump_Loop");
+            var land = sm.AddState("Land", new Vector3(600, 180)); land.motion = Clip("Jump_Land"); land.speed = 1.6f; land.iKOnFeet = true;
+            var dash = sm.AddState("Dash", new Vector3(300, 270)); dash.motion = Clip("Sword_Dash_RM"); dash.speed = 1.8f;
+            var death = sm.AddState("Death", new Vector3(600, 270)); death.motion = Clip("Death01");
+            var sing = sm.AddState("Sing", new Vector3(0, 180)); sing.motion = Clip("Spell_Simple_Idle_Loop"); sing.iKOnFeet = true;
+            sm.defaultState = idle;
 
-            var sJump = sm.AddState("Jump", new Vector3(560, 0));
-            sJump.motion = jump; sJump.timeParameterActive = true; sJump.timeParameter = "AirTime";
-            var sFall = sm.AddState("Fall", new Vector3(560, 80));
-            sFall.motion = jump; sFall.timeParameterActive = true; sFall.timeParameter = "AirTime";
-            var sLand = sm.AddState("Land", new Vector3(560, 160));
-            sLand.motion = jump; sLand.timeParameterActive = true; sLand.timeParameter = "AirTime";
+            // Death / respawn (respawn simply returns to Idle).
+            Any(sm, death, 0.1f).AddCondition(AnimatorConditionMode.If, 0, "Dead");
+            To(death, idle, 0f).AddCondition(AnimatorConditionMode.IfNot, 0, "Dead");
+            // Dash interrupts anything alive.
+            var td = Any(sm, dash, 0.05f); td.AddCondition(AnimatorConditionMode.If, 0, "Dash"); td.AddCondition(AnimatorConditionMode.IfNot, 0, "Dead");
+            var dl = To(dash, loco, 0.12f); dl.AddCondition(AnimatorConditionMode.IfNot, 0, "Dash"); dl.AddCondition(AnimatorConditionMode.If, 0, "Grounded"); dl.AddCondition(AnimatorConditionMode.Greater, 0.06f, "Speed");
+            var di = To(dash, idle, 0.15f); di.AddCondition(AnimatorConditionMode.IfNot, 0, "Dash"); di.AddCondition(AnimatorConditionMode.If, 0, "Grounded");
+            var df = To(dash, fall, 0.15f); df.AddCondition(AnimatorConditionMode.IfNot, 0, "Dash"); df.AddCondition(AnimatorConditionMode.IfNot, 0, "Grounded");
+            // Singing (finale).
+            var ts = Any(sm, sing, 0.4f); ts.AddCondition(AnimatorConditionMode.If, 0, "Sing"); ts.AddCondition(AnimatorConditionMode.IfNot, 0, "Dead"); ts.AddCondition(AnimatorConditionMode.IfNot, 0, "Dash");
+            To(sing, idle, 0.3f).AddCondition(AnimatorConditionMode.IfNot, 0, "Sing");
+            // Ground locomotion.
+            To(idle, loco, 0.12f).AddCondition(AnimatorConditionMode.Greater, 0.06f, "Speed");
+            To(loco, idle, 0.15f).AddCondition(AnimatorConditionMode.Less, 0.06f, "Speed");
+            foreach (var g in new[] { idle, loco, land })
+            {
+                var j = To(g, jump, 0.06f); j.AddCondition(AnimatorConditionMode.IfNot, 0, "Grounded"); j.AddCondition(AnimatorConditionMode.Greater, 0.5f, "VerticalSpeed");
+                var f = To(g, fall, 0.2f); f.AddCondition(AnimatorConditionMode.IfNot, 0, "Grounded"); f.AddCondition(AnimatorConditionMode.Less, 0.5f, "VerticalSpeed");
+            }
+            // Air.
+            To(jump, fall, 0.3f).AddCondition(AnimatorConditionMode.Less, -1f, "VerticalSpeed");
+            foreach (var a in new[] { jump, fall })
+            {
+                var r = To(a, loco, 0.1f); r.AddCondition(AnimatorConditionMode.If, 0, "Grounded"); r.AddCondition(AnimatorConditionMode.Greater, 0.35f, "Speed");
+                To(a, land, 0.05f).AddCondition(AnimatorConditionMode.If, 0, "Grounded");
+            }
+            To(land, loco, 0.12f).AddCondition(AnimatorConditionMode.Greater, 0.1f, "Speed");
+            To(land, idle, 0.25f, true, 0.55f);
 
-            var sDash = sm.AddState("Dash", new Vector3(300, 160));
-            sDash.motion = run; sDash.speed = 1.7f;
-
-            var sDeath = sm.AddState("Death", new Vector3(300, 240));
-            sDeath.motion = death;
-            var sRespawn = sm.AddState("Respawn", new Vector3(560, 240));
-            sRespawn.motion = idle;
-            var back = sRespawn.AddTransition(sIdle);
-            back.hasExitTime = true; back.exitTime = 0.05f; back.duration = 0.2f;
-
-            sm.defaultState = sIdle;
-
-            // Cast: arms + head play the punch, driven by CastTime; layer weight set from code.
+            // Upper-body actions (override layer, arms + spine + head).
             var mask = new AvatarMask { name = "UmbraUpperBody" };
             for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
             {
                 var part = (AvatarMaskBodyPart)i;
-                bool on = part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.RightArm
-                       || part == AvatarMaskBodyPart.LeftFingers || part == AvatarMaskBodyPart.RightFingers
-                       || part == AvatarMaskBodyPart.Head || part == AvatarMaskBodyPart.Body;
-                mask.SetHumanoidBodyPartActive(part, on);
+                mask.SetHumanoidBodyPartActive(part, part == AvatarMaskBodyPart.Body || part == AvatarMaskBodyPart.Head
+                    || part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.RightArm
+                    || part == AvatarMaskBodyPart.LeftFingers || part == AvatarMaskBodyPart.RightFingers);
             }
             AssetDatabase.AddObjectToAsset(mask, ctrl);
-            var castSm = new AnimatorStateMachine { name = "Cast", hideFlags = HideFlags.HideInHierarchy };
-            AssetDatabase.AddObjectToAsset(castSm, ctrl);
-            var sCast = castSm.AddState("Cast", new Vector3(300, 0));
-            sCast.motion = punch; sCast.timeParameterActive = true; sCast.timeParameter = "CastTime";
-            castSm.defaultState = sCast;
+            var asm = new AnimatorStateMachine { name = "Actions", hideFlags = HideFlags.HideInHierarchy };
+            AssetDatabase.AddObjectToAsset(asm, ctrl);
+            var empty = asm.AddState("Empty", new Vector3(300, 0));
+            var cast = asm.AddState("Cast", new Vector3(600, 0)); cast.motion = Clip("OverhandThrow"); cast.speed = 2.2f;
+            var shield = asm.AddState("Shield", new Vector3(600, 90)); shield.motion = Clip("Idle_Shield_Loop");
+            var hurt = asm.AddState("Hurt", new Vector3(600, 180)); hurt.motion = Clip("Hit_Chest"); hurt.speed = 1.2f;
+            asm.defaultState = empty;
+            var tc = Any(asm, cast, 0.05f); tc.AddCondition(AnimatorConditionMode.If, 0, "Cast"); tc.AddCondition(AnimatorConditionMode.IfNot, 0, "Dead");
+            To(cast, empty, 0.2f, true, 0.85f);
+            var sh = To(empty, shield, 0.1f); sh.AddCondition(AnimatorConditionMode.If, 0, "Shield"); sh.AddCondition(AnimatorConditionMode.IfNot, 0, "Dead");
+            To(cast, shield, 0.15f, true, 0.85f).AddCondition(AnimatorConditionMode.If, 0, "Shield");
+            To(shield, empty, 0.15f).AddCondition(AnimatorConditionMode.IfNot, 0, "Shield");
+            To(shield, empty, 0.1f).AddCondition(AnimatorConditionMode.If, 0, "Dead");
+            var th = Any(asm, hurt, 0.04f); th.AddCondition(AnimatorConditionMode.If, 0, "Hurt"); th.AddCondition(AnimatorConditionMode.IfNot, 0, "Dead"); th.AddCondition(AnimatorConditionMode.IfNot, 0, "Shield");
+            To(hurt, empty, 0.15f, true, 0.9f);
             ctrl.AddLayer(new AnimatorControllerLayer
             {
-                name = "Cast", stateMachine = castSm, avatarMask = mask, defaultWeight = 0f,
-                blendingMode = AnimatorLayerBlendingMode.Override, iKPass = true,
+                name = "Actions", stateMachine = asm, avatarMask = mask, defaultWeight = 1f,
+                blendingMode = AnimatorLayerBlendingMode.Override,
             });
-
             var layers = ctrl.layers; layers[0] = layer; ctrl.layers = layers;
             EditorUtility.SetDirty(ctrl);
             return ctrl;
         }
 
-        static void BuildPrefab(GameObject model, AnimatorController ctrl)
+        static void BuildPrefab(AnimatorController ctrl)
         {
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>(Ual1);
             var go = Object.Instantiate(model);
             go.name = "UmbraModel";
             var anim = go.GetComponent<Animator>();
             if (anim == null) anim = go.AddComponent<Animator>();
-            anim.avatar = AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<Avatar>().FirstOrDefault();
+            anim.avatar = AssetDatabase.LoadAllAssetsAtPath(Ual1).OfType<Avatar>().FirstOrDefault();
             anim.runtimeAnimatorController = ctrl;
             anim.applyRootMotion = false;
             anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            if (go.GetComponent<LumenWave.UmbraAnimEvents>() == null) go.AddComponent<LumenWave.UmbraAnimEvents>();
             var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/LumenWave/Resources/Materials/Umbra.mat");
             foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>())
             {
-                if (mat != null) smr.sharedMaterial = mat;
+                if (mat != null) smr.sharedMaterials = Enumerable.Repeat(mat, smr.sharedMesh.subMeshCount).ToArray();
                 smr.updateWhenOffscreen = true;
-                smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-                smr.receiveShadows = false;
                 smr.skinnedMotionVectors = false;
             }
             foreach (var t in go.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = 9; // Layers.Player
@@ -158,43 +204,6 @@ namespace LumenWave.EditorTools
         {
             try { Ensure(true); EditorApplication.Exit(0); }
             catch (System.Exception e) { Debug.LogError("[LumenWave] Hero setup failed: " + e); EditorApplication.Exit(1); }
-        }
-
-        /// <summary>Batch probe: samples each clip and logs key bone heights (root space, unscaled model).</summary>
-        public static void ProbeClipsBatch()
-        {
-            AssetDatabase.ImportAsset(ModelPath, ImportAssetOptions.ForceUpdate);
-            var model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
-            var go = Object.Instantiate(model);
-            var anim = go.GetComponent<Animator>();
-            if (anim == null) anim = go.AddComponent<Animator>();
-            anim.avatar = AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<Avatar>().FirstOrDefault();
-            var smr = go.GetComponentInChildren<SkinnedMeshRenderer>();
-            Debug.Log($"[LumenWave] humanScale={anim.humanScale} isHuman={anim.isHuman} meshH={smr.sharedMesh.bounds.size.y * smr.transform.lossyScale.y}");
-            Transform B(HumanBodyBones b) => anim.GetBoneTransform(b);
-            foreach (var clip in AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<AnimationClip>().Where(c => !c.name.StartsWith("__preview")))
-            {
-                var graph = PlayableGraph.Create("probe");
-                graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-                var output = AnimationPlayableOutput.Create(graph, "out", anim);
-                var cp = AnimationClipPlayable.Create(graph, clip);
-                output.SetSourcePlayable(cp);
-                for (int i = 0; i <= 10; i++)
-                {
-                    float t = clip.length * i / 10f;
-                    AnimationMode.StartAnimationMode();
-                    AnimationMode.BeginSampling();
-                    AnimationMode.SampleAnimationClip(go, clip, t);
-                    AnimationMode.EndSampling();
-                    var hips = B(HumanBodyBones.Hips).position; var head = B(HumanBodyBones.Head).position;
-                    var lf = B(HumanBodyBones.LeftFoot).position; var rf = B(HumanBodyBones.RightFoot).position;
-                    var lh = B(HumanBodyBones.LeftHand).position; var rh = B(HumanBodyBones.RightHand).position;
-                    var fwd = B(HumanBodyBones.Hips).forward;
-                    Debug.Log($"[LumenWave] {clip.name} t={i / 10f:0.0} hips={hips:F2} head={head:F2} lf={lf:F2} rf={rf:F2} lh={lh:F2} rh={rh:F2} hipFwd={fwd:F2}");
-                }
-                graph.Destroy();
-            }
-            EditorApplication.Exit(0);
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -161,7 +162,7 @@ namespace LumenWave.UI
         static GameObject BindButton(RectTransform row, InputAction action, bool gamepad, float x0, float x1, List<Action> refreshers)
         {
             int idx = LumenInput.BindingIndex(action, gamepad ? LumenInput.GamepadGroup : LumenInput.KeyboardGroup);
-            Text label = null;
+            TMP_Text label = null;
             Button b = null;
             Action refresh = () =>
             {
@@ -178,7 +179,7 @@ namespace LumenWave.UI
             rt.anchorMin = new Vector2(x0, 0.08f); rt.anchorMax = new Vector2(x1, 0.92f);
             rt.offsetMin = rt.offsetMax = Vector2.zero;
             var le = b.GetComponent<LayoutElement>(); if (le != null) le.ignoreLayout = true;
-            label = b.GetComponentInChildren<Text>();
+            label = b.GetComponentInChildren<TMP_Text>();
             label.font = UIKit.Bold;
             label.fontSize = 24;
             refresh();
@@ -209,7 +210,7 @@ namespace LumenWave.UI
             wave.thickness = 3f; wave.glowWidth = 2f; wave.amplitude = 0.6f; wave.raycastTarget = false;
             UIKit.Place(wave.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -118), new Vector2(560, 24), new Vector2(0.5f, 0.5f));
             var t = UIKit.Label(p, CreditsText, 25, TextAnchor.UpperCenter, UIStyle.Text, "Text");
-            t.lineSpacing = 1.12f;
+            t.lineSpacing = 10f;
             t.rectTransform.anchorMin = new Vector2(0, 0); t.rectTransform.anchorMax = new Vector2(1, 1);
             t.rectTransform.offsetMin = new Vector2(50, 110); t.rectTransform.offsetMax = new Vector2(-50, -150);
             var back = UIKit.Button(p, "Back", () => stack.Pop(), 60);

@@ -1,5 +1,8 @@
 using System.Collections.Generic;
+using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.Playables;
+using UnityEngine.Timeline;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -10,8 +13,12 @@ namespace LumenWave
     /// through the spectrum) pulse out on every beat; every beam and lamp fades from its hazard colour into
     /// warm white and breathes with the BeatClock; enemies fall quiet; the night turns to dawn; the camera
     /// slowly pulls back. Light damage is switched off for the whole sequence.
+    /// Sequenced by a Timeline (Resources/Timelines/Finale, built by EditorTools.EnvAssets): a Signal track fires the
+    /// discrete steps (rings on/off, harmonize lights, dawn peak) into this component, Activation tracks bring in the
+    /// rising motes and a wide CinemachineCamera that the brain blends to. Continuous curves stay in Update.
+    /// Without the asset it falls back to the same timings in code.
     /// </summary>
-    public class FinaleDirector : MonoBehaviour
+    public class FinaleDirector : MonoBehaviour, INotificationReceiver
     {
         public static FinaleDirector Instance { get; private set; }
         public static bool Active => Instance != null;
@@ -42,6 +49,12 @@ namespace LumenWave
         float _bloom0, _exp0, _vig0, _sat0;
         ParticleSystem _motes;
         int _lastBeat = -1;
+        PlayableDirector _director;
+        CinemachineCamera _wideCam;
+        bool _ringsOn, _harmonized;
+        CinemachineBlendDefinition _blend0;
+        public bool TimelineDriven => _director != null;
+        public PlayableDirector Director => _director;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Install()
@@ -67,9 +80,76 @@ namespace LumenWave
             CalmEnemies();
             CaptureEnvironment();
             _motes = MakeMotes();
+            SetupTimeline();
         }
 
-        void OnDestroy() { if (Instance == this) Instance = null; }
+        void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            var rig = SceneRig.Instance;
+            if (rig != null && rig.CameraRig != null && rig.CameraRig.Brain != null && _wideCam != null) rig.CameraRig.Brain.DefaultBlend = _blend0;
+            if (_wideCam != null) Destroy(_wideCam.gameObject);
+        }
+
+        void SetupTimeline()
+        {
+            var tl = Resources.Load<TimelineAsset>(FinaleTimeline.Resource);
+            if (tl == null) return;
+            // Wide shot: same follow as the gameplay camera, pulled back and raised (blended by the brain).
+            var rig = SceneRig.Instance;
+            if (rig != null && rig.CameraRig != null && rig.CameraRig.VirtualCamera != null && _player != null)
+            {
+                var src = rig.CameraRig.VirtualCamera;
+                var go = new GameObject("CM FinaleWide");
+                go.transform.SetParent(src.transform.parent, false);
+                go.transform.rotation = src.transform.rotation;
+                go.SetActive(false);
+                _wideCam = go.AddComponent<CinemachineCamera>();
+                _wideCam.Lens = src.Lens;
+                _wideCam.Priority = 50;
+                _wideCam.Follow = _player.transform;
+                var comp = go.AddComponent<CinemachinePositionComposer>();
+                var srcComp = src.GetComponent<CinemachinePositionComposer>();
+                comp.CameraDistance = (srcComp != null ? srcComp.CameraDistance : CameraRig.DefaultDistance) + 3.5f;
+                comp.Composition = srcComp != null ? srcComp.Composition : ScreenComposerSettings.Default;
+                comp.Damping = new Vector3(1f, 1f, 1f);
+                comp.TargetOffset = new Vector3(0f, 1.2f, 0f);
+                var conf = src.GetComponent<CinemachineConfiner3D>();
+                if (conf != null) go.AddComponent<CinemachineConfiner3D>().BoundingVolume = conf.BoundingVolume;
+                go.AddComponent<CinemachineImpulseListener>().UseCameraSpace = true;
+                if (rig.CameraRig.Brain != null)
+                {
+                    _blend0 = rig.CameraRig.Brain.DefaultBlend;
+                    rig.CameraRig.Brain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.EaseInOut, 9f);
+                }
+            }
+            _director = gameObject.AddComponent<PlayableDirector>();
+            _director.playOnAwake = false;
+            _director.timeUpdateMode = DirectorUpdateMode.GameTime;
+            _director.extrapolationMode = DirectorWrapMode.Hold;
+            _director.playableAsset = tl;
+            foreach (var output in tl.outputs)
+            {
+                if (output.sourceObject is not TrackAsset track) continue;
+                if (track.name == FinaleTimeline.StepsTrack) _director.SetGenericBinding(track, gameObject);
+                else if (track.name == FinaleTimeline.MotesTrack && _motes != null) _director.SetGenericBinding(track, _motes.gameObject);
+                else if (track.name == FinaleTimeline.CameraTrack && _wideCam != null) _director.SetGenericBinding(track, _wideCam.gameObject);
+            }
+            _director.Play();
+        }
+
+        /// <summary>Timeline signals (Signal track "Steps").</summary>
+        public void OnNotify(Playable origin, INotification notification, object context)
+        {
+            if (notification is not SignalEmitter e || e.asset == null) return;
+            switch (e.asset.name)
+            {
+                case FinaleTimeline.RingsOn: _ringsOn = true; break;
+                case FinaleTimeline.RingsOff: _ringsOn = false; break;
+                case FinaleTimeline.Harmonize: _harmonized = true; break;
+                case FinaleTimeline.DawnPeak: CameraRig.Shake(0.15f); break;
+            }
+        }
 
         // ------------------------------------------------------------------ setup
 
@@ -226,7 +306,7 @@ namespace LumenWave
                 if (!s.switched)
                 {
                     s.beam.intensity = s.intensity * Mathf.Clamp01(1f - harmony * 2.2f);
-                    if (harmony >= 0.45f)
+                    if (harmony >= 0.45f || _harmonized)
                     {
                         s.switched = true;
                         s.beam.color = LightColor.White;   // white is neutral; through a prism it becomes a spectrum
@@ -247,7 +327,7 @@ namespace LumenWave
             {
                 var s = _lamps[i];
                 if (s.lamp == null) continue;
-                if (!s.switched && harmony >= 0.45f)
+                if (!s.switched && (harmony >= 0.45f || _harmonized))
                 {
                     s.switched = true;
                     s.lamp.color = LightColor.White;
@@ -280,7 +360,7 @@ namespace LumenWave
             if (beat != _lastBeat)
             {
                 _lastBeat = beat;
-                if (t > 0.3f && t < 11.5f) EmitRings();
+                if (_director != null ? _ringsOn : (t > 0.3f && t < 11.5f)) EmitRings();
             }
 
             // Environment → dawn.
@@ -297,7 +377,7 @@ namespace LumenWave
                     rig.Moonlight.color = Color.Lerp(_moon0, new Color(1f, 0.82f, 0.62f), dawn);
                     rig.Moonlight.intensity = Mathf.Lerp(_moonI0, 1.1f, dawn);
                 }
-                if (rig.CameraRig != null)
+                if (rig.CameraRig != null && _wideCam == null)
                 {
                     float pull = Smooth(0.5f, 10f, t);
                     rig.CameraRig.extraDistance = 3.5f * pull;

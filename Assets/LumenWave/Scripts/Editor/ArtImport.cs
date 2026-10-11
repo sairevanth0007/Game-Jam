@@ -74,6 +74,20 @@ namespace LumenWave.EditorTools
                     c.keepOriginalOrientation = false;
                     c.keepOriginalPositionY = true;
                     c.keepOriginalPositionXZ = false;
+                    // *_RM clips travel: let that travel become (discarded) root motion so the hero stays on its collider.
+                    if (c.name.EndsWith("_RM")) c.lockRootPositionXZ = false;
+                    // Hero animation events (receiver: LumenWave.UmbraAnimEvents on the model). Times are the
+                    // normalized foot-contact frames measured with HeroProbe (lowest foot, leading).
+                    string shortName = c.name.Substring(c.name.IndexOf('|') + 1);
+                    float[] steps = shortName == "Walk_Loop" ? new[] { 0.02f, 0.52f }
+                                  : shortName == "Jog_Fwd_Loop" ? new[] { 0.08f, 0.58f }
+                                  : shortName == "Sprint_Loop" ? new[] { 0.04f, 0.54f } : null;
+                    if (steps != null)
+                        c.events = steps.Select((t, k) => new AnimationEvent { functionName = "OnFootstep", time = t, intParameter = k }).ToArray();
+                    else if (shortName == "Jump_Land")
+                        c.events = new[] { new AnimationEvent { functionName = "OnLand", time = 0.06f } };
+                    else if (shortName == "Idle_Loop")
+                        c.loopTime = c.loopPose = true;
                 }
                 ui.clipAnimations = all;
                 return;

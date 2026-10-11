@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,7 +14,7 @@ namespace LumenWave.UI
         public RectTransform root;
         public RectTransform fill, ghost;
         public Image fillImg, ghostImg, glowImg, frameImg, edgeImg, iconImg;
-        public Text label;
+        public TMP_Text label;
         public Color color, ghostColor;
         public float displayed = 1f, ghostValue = 1f, target = 1f;
         public float flash;   // 0..1, decays
@@ -80,10 +81,9 @@ namespace LumenWave.UI
 
             b.label = UIKit.Label(b.root, UIKit.Spaced(name.ToUpperInvariant()), 20, TextAnchor.LowerLeft, new Color(color.r, color.g, color.b, 0.95f));
             b.label.font = UIKit.Narrow;
-            b.label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            b.label.textWrappingMode = TextWrappingModes.NoWrap;
             UIKit.Place(b.label.rectTransform, new Vector2(0f, 1f), new Vector2(2, 28), new Vector2(width, 24), new Vector2(0f, 1f));
-            var ls = b.label.gameObject.AddComponent<Shadow>();
-            ls.effectColor = new Color(0f, 0f, 0f, 0.8f); ls.effectDistance = new Vector2(1.5f, -1.5f);
+            UIKit.Shadowed(b.label);
 
             if (icon != null)
             {
@@ -143,18 +143,18 @@ namespace LumenWave.UI
         public static Hud Instance { get; private set; }
         public HudBar Health { get; private set; }
         public HudBar ResonanceBar { get; private set; }
-        public Text MessageText { get; private set; }
-        public Text LevelText { get; private set; }
-        public Text TimerText { get; private set; }
+        public TMP_Text MessageText { get; private set; }
+        public TMP_Text LevelText { get; private set; }
+        public TMP_Text TimerText { get; private set; }
         /// <summary>Plain-text version of the key hints (the visible hints are key-cap boxes).</summary>
-        public Text LegendText { get; private set; }
+        public TMP_Text LegendText { get; private set; }
 
         CanvasGroup _messageGroup;
         RectTransform _messageRoot, _messageBacking;
         float _messageUntil;
         string _rawMessage;
-        Text _levelNumber;
-        Text _banner, _bannerSub;
+        TMP_Text _levelNumber;
+        TMP_Text _banner, _bannerSub;
         UIWaveLine _bannerWave;
         RectTransform _beatRoot;
         Image _beatRing, _beatDot;
@@ -163,7 +163,7 @@ namespace LumenWave.UI
         CanvasGroup _bannerGroup;
         float _bannerUntil;
         Image _deathVignette;
-        Text _deathText;
+        TMP_Text _deathText;
         float _death;
         Image _damageVignette;
         float _damagePulse;
@@ -172,7 +172,7 @@ namespace LumenWave.UI
         RectTransform _legendRoot;
 
         // Power chips under the resonance bar.
-        class Chip { public RectTransform root; public Image bg, dot; public Text text; public float flash, fail; public PowerType power; }
+        class Chip { public RectTransform root; public Image bg, dot; public TMP_Text text; public float flash, fail; public PowerType power; }
         readonly Chip[] _chips = new Chip[3];
         float _lastTimer = -1f;
 
@@ -180,7 +180,7 @@ namespace LumenWave.UI
         public bool Cinematic { get; private set; }
         public float CinematicTime { get; private set; }
         CanvasGroup _gameplayGroup;
-        Text _endLine1, _endLine2;
+        TMP_Text _endLine1, _endLine2;
         Image _whiteout;
         float _finaleLength = 11f;
         bool _finaleCompleted;
@@ -271,7 +271,7 @@ namespace LumenWave.UI
             TimerText = UIKit.Heading(gameplay, "00:00.00", 36, TextAnchor.UpperRight, UIStyle.Accent, "Timer", 0);
             UIKit.Place(TimerText.rectTransform, new Vector2(1f, 1f), new Vector2(-60, -138), new Vector2(400, 40), new Vector2(1f, 1f));
             TimerText.font = UIKit.Font;   // the serif's ornamented 0 reads poorly in numbers
-            var tsh = TimerText.gameObject.AddComponent<Shadow>(); tsh.effectColor = new Color(0, 0, 0, 0.8f); tsh.effectDistance = new Vector2(2, -2);
+            UIKit.Shadowed(TimerText);
 
             // Message banner (lower middle, over the dark ground so it never hides lights or enemies).
             _messageRoot = UIKit.Rect(root, "Message");
@@ -285,9 +285,9 @@ namespace LumenWave.UI
             UIKit.Place(mline.rectTransform, new Vector2(0.5f, 0f), new Vector2(0, 2), new Vector2(700, 2), new Vector2(0.5f, 0.5f));
             MessageText = UIKit.Label(_messageRoot, "", 34, TextAnchor.MiddleCenter, Color.white, "Text");
             MessageText.font = UIKit.Font;
-            MessageText.supportRichText = true;
+            MessageText.richText = true;
             UIKit.Stretch(MessageText.rectTransform, 8);
-            var msh = MessageText.gameObject.AddComponent<Shadow>(); msh.effectColor = new Color(0, 0, 0, 0.9f); msh.effectDistance = new Vector2(2, -2);
+            UIKit.Shadowed(MessageText);
 
             // Bottom-left key hints: key-cap boxes + action names (rebuilt when bindings / device change).
             _legendRoot = UIKit.Rect(gameplay, "Legend");
@@ -340,7 +340,7 @@ namespace LumenWave.UI
             UIKit.Place(_endLine1.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 250), new Vector2(1600, 70), new Vector2(0.5f, 0.5f));
             UIKit.GlowText(_endLine1, new Color(1f, 0.85f, 0.6f), 2f);
             _endLine2 = UIKit.Label(root, UIKit.Spaced("and every light remembered its harmony."), 30, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0f), "EndLine2");
-            _endLine2.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _endLine2.textWrappingMode = TextWrappingModes.NoWrap;
             UIKit.Place(_endLine2.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 182), new Vector2(1600, 50), new Vector2(0.5f, 0.5f));
 
             RefreshLegend();
@@ -362,7 +362,7 @@ namespace LumenWave.UI
                 UIKit.Place(c.dot.rectTransform, new Vector2(0f, 0.5f), new Vector2(18, 0), new Vector2(16, 16), new Vector2(0.5f, 0.5f));
                 c.text = UIKit.Label(c.root, UIKit.Spaced(names[i]), 19, TextAnchor.MiddleLeft, UIStyle.Text, "Name");
                 c.text.font = UIKit.Narrow;
-                c.text.horizontalOverflow = HorizontalWrapMode.Overflow;
+                c.text.textWrappingMode = TextWrappingModes.NoWrap;
                 UIKit.Stretch(c.text.rectTransform);
                 c.text.rectTransform.offsetMin = new Vector2(32, 0);
                 float w = 44f + c.text.preferredWidth;
@@ -433,7 +433,7 @@ namespace LumenWave.UI
             // Whiteout: starts ~1.5 s before the level completes, and is complete ~1 s after.
             float wStart = _finaleCompleted ? Mathf.Min(_completedAt - 0.5f, _finaleLength - 1.5f) : _finaleLength - 1.5f;
             float w = Mathf.Clamp01((t - wStart) / 2.5f);
-            // Text glows through the whiteout, then dissolves into it at the very end.
+            // TMP_Text glows through the whiteout, then dissolves into it at the very end.
             float textFade = 1f - Mathf.Clamp01((w - 0.6f) / 0.4f);
             // Gold over the night; deepens to warm umber as the screen turns white, so it stays readable.
             float dawnK = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(3f, 8f, t));
@@ -510,8 +510,8 @@ namespace LumenWave.UI
                 }
                 var lbl = UIKit.Label(_legendRoot, UIKit.Spaced(h.action.ToUpperInvariant()), 20, TextAnchor.MiddleLeft, UIStyle.Text, "Action");
                 lbl.font = UIKit.Font;
-                lbl.horizontalOverflow = HorizontalWrapMode.Overflow;
-                var sh = lbl.gameObject.AddComponent<Shadow>(); sh.effectColor = new Color(0, 0, 0, 0.85f); sh.effectDistance = new Vector2(1.5f, -1.5f);
+                lbl.textWrappingMode = TextWrappingModes.NoWrap;
+                UIKit.Shadowed(lbl);
                 float w = lbl.preferredWidth;
                 UIKit.Place(lbl.rectTransform, new Vector2(0f, 0.5f), new Vector2(x + 2f, 0f), new Vector2(w + 4f, 32f), new Vector2(0f, 0.5f));
                 x += w + 34f;

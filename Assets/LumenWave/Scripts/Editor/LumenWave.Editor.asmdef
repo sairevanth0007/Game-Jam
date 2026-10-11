@@ -7,9 +7,16 @@
         "Unity.RenderPipelines.Universal.Runtime",
         "Unity.RenderPipelines.Universal.Editor",
         "Unity.RenderPipelines.Core.Runtime",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Unity.TextMeshPro",
+        "Unity.TextMeshPro.Editor",
+        "Unity.Cinemachine",
+        "Unity.Timeline",
+        "Unity.Timeline.Editor"
     ],
-    "includePlatforms": ["Editor"],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

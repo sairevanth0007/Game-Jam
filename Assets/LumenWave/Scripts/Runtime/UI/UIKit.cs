@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -29,26 +30,52 @@ namespace LumenWave.UI
     /// <summary>Helpers to build uGUI hierarchies in code.</summary>
     public static class UIKit
     {
-        static Font _builtin, _font, _bold, _light, _display;
+        static TMP_FontAsset _font, _bold, _light, _display;
         static Sprite _soft, _radial, _glow, _hgrad, _vgrad, _diamond, _waveIcon, _ring;
+        static readonly System.Collections.Generic.Dictionary<long, Material> _tinted = new System.Collections.Generic.Dictionary<long, Material>();
 
-        static Font Builtin => _builtin != null ? _builtin : (_builtin = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
-        static Font Load(ref Font cache, string name)
+        static TMP_FontAsset Load(ref TMP_FontAsset cache, string name)
         {
-            if (cache == null) cache = Resources.Load<Font>("Art/GGBotNetFonts/" + name);
-            return cache != null ? cache : Builtin;
+            if (cache == null) cache = Resources.Load<TMP_FontAsset>("Fonts/" + name);
+            if (cache == null) cache = TMP_Settings.defaultFontAsset;
+            return cache;
         }
 
-        /// <summary>Body font: Jupiteroid Regular (GGBotNet, CC0), a clean humanist sans. Sentences, hints, credits.</summary>
-        public static Font Font => Load(ref _font, "Jupiteroid-Regular");
-        /// <summary>Jupiteroid Bold: key caps, buttons, HUD labels, the tutorial banner.</summary>
-        public static Font Bold => Load(ref _bold, "Jupiteroid-Bold");
-        /// <summary>Jupiteroid Light: quiet secondary lines (taglines, end line).</summary>
-        public static Font Light => Load(ref _light, "Jupiteroid-Light");
-        /// <summary>OSerif (GGBotNet, CC0), an elegant capital serif: logo, headings, level names, big numbers.</summary>
-        public static Font Display => Load(ref _display, "OSerif-Regular");
-        /// <summary>Font for short uppercase UI labels (buttons, bar labels, chips): Jupiteroid Bold.</summary>
-        public static Font Narrow => Bold;
+        /// <summary>Body font: Jupiteroid Regular SDF (GGBotNet, CC0), a clean humanist sans. Sentences, hints, key caps.</summary>
+        public static TMP_FontAsset Font => Load(ref _font, "Jupiteroid SDF");
+        /// <summary>Jupiteroid Bold SDF: buttons, HUD labels.</summary>
+        public static TMP_FontAsset Bold => Load(ref _bold, "Jupiteroid Bold SDF");
+        /// <summary>Jupiteroid Light SDF: quiet secondary lines (tagline, end line).</summary>
+        public static TMP_FontAsset Light => Load(ref _light, "Jupiteroid Light SDF");
+        /// <summary>OSerif SDF (GGBotNet, CC0), an elegant capital serif: logo, headings, level names.</summary>
+        public static TMP_FontAsset Display => Load(ref _display, "OSerif SDF");
+        /// <summary>Font for short uppercase UI labels (buttons, bar labels, chips).</summary>
+        public static TMP_FontAsset Narrow => Bold;
+
+        /// <summary>Editor-made preset material for a font ("Shadow" = soft underlay, "Glow" = glow + underlay).</summary>
+        public static Material Preset(TMP_FontAsset f, string kind)
+        {
+            if (f == null) return null;
+            var m = Resources.Load<Material>("Fonts/" + f.name + " " + kind);
+            return m != null ? m : f.material;
+        }
+
+        /// <summary>Soft dark underlay so text reads over any background.</summary>
+        public static void Shadowed(TMP_Text t)
+        {
+            var m = Preset(t.font, "Shadow");
+            if (m != null) t.fontSharedMaterial = m;
+        }
+
+        /// <summary>Letter-spaced text via the TMP cspace rich-text tag (the string itself stays unspaced).</summary>
+        public static string Spaced(string s, int spaces = 1)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            return "<cspace=" + (0.16f * spaces).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "em>" + s + "</cspace>";
+        }
+
+        /// <summary>Text with rich-text tags removed (for comparisons).</summary>
+        public static string Plain(string s) => string.IsNullOrEmpty(s) ? s : System.Text.RegularExpressions.Regex.Replace(s, "<[^>]+>", "");
 
         static Sprite MakeSprite(int w, int h, string name, Func<float, float, float> alpha, Vector4 border = default)
         {
@@ -157,19 +184,6 @@ namespace LumenWave.UI
             }
         }
 
-        /// <summary>"LUMEN" → "L U M E N" (uGUI Text has no letter spacing).</summary>
-        public static string Spaced(string s, int spaces = 1)
-        {
-            var pad = new string(' ', spaces);
-            var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < s.Length; i++)
-            {
-                sb.Append(s[i]);
-                if (i < s.Length - 1) sb.Append(pad);
-            }
-            return sb.ToString();
-        }
-
         public static string FormatTime(float seconds)
         {
             if (seconds < 0) seconds = 0;
@@ -271,32 +285,59 @@ namespace LumenWave.UI
             return rt;
         }
 
-        public static Text Label(Transform parent, string text, int size, TextAnchor anchor = TextAnchor.MiddleCenter, Color? color = null, string name = "Label")
+        public static TextAlignmentOptions Align(TextAnchor a)
+        {
+            switch (a)
+            {
+                case TextAnchor.UpperLeft: return TextAlignmentOptions.TopLeft;
+                case TextAnchor.UpperCenter: return TextAlignmentOptions.Top;
+                case TextAnchor.UpperRight: return TextAlignmentOptions.TopRight;
+                case TextAnchor.MiddleLeft: return TextAlignmentOptions.Left;
+                case TextAnchor.MiddleRight: return TextAlignmentOptions.Right;
+                case TextAnchor.LowerLeft: return TextAlignmentOptions.BottomLeft;
+                case TextAnchor.LowerCenter: return TextAlignmentOptions.Bottom;
+                case TextAnchor.LowerRight: return TextAlignmentOptions.BottomRight;
+                default: return TextAlignmentOptions.Center;
+            }
+        }
+
+        public static TMP_Text Label(Transform parent, string text, int size, TextAnchor anchor = TextAnchor.MiddleCenter, Color? color = null, string name = "Label")
         {
             var rt = Rect(parent, name);
-            var t = rt.gameObject.AddComponent<Text>();
+            var t = rt.gameObject.AddComponent<TextMeshProUGUI>();
             t.font = Font;
             t.text = text;
             t.fontSize = size;
-            t.alignment = anchor;
+            t.alignment = Align(anchor);
             t.color = color ?? UIStyle.Text;
-            t.horizontalOverflow = HorizontalWrapMode.Wrap;
-            t.verticalOverflow = VerticalWrapMode.Overflow;
+            t.textWrappingMode = TextWrappingModes.Normal;
+            t.overflowMode = TextOverflowModes.Overflow;
+            t.richText = true;
             t.raycastTarget = false;
             return t;
         }
 
-        /// <summary>Big letter-spaced OSerif heading.</summary>
-        public static Text Heading(Transform parent, string text, int size, TextAnchor anchor = TextAnchor.MiddleCenter, Color? color = null, string name = "Title", int spacing = 1)
+        /// <summary>Lets a label shrink (down to minScale) instead of overflowing its box.</summary>
+        public static void AutoFit(TMP_Text t, float minScale = 0.6f)
         {
-            var t = Label(parent, spacing > 0 ? Spaced(text.ToUpperInvariant(), spacing) : text, size, anchor, color, name);
+            float max = t.fontSize;
+            t.enableAutoSizing = true;
+            t.fontSizeMax = max;
+            t.fontSizeMin = Mathf.Max(8f, max * minScale);
+        }
+
+        /// <summary>Big letter-spaced OSerif heading (letter-spacing via TMP characterSpacing).</summary>
+        public static TMP_Text Heading(Transform parent, string text, int size, TextAnchor anchor = TextAnchor.MiddleCenter, Color? color = null, string name = "Title", int spacing = 1)
+        {
+            var t = Label(parent, spacing > 0 ? text.ToUpperInvariant() : text, size, anchor, color, name);
             t.font = Display;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            t.characterSpacing = spacing > 0 ? 20f * spacing : 0f;
+            t.textWrappingMode = TextWrappingModes.NoWrap;
             return t;
         }
 
         /// <summary>Panel title: serif heading + a short glowing underline.</summary>
-        public static Text PanelTitle(RectTransform panel, string text, float y = -62, int size = 40)
+        public static TMP_Text PanelTitle(RectTransform panel, string text, float y = -62, int size = 40)
         {
             var title = Heading(panel, text, size, TextAnchor.MiddleCenter, Color.white, "Title", 1);
             Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, y), new Vector2(Mathf.Max(400, panel.sizeDelta.x - 80), 60), new Vector2(0.5f, 0.5f));
@@ -311,7 +352,7 @@ namespace LumenWave.UI
         public static Sprite HGradientCentered => _hgradC != null ? _hgradC : (_hgradC = MakeSprite(128, 4, "lw_hgradc", (u, v) => Mathf.Sin(u * Mathf.PI)));
 
         /// <summary>A key-cap box ("Space", "J", "LMB") with a raised look, auto-sized to the text.</summary>
-        public static RectTransform KeyCap(Transform parent, string key, int fontSize, out Text label, string name = "KeyCap")
+        public static RectTransform KeyCap(Transform parent, string key, int fontSize, out TMP_Text label, string name = "KeyCap")
         {
             var box = Rect(parent, name);
             var edge = Image(box, "Edge", new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.45f), Soft);
@@ -322,8 +363,8 @@ namespace LumenWave.UI
             lip.rectTransform.anchorMin = new Vector2(0f, 0f); lip.rectTransform.anchorMax = new Vector2(1f, 0.22f);
             lip.rectTransform.offsetMin = new Vector2(1, 1); lip.rectTransform.offsetMax = new Vector2(-1, 0);
             label = Label(box, key, fontSize, TextAnchor.MiddleCenter, Color.white, "Key");
-            label.font = Font;   // Regular reads cleaner than Bold at key-cap sizes
-            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            label.font = Font;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
             Stretch(label.rectTransform);
             label.rectTransform.offsetMin = new Vector2(0, 2);
             SizeKeyCap(box, label);
@@ -331,24 +372,30 @@ namespace LumenWave.UI
         }
 
         /// <summary>Re-fits a key cap to its text.</summary>
-        public static void SizeKeyCap(RectTransform box, Text label)
+        public static void SizeKeyCap(RectTransform box, TMP_Text label)
         {
             float h = label.fontSize * 1.55f;
-            float w = Mathf.Max(h, label.preferredWidth + label.fontSize * 0.9f);
+            float w = Mathf.Max(h, label.GetPreferredValues(label.text).x + label.fontSize * 0.9f);
             box.sizeDelta = new Vector2(w, h);
             var le = box.GetComponent<LayoutElement>();
             if (le != null) { le.preferredWidth = w; le.minWidth = w; le.preferredHeight = h; }
         }
 
-        /// <summary>Adds a soft cyan glow (two outlines) to a text.</summary>
-        public static void GlowText(Text t, Color glow, float dist = 2f)
+        /// <summary>Soft coloured glow + dark underlay through a TMP material (cached per font and colour).</summary>
+        public static void GlowText(TMP_Text t, Color glow, float dist = 2f)
         {
-            var o = t.gameObject.AddComponent<Outline>();
-            o.effectColor = new Color(glow.r, glow.g, glow.b, 0.35f);
-            o.effectDistance = new Vector2(dist, dist);
-            var s = t.gameObject.AddComponent<Shadow>();
-            s.effectColor = new Color(glow.r, glow.g, glow.b, 0.2f);
-            s.effectDistance = new Vector2(-dist, -dist);
+            var preset = Preset(t.font, "Glow");
+            if (preset == null) return;
+            var c32 = (Color32)glow;
+            long key = ((long)preset.GetInstanceID() << 32) ^ ((long)c32.r << 16 | (long)c32.g << 8 | c32.b) ^ ((long)Mathf.RoundToInt(dist * 10f) << 24);
+            if (!_tinted.TryGetValue(key, out var m) || m == null)
+            {
+                m = new Material(preset) { name = preset.name + " " + ColorUtility.ToHtmlStringRGB(glow) };
+                m.SetColor("_GlowColor", new Color(glow.r, glow.g, glow.b, Mathf.Clamp01(0.32f + 0.08f * dist)));
+                m.SetFloat("_GlowOuter", Mathf.Clamp(0.25f + 0.15f * dist, 0.2f, 0.8f));
+                _tinted[key] = m;
+            }
+            t.fontSharedMaterial = m;
         }
 
         public static VerticalLayoutGroup VList(RectTransform rt, float spacing, RectOffset padding = null, TextAnchor align = TextAnchor.UpperCenter)
@@ -386,9 +433,11 @@ namespace LumenWave.UI
             cb.colorMultiplier = 1f;
             cb.fadeDuration = 0.08f;
             b.colors = cb;
-            var t = Label(bg.rectTransform, UIKit.Spaced(label.ToUpperInvariant()), fontSize, TextAnchor.MiddleCenter, UIStyle.TextDim);
+            var t = Label(bg.rectTransform, label.ToUpperInvariant(), fontSize, TextAnchor.MiddleCenter, UIStyle.TextDim);
             t.font = Narrow;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            t.characterSpacing = 9f;
+            AutoFit(t, 0.55f);
+            t.textWrappingMode = TextWrappingModes.NoWrap;
             Stretch(t.rectTransform);
             var fx = bg.gameObject.AddComponent<UISelectFx>();
             fx.label = t;
@@ -402,9 +451,10 @@ namespace LumenWave.UI
             Height(row.gameObject, 56);
             var bg = row.gameObject.AddComponent<Image>();
             bg.sprite = Soft; bg.type = UnityEngine.UI.Image.Type.Sliced; bg.color = Color.white;
-            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 19, TextAnchor.MiddleLeft, UIStyle.TextDim);
+            var t = Label(row, label.ToUpperInvariant(), 19, TextAnchor.MiddleLeft, UIStyle.TextDim);
             t.font = Narrow;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;   // never wrap mid-word ("VOLU / ME")
+            t.characterSpacing = 9f;
+            t.textWrappingMode = TextWrappingModes.NoWrap;   // never wrap mid-word ("VOLU / ME")
             t.rectTransform.anchorMin = new Vector2(0, 0); t.rectTransform.anchorMax = new Vector2(0.5f, 1);
             t.rectTransform.offsetMin = new Vector2(24, 0); t.rectTransform.offsetMax = Vector2.zero;
 
@@ -443,9 +493,10 @@ namespace LumenWave.UI
             Height(row.gameObject, 56);
             var bg = row.gameObject.AddComponent<Image>();
             bg.sprite = Soft; bg.type = UnityEngine.UI.Image.Type.Sliced; bg.color = Color.white;
-            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 19, TextAnchor.MiddleLeft, UIStyle.TextDim);
+            var t = Label(row, label.ToUpperInvariant(), 19, TextAnchor.MiddleLeft, UIStyle.TextDim);
             t.font = Narrow;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            t.characterSpacing = 9f;
+            t.textWrappingMode = TextWrappingModes.NoWrap;
             t.rectTransform.anchorMin = new Vector2(0, 0); t.rectTransform.anchorMax = new Vector2(0.7f, 1);
             t.rectTransform.offsetMin = new Vector2(24, 0); t.rectTransform.offsetMax = Vector2.zero;
             var box = Image(row, "Box", new Color(1, 1, 1, 0.15f), Soft);
@@ -485,7 +536,7 @@ namespace LumenWave.UI
     /// <summary>Selection feedback: label brightens + a glowing bar on the left + a soft light sweep; hover selects.</summary>
     public class UISelectFx : MonoBehaviour, ISelectHandler, IDeselectHandler, IPointerEnterHandler
     {
-        public Text label;
+        public TMP_Text label;
         Image _bar, _sweep;
         bool _selected;
         float _t;
@@ -531,7 +582,7 @@ namespace LumenWave.UI
                 if (!_labelInit) { _labelMin = label.rectTransform.offsetMin; _labelMax = label.rectTransform.offsetMax; _labelInit = true; }
                 label.color = Color.Lerp(UIStyle.TextDim, Color.white, _t);
                 // Left-aligned labels slide in a little when selected.
-                if (label.alignment == TextAnchor.MiddleLeft)
+                if (label.alignment == TextAlignmentOptions.Left)
                 {
                     var slide = new Vector2(10f * (1f - (1f - _t) * (1f - _t)), 0f);
                     label.rectTransform.offsetMin = _labelMin + slide;
@@ -558,37 +609,52 @@ namespace LumenWave.UI
         void OnDisable() { if (target != null) target.SetActive(false); }
     }
 
-    /// <summary>Vertical colour gradient on a Graphic's vertices, plus an optional moving highlight band (the logo).</summary>
-    public class UIGradient : BaseMeshEffect
+    /// <summary>
+    /// Vertical colour gradient on a TMP text (vertex gradient) plus an optional moving highlight band across the
+    /// characters (vertex colours rewritten after TMP builds the mesh). Used on the logo and big titles.
+    /// </summary>
+    [RequireComponent(typeof(TMP_Text))]
+    public class UIGradient : MonoBehaviour
     {
         public Color top = Color.white, bottom = new Color(0.45f, 0.95f, 1f, 1f);
         public float shimmer;      // 0..1 strength of the moving highlight band
-        public float shimmerPos;   // position of the band across the rect (0..1)
+        public float shimmerPos;   // position of the band across the text (0..1)
+        TMP_Text _t;
+        bool _dirty = true;
 
-        public override void ModifyMesh(VertexHelper vh)
+        void OnEnable() { _t = GetComponent<TMP_Text>(); _dirty = true; }
+
+        public void Refresh() { _dirty = true; }
+
+        void LateUpdate()
         {
-            if (!IsActive() || vh.currentVertCount == 0) return;
-            var rect = graphic.rectTransform.rect;
-            var v = new UIVertex();
-            for (int i = 0; i < vh.currentVertCount; i++)
+            if (_t == null || !_t.isActiveAndEnabled) return;
+            // Re-applied every frame: TMP rebuilds vertex colours whenever the text or its colour changes.
+            if (_dirty || _t.havePropertiesChanged) { _t.ForceMeshUpdate(); _dirty = false; }
+            var info = _t.textInfo;
+            if (info == null || info.characterCount == 0) return;
+            var b = _t.textBounds;
+            float x0 = b.min.x, x1 = b.max.x, y0 = b.min.y, y1 = b.max.y;
+            for (int i = 0; i < info.characterCount; i++)
             {
-                vh.PopulateUIVertex(ref v, i);
-                float ty = Mathf.InverseLerp(rect.yMin + rect.height * 0.25f, rect.yMax - rect.height * 0.25f, v.position.y);
-                float tx = Mathf.InverseLerp(rect.xMin, rect.xMax, v.position.x);
-                var c = Color.Lerp(bottom, top, ty);
-                if (shimmer > 0f)
+                var ch = info.characterInfo[i];
+                if (!ch.isVisible) continue;
+                var cols = info.meshInfo[ch.materialReferenceIndex].colors32;
+                var verts = info.meshInfo[ch.materialReferenceIndex].vertices;
+                int v = ch.vertexIndex;
+                for (int k = 0; k < 4; k++)
                 {
-                    float d = Mathf.Abs(tx - shimmerPos);
-                    c = Color.Lerp(c, Color.white, shimmer * Mathf.Clamp01(1f - d * 7f));
+                    var p = verts[v + k];
+                    float ty = Mathf.InverseLerp(y0, y1, p.y);
+                    float tx = Mathf.InverseLerp(x0, x1, p.x);
+                    var c = Color.Lerp(bottom, top, ty);
+                    if (shimmer > 0f) c = Color.Lerp(c, Color.white, shimmer * Mathf.Clamp01(1f - Mathf.Abs(tx - shimmerPos) * 7f));
+                    c.a *= _t.color.a;
+                    cols[v + k] = c;
                 }
-                Color orig = v.color;
-                c.a *= orig.a;
-                v.color = c;
-                vh.SetUIVertex(v, i);
             }
+            _t.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
         }
-
-        public void Refresh() { if (graphic != null) graphic.SetVerticesDirty(); }
     }
 
     /// <summary>

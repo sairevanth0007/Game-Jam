@@ -23,6 +23,8 @@ namespace LumenWave.EditorTools
             EnsurePipeline();
             ConfigurePlayer();
             MaterialAssets.EnsureAll();
+            EnvAssets.EnsureAll();   // finale Timeline + scenery prefabs (environment worker)
+            TmpSetup.Ensure();   // TextMeshPro essentials + SDF font assets (UI worker)
             HeroSetup.Ensure();
             AssetDatabase.SaveAssets();
             Debug.Log("[LumenWave] Project setup complete");

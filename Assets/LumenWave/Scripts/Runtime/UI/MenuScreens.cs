@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -145,7 +146,7 @@ namespace LumenWave.UI
                 }
                 var lbl = UIKit.Label(root, UIKit.Spaced(h.action.ToUpperInvariant()), keySize, TextAnchor.MiddleLeft, UIStyle.TextDim, "Action");
                 lbl.font = UIKit.Font;
-                lbl.horizontalOverflow = HorizontalWrapMode.Overflow;
+                lbl.textWrappingMode = TextWrappingModes.NoWrap;
                 float w = lbl.preferredWidth;
                 UIKit.Place(lbl.rectTransform, new Vector2(0f, 0.5f), new Vector2(x + 2f, 0f), new Vector2(w + 4f, 30f), new Vector2(0f, 0.5f));
                 x += w + 30f;
@@ -160,7 +161,7 @@ namespace LumenWave.UI
         public static TitleScreen Instance { get; private set; }
         public MenuStack Stack { get; private set; }
         public Button PlayButton { get; private set; }
-        Text _logo;
+        TMP_Text _logo;
         UIGradient _logoGradient;
         Image _logoHalo;
         UIWaveLine _wave, _wave2;
@@ -210,11 +211,7 @@ namespace LumenWave.UI
             UIKit.Place(_wave.rectTransform, new Vector2(0f, 1f), new Vector2(logoX - 90f, logoY - 6f), new Vector2(logoW + 180f, 150f), new Vector2(0f, 0.5f));
             _wave.transform.SetSiblingIndex(_logo.transform.GetSiblingIndex());
 
-            var logoShadow = _logo.gameObject.AddComponent<Shadow>();
-            logoShadow.effectColor = new Color(0f, 0.02f, 0.05f, 0.9f); logoShadow.effectDistance = new Vector2(4f, -5f);
-            var glow = _logo.gameObject.AddComponent<Outline>();
-            glow.effectColor = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.35f);
-            glow.effectDistance = new Vector2(2f, 2f);
+            UIKit.GlowText(_logo, UIStyle.Accent, 2f);
             _logoGradient = _logo.gameObject.AddComponent<UIGradient>();
             _logoGradient.top = Color.white;
             _logoGradient.bottom = new Color(0.5f, 0.9f, 1f);
@@ -227,7 +224,7 @@ namespace LumenWave.UI
 
             var tag = UIKit.Label(logoGroup, UIKit.Spaced("A SONG OF SHADOW AND LIGHT", 1), 26, TextAnchor.MiddleLeft, new Color(0.75f, 0.85f, 0.95f, 0.95f), "Tagline");
             tag.font = UIKit.Light;
-            tag.horizontalOverflow = HorizontalWrapMode.Overflow;
+            tag.textWrappingMode = TextWrappingModes.NoWrap;
             UIKit.Place(tag.rectTransform, new Vector2(0f, 1f), new Vector2(logoX + 8f, logoY - 104f), new Vector2(1200, 40), new Vector2(0f, 0.5f));
             var line = UIKit.Image(logoGroup, "TitleLine", new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.7f), UIKit.HGradient, false);
             UIKit.Place(line.rectTransform, new Vector2(0f, 1f), new Vector2(logoX + 8f, logoY - 78f), new Vector2(560, 2), new Vector2(0f, 0.5f));
@@ -248,10 +245,10 @@ namespace LumenWave.UI
             UIKit.Button(main, "Settings", () => Stack.Push(settings, settingsFirst), 60, 26);
             UIKit.Button(main, "Credits", () => Stack.Push(credits, creditsFirst), 60, 26);
             UIKit.Button(main, "Quit", Quit, 60, 26);
-            foreach (var t in main.GetComponentsInChildren<Text>(true))
+            foreach (var t in main.GetComponentsInChildren<TMP_Text>(true))
             {
                 if (t.transform.parent.parent != main) continue;
-                t.alignment = TextAnchor.MiddleLeft;
+                t.alignment = TextAlignmentOptions.Left;
                 t.rectTransform.offsetMin = new Vector2(30, 0);
             }
             // The Play button gets a brighter resting state.
@@ -269,7 +266,7 @@ namespace LumenWave.UI
             UIKit.Place(foot, new Vector2(0f, 0f), new Vector2(logoX, 52), foot.sizeDelta, new Vector2(0f, 0.5f));
             var pad = UIKit.Label(root, UIKit.Spaced("GAMEPAD SUPPORTED"), 16, TextAnchor.MiddleLeft, new Color(0.6f, 0.68f, 0.8f, 0.7f), "Gamepad");
             pad.font = UIKit.Narrow;
-            pad.horizontalOverflow = HorizontalWrapMode.Overflow;
+            pad.textWrappingMode = TextWrappingModes.NoWrap;
             UIKit.Place(pad.rectTransform, new Vector2(0f, 0f), new Vector2(logoX, 92), new Vector2(600, 24), new Vector2(0f, 0.5f));
 
             Stack.Push(_main, PlayButton.gameObject);
@@ -300,8 +297,8 @@ namespace LumenWave.UI
                 if (best > 0f) details += $"     <color=#8CF2FF>{UIKit.FormatTime(best)}</color>";
                 if (total > 0 && (best > 0f || RunStats.SecretsFound(i) > 0)) details += $"     <color=#FFD970>{RunStats.SecretsFound(i)}/{total} shards</color>";
                 var b = UIKit.Button(list, $"{i:00}  {name}", () => { GameSession.NewRun(); GameSession.CurrentLevel = n; ScreenFader.FadeThen(() => SceneFlow.LoadLevel(n)); }, 50, 22);
-                var lt = b.GetComponentInChildren<Text>();
-                lt.alignment = TextAnchor.MiddleLeft;
+                var lt = b.GetComponentInChildren<TMP_Text>();
+                lt.alignment = TextAlignmentOptions.Left;
                 lt.rectTransform.offsetMin = new Vector2(30, 0);
                 if (open && details.Length > 0) lt.text += details;
                 b.interactable = open;
@@ -364,7 +361,7 @@ namespace LumenWave.UI
     {
         public static EndScreen Instance { get; private set; }
         MenuStack _stack;
-        Text _line, _title;
+        TMP_Text _line, _title;
         CanvasGroup _statsGroup;
         float _t;
 
@@ -400,7 +397,7 @@ namespace LumenWave.UI
             {
                 var n = UIKit.Label(card, note, 18, TextAnchor.MiddleCenter, UIStyle.TextDim, "Note");
                 n.font = UIKit.Narrow;
-                n.supportRichText = true;
+                n.richText = true;
                 UIKit.Place(n.rectTransform, new Vector2(0.5f, 0f), new Vector2(0, 24), new Vector2(320, 26), new Vector2(0.5f, 0.5f));
             }
             return card;
@@ -429,9 +426,9 @@ namespace LumenWave.UI
 
             _line = UIKit.Label(main, "Umbra sang, and every light remembered its harmony.", 34, TextAnchor.MiddleCenter, Color.white, "Line");
             _line.font = UIKit.Light;
-            _line.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _line.textWrappingMode = TextWrappingModes.NoWrap;
             UIKit.Place(_line.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 196), new Vector2(1600, 60), new Vector2(0.5f, 0.5f));
-            var lsh = _line.gameObject.AddComponent<Shadow>(); lsh.effectColor = new Color(0, 0, 0, 0.8f); lsh.effectDistance = new Vector2(2, -2);
+            UIKit.Shadowed(_line);
 
             int secrets = PlayerPrefs.GetInt(UIRoot.SecretsKey, 0);
             int totalSecrets = RunStats.TotalSecrets;

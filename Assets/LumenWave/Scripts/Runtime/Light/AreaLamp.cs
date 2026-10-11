@@ -45,10 +45,23 @@ namespace LumenWave
                     // No ceiling: a crooked lamp post with an arm, so it reads as a street lantern, not a second moon.
                     float h = floor.distance + 0.9f;
                     var postX = -0.75f;
+                    var prefab = Resources.Load<GameObject>("Prefabs/LampPost");
+                    if (prefab != null)
+                    {
+                        var inst = Instantiate(prefab, transform, false);
+                        inst.name = "LampPost";
+                        var post = inst.transform.Find("Post");
+                        if (post != null) { post.localPosition = new Vector3(postX, 0.9f - h * 0.5f, 0.45f); post.localScale = new Vector3(0.12f, h * 0.5f, 0.12f); }
+                        var bse = inst.transform.Find("Base");
+                        if (bse != null) bse.localPosition = new Vector3(postX, 0.9f - h + 0.1f, 0.45f);
+                    }
+                    else
+                    {
                     LightVisuals.Part(PrimitiveType.Cylinder, transform, new Vector3(postX, 0.9f - h * 0.5f, 0.45f), new Vector3(0.12f, h * 0.5f, 0.12f), dark, "Post");
                     LightVisuals.Part(PrimitiveType.Cube, transform, new Vector3(postX * 0.5f, 0.9f, 0.45f), new Vector3(0.9f, 0.08f, 0.08f), dark, "Arm");
                     LightVisuals.Part(PrimitiveType.Cylinder, transform, new Vector3(0, 0.65f, 0.2f), new Vector3(0.04f, 0.2f, 0.04f), dark, "Chain");
                     LightVisuals.Part(PrimitiveType.Cube, transform, new Vector3(postX, 0.9f - h + 0.1f, 0.45f), new Vector3(0.45f, 0.2f, 0.45f), dark, "Base");
+                    }
                 }
                 LightVisuals.Part(PrimitiveType.Cube, transform, new Vector3(0, 0.38f, 0), new Vector3(0.5f, 0.1f, 0.5f), dark, "Cap");
             }

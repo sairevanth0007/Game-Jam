@@ -100,3 +100,42 @@ Format: time (Sun 11 Oct 2026) — decision — why.
   - A floating lamp with no ceiling gets a lamp post and arm, so it reads as a lantern rather than a second moon.
   - Fortress, ruins and prism themes get warm fire glows (or soft violet light pools), stronger mid-layer rims, and denser prism crystals.
   - Stronger lip highlight on dust and paving caps.
+- 11:00 — **User correction:** no procedural or primitive hero, and no code-driven limb animation. Build it the standard Unity way: real assets, Animator, Cinemachine, ProBuilder or CC0 meshes as prefabs, TextMeshPro, Timeline, prefabs.
+- 11:05 — Found Quaternius **Universal Animation Library 1 + 2** (CC0) as direct OpenGameArt downloads (no login), with Unity-ready FBX files. Imported per the pack's Unity guide (Humanoid, bake axis conversion, loop on `_Loop` clips). Both avatars are valid, with about 90 clips in the Standard editions. Umbra is now the UAL mannequin; every state comes from a clip in an Animator Controller (speed blend tree, root motion off, footstep/land animation events). The procedural limb overlays and the primitive fallback rig are being removed. The earlier "Animated Human" stays in the repo but is unused.
+- 11:10 — Added official packages via the manifest: Cinemachine 3.1.7 (camera follow, dead zone, look-ahead, confiner, impulse shake), ProBuilder 6.1.3, Animation Rigging 1.4.1. Timeline 1.8.9 and uGUI 2.0 (with TextMeshPro) were already present. Work split: hero (Animator), environment (Cinemachine, Timeline finale, prefabs), UI (TextMeshPro).
+- 11:15 — Level 8 bot flakiness in the real build: when a long jump lands after the next jump hint, the hint is lost (the height check fails in mid-air). The bot now keeps a jump hint crossed in mid-air until it lands, and that hint is marked `any=1`. Game code was unchanged; this only affects the bot.
+- 11:20 — Env, standard Unity packages:
+  - **Camera:** CameraRig is now a thin facade over Cinemachine 3, so its public API is unchanged. The main camera has a CinemachineBrain driving one follow CinemachineCamera:
+    - A PositionComposer keeps the framing (feet at screen y +0.21, 3° pitch, dead zone 0.04x0.14, damping, 0.3 s look-ahead). The facing bias is applied as a screen-x offset, and a downward peek kicks in while falling.
+    - A Confiner3D uses a trigger BoxCollider on the Ignore Raycast layer at camera depth, sized from the level bounds minus the half view.
+    - Shake fires a CinemachineImpulseSource, picked up by a CinemachineImpulseListener, and still respects the screen-shake setting.
+    - SnapToTarget and FramePoint call ForceCameraPosition with PreviousStateIsValid=false. Disabling the rig (menu drift) disables the brain.
+  - **Finale:** the finale is sequenced by `Resources/Timelines/Finale.playable`, built by `EditorTools.EnvAssets` from ProjectSetup. It has a Signal track (rings on/off, harmonize lights, dawn peak) received by FinaleDirector through INotificationReceiver, plus Activation tracks for the motes and for a wide CinemachineCamera that the brain blends to over 9 s. Continuous curves and all public timings stay in FinaleDirector, with a code fallback if the asset is missing.
+  - **Prefabs:** every scenery model is baked to `Resources/Prefabs/Props/*.prefab` (unit height, bottom-centre pivot, Prop material, no colliders or shadows). PropLibrary instantiates these and re-tints them per layer, falling back to assembling from the FBX if a prefab is missing. The open-sky lamp post is `Prefabs/LampPost.prefab`. Platform bodies and caps stay procedural meshes, because they are generated per level shape.
+- 11:40 — All UI text is now TextMeshPro (TextMeshProUGUI, from com.unity.ugui 2.0). `Scripts/Editor/TmpSetup.cs`, run from `ProjectSetup.Run`, does two things:
+  - It unpacks "TMP Essential Resources.unitypackage" into `Assets/TextMesh Pro/` with the original GUIDs. It reads the gzip/tar directly because `AssetDatabase.ImportPackage` is asynchronous and never finishes before a batch-mode exit.
+  - It creates dynamic SDF font assets for OSerif and Jupiteroid Regular/Bold/Light in `Resources/Fonts/`, with ASCII and common punctuation pre-baked into a 1024 atlas. Each font also gets "Shadow" (underlay) and "Glow" (glow + underlay) preset materials saved as assets, so the TMP shader keyword variants ship in builds.
+  - At runtime: text glow and shadows use TMP materials (cached per colour) instead of Outline/Shadow components. Letter-spacing uses `characterSpacing` or the `<cspace>` tag (`UIKit.Spaced`). Buttons auto-size. The logo gradient and light sweep rewrite TMP vertex colours. FlowTestDirector compares button labels with rich-text tags stripped.
+- 11:35 — Hero rebuilt the standard Unity way (user directive):
+  - **Model:** the Quaternius UAL1 mannequin (Humanoid). `HeroSetup` builds `Resources/Hero/UmbraAnimator.controller` and `UmbraModel.prefab` from it. The old Animated Human is retired; its files are left in place.
+  - **Controller:** driven only by parameters set from UmbraController/GameEvents state: Speed, VerticalSpeed, Grounded, Dash, Cast/Hurt (triggers), Shield, Dead, Sing. There is also a LocoRate playback multiplier, because Umbra runs at 7 m/s and the clips are authored at about 3–4 m/s. All transitions are condition-based, and applyRootMotion is off.
+  - **Clip map:**
+
+    | State | Clip |
+    |---|---|
+    | Idle | Idle_Loop |
+    | Locomotion (blend) | Walk_Loop / Jog_Fwd_Loop / Sprint_Loop |
+    | Jump | Jump_Start (cycle offset skips the crouch) |
+    | Fall | Jump_Loop |
+    | Land | Jump_Land |
+    | Dash | Sword_Dash_RM (travel made into discarded root motion) |
+    | Death | Death01 |
+    | Sing | Spell_Simple_Idle_Loop |
+    | Cast (upper-body layer) | OverhandThrow |
+    | Shield (upper-body layer) | Idle_Shield_Loop |
+    | Hurt (upper-body layer) | Hit_Chest |
+
+  - **Feet and events:** the "Foot IK" state flag is on for the grounded states. ArtImport adds `OnFootstep` animation events at the walk/jog/sprint foot contacts (measured with HeroProbe) and `OnLand` on Jump_Land. `UmbraAnimEvents` turns them into dust plus `Footstep`/`Landed` sound hooks.
+  - **Removed:** all code-driven limb motion (lean, breathing, head look, IK guard/shield/sing, spine flinch) and the primitive fallback rig.
+  - **Kept:** root facing with the 3/4 turn, whole-body landing squash, rim/dissolve shader, eye quads parented to the Head bone, verlet scarf, baked-mesh dash ghosts.
+  - **Outline:** the outline hull is now a second SkinnedMeshRenderer sharing the bones, because the mannequin has several submeshes and an extra material slot only draws the last one.

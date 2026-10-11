@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
@@ -67,8 +68,8 @@ namespace LumenWave.UI
             foreach (var b in FindObjectsByType<Button>(FindObjectsSortMode.None))
             {
                 if (!b.isActiveAndEnabled) continue;
-                var t = b.GetComponentInChildren<Text>();
-                if (t != null && t.text.Replace(" ", "").ToLowerInvariant() == want) return b;
+                var t = b.GetComponentInChildren<TMP_Text>();
+                if (t != null && UIKit.Plain(t.text).Replace(" ", "").ToLowerInvariant() == want) return b;
             }
             return null;
         }

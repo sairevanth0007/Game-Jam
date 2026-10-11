@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -18,7 +19,7 @@ namespace LumenWave
 
         CanvasGroup _black;
         CanvasGroup _card;
-        Text _cardNumber, _cardName;
+        TMP_Text _cardNumber, _cardName;
         Coroutine _fade, _cardRoutine, _dip;
         static bool _captureRun;
 

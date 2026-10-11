@@ -60,7 +60,46 @@ namespace LumenWave
         /// scaled uniformly to <paramref name="height"/>, rotated by <paramref name="yaw"/> degrees.
         /// Returns null if the model is missing.
         /// </summary>
+        public static string PrefabName(string path) => path.Replace('/', '_');
+
+        static readonly Dictionary<string, GameObject> _prefabs = new Dictionary<string, GameObject>();
+
+        static GameObject Prefab(string path)
+        {
+            if (_prefabs.TryGetValue(path, out var p)) return p;
+            p = Resources.Load<GameObject>("Prefabs/Props/" + PrefabName(path));
+            _prefabs[path] = p;
+            return p;
+        }
+
         public static GameObject Spawn(string path, Transform parent, Vector3 foot, float height, float yaw, Material mat, bool flipX = false, float widthScale = 1f, float maxWidth = 0f)
+        {
+            // Preferred: the baked prefab (Resources/Prefabs/Props, unit height, pivot at the bottom centre).
+            var prefab = Prefab(path);
+            if (prefab != null)
+            {
+                var info = prefab.GetComponent<PropInfo>();
+                float aspect = info != null ? info.aspect : 1f;
+                float h = height;
+                if (maxWidth > 0f && aspect * h > maxWidth) h = maxWidth / Mathf.Max(0.01f, aspect);
+                var inst = Object.Instantiate(prefab, parent, false);
+                inst.name = prefab.name;
+                inst.transform.localPosition = foot;
+                inst.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+                inst.transform.localScale = new Vector3(h * widthScale * (flipX ? -1f : 1f), h, h * widthScale);
+                foreach (var r in inst.GetComponentsInChildren<MeshRenderer>())
+                {
+                    var mats = r.sharedMaterials;
+                    for (int k = 0; k < mats.Length; k++) mats[k] = mat;
+                    r.sharedMaterials = mats;
+                }
+                return inst;
+            }
+            return Assemble(path, parent, foot, height, yaw, mat, flipX, widthScale, maxWidth);
+        }
+
+        /// <summary>Fallback when no prefab was baked: assemble the parts from the model directly.</summary>
+        static GameObject Assemble(string path, Transform parent, Vector3 foot, float height, float yaw, Material mat, bool flipX, float widthScale, float maxWidth)
         {
             var model = Get(path);
             if (!model.valid) return null;
@@ -108,6 +147,6 @@ namespace LumenWave
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() { _cache.Clear(); }
+        static void ResetStatics() { _cache.Clear(); _prefabs.Clear(); }
     }
 }

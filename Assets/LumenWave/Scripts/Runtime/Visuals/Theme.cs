@@ -176,6 +176,27 @@ namespace LumenWave
             return t;
         }
 
+        static readonly string[] ThemeNames = { "forest", "canyon", "ruins", "fortress", "ice", "garden", "clockwork", "prism", "dawn" };
+        /// <summary>Extra models used outside the theme lists (title vista, front boulders).</summary>
+        public static readonly string[] ExtraModels =
+        {
+            "KenneyNature/tree_oak_dark", "KenneyNature/tree_pineRoundA", "KenneyNature/rock_largeA", "KenneyNature/rock_largeB",
+            "KenneyNature/rock_largeC", "KenneyNature/rock_largeD", "KenneyNature/stone_largeA", "KenneyNature/stump_oldTall",
+        };
+
+        /// <summary>Every scenery model any theme can spawn (the editor bakes one prefab per model).</summary>
+        public static System.Collections.Generic.IEnumerable<string> AllModelPaths()
+        {
+            var set = new System.Collections.Generic.SortedSet<string>(ExtraModels);
+            foreach (var n in ThemeNames)
+            {
+                var t = Get(n);
+                foreach (var list in new[] { t.topProps, t.nearProps, t.midProps, t.farProps })
+                    if (list != null) foreach (var p in list) set.Add(p);
+            }
+            return set;
+        }
+
         public static Theme For(LevelData data)
         {
             if (data == null) return Get("forest");

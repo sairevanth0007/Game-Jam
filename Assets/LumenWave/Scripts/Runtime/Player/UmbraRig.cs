@@ -1,16 +1,13 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace LumenWave
 {
     /// <summary>
-    /// Umbra's body. Preferred: a skinned Shadow-Fight-style hero (<see cref="UmbraHero"/>, prefab
-    /// Resources/Hero/UmbraModel built by EditorTools.HeroSetup) animated by an Animator plus procedural
-    /// overlays. Fallback (prefab missing or invalid): the original procedural silhouette of primitive limbs
-    /// on joint pivots, posed every frame by a small state machine (idle, run, jump, fall, land, dash, cast,
-    /// shield, hurt, death, respawn). Angles are degrees around Z; for limbs, positive swings forward
-    /// (toward facing), knees bend negative.
-    /// Shared by both bodies: state selection, rim colour (hit flash, shield, singing), squash, dash ghosts.
+    /// Umbra's body: the skinned UAL mannequin (<see cref="UmbraHero"/>, prefab Resources/Hero/UmbraModel
+    /// built by EditorTools.HeroSetup) animated only by its Animator Controller. This component owns the look
+    /// around it: the black rim material and stencil outline, rim colour (hit flash, shield, singing),
+    /// glowing-eye materials, whole-body squash on landing, death/respawn timers and dash ghosts.
+    /// There is no procedural fallback body: if the prefab is missing an error is logged and Umbra is invisible.
     /// </summary>
     public class UmbraRig : MonoBehaviour
     {
@@ -21,187 +18,111 @@ namespace LumenWave
 
         public State Current { get; private set; }
         public Transform Visual { get; private set; }
-        public Transform Neck => _neck;
-        /// <summary>0..1: finale "singing" pose (arms open and raised, head up, golden rim, bright eyes). Set by FinaleDirector.</summary>
+        /// <summary>Neck bone of the hero (scarf anchor); the Visual root if the hero failed to load.</summary>
+        public Transform Neck => _neck != null ? _neck : Visual;
+        /// <summary>0..1: finale singing (Animator "Sing" state, golden rim, bright eyes). Set by FinaleDirector.</summary>
         public float Singing { get; set; }
-        Material _eyeMat, _haloMat;
-        UmbraHero _hero;
-        /// <summary>The skinned hero body, or null when the primitive fallback is in use.</summary>
+        /// <summary>The skinned hero body (null only if Resources/Hero/UmbraModel is missing).</summary>
         public UmbraHero Hero => _hero;
-        /// <summary>Set false (before Build) to force the primitive rig.</summary>
-        public static bool UseSkinnedHero = true;
 
+        UmbraHero _hero;
         UmbraController _ctl;
         PlayerHealth _health;
-        Material _bodyMat;
-        Material _outlineMat;
-        Material _ghostMatBase;
-        readonly List<Renderer> _renderers = new List<Renderer>();
-
-        Transform _pelvis, _torso, _neck, _head;
-        Transform _armNearU, _armNearL, _armFarU, _armFarL;
-        Transform _legNearU, _legNearL, _legFarU, _legFarL;
-
-        // Current joint angles (smoothed toward targets).
-        float _aTorso, _aHead, _aANU, _aANL, _aAFU, _aAFL, _aLNU, _aLNL, _aLFU, _aLFL, _pelvisY;
-        float _runPhase, _facingYaw, _castTimer, _hurtTimer, _deathTimer, _respawnTimer, _ghostTimer;
+        Material _bodyMat, _outlineMat, _ghostMatBase, _eyeMat, _haloMat;
+        Transform _neck;
+        float _castTimer, _hurtTimer, _deathTimer, _respawnTimer, _ghostTimer, _keyX = -0.5f;
         bool _wasDead;
         Vector3 _squash = Vector3.one;
-        static Mesh _capsule, _sphere;
 
-        const float PelvisHeight = 0.95f;
+        const float HeroRimPower = 5f, HeroRimStrength = 0.22f;
+        static readonly Color HeroAmbient = new Color(0.006f, 0.008f, 0.013f);
 
         public void Build(UmbraController ctl)
         {
             _ctl = ctl;
             _health = GetComponent<PlayerHealth>();
-            if (_capsule == null) _capsule = PrimitiveMesh(PrimitiveType.Capsule);
-            if (_sphere == null) _sphere = PrimitiveMesh(PrimitiveType.Sphere);
+            _ghostMatBase = MaterialLibrary.Create("UnlitTransparent");
+            Visual = new GameObject("Visual").transform;
+            Visual.SetParent(transform, false);
 
+            GameObject prefab = null;
+            try { prefab = Resources.Load<GameObject>("Hero/UmbraModel"); } catch (System.Exception e) { Debug.LogError("[LumenWave] Hero load failed: " + e.Message); }
+            if (prefab == null) { Debug.LogError("[LumenWave] Missing Resources/Hero/UmbraModel (run scripts/compile.ps1 -Setup)"); return; }
+
+            // Black body with a crisp light-facing Schlick rim, plus the stencil outline hull: strong and wider
+            // on the key-light (upper/back) edge, faint on the other side.
             _bodyMat = MaterialLibrary.Create("Umbra");
-            _bodyMat.name = "UmbraBody";
-            if (_bodyMat.HasProperty("_BaseColor")) _bodyMat.SetColor("_BaseColor", Color.black);
-            if (_bodyMat.HasProperty("_RimColor")) _bodyMat.SetColor("_RimColor", RimColor);
-            if (_bodyMat.HasProperty("_RimPower")) _bodyMat.SetFloat("_RimPower", 5.5f);
-            if (_bodyMat.HasProperty("_RimF0")) _bodyMat.SetFloat("_RimF0", 0.0f);
-            // The bright edge is a stencil-masked inverted hull around the union of all parts
-            // (LumenWave/UmbraOutline), so limbs overlapping each other never show inner outlines.
+            _bodyMat.name = "UmbraHeroBody";
+            _bodyMat.SetColor("_BaseColor", new Color(0.004f, 0.004f, 0.007f));
+            _bodyMat.SetColor("_RimColor", RimColor);
+            _bodyMat.SetFloat("_RimPower", HeroRimPower);
+            _bodyMat.SetFloat("_RimF0", 0f);
+            if (_bodyMat.HasProperty("_RimStrength")) _bodyMat.SetFloat("_RimStrength", HeroRimStrength);
+            if (_bodyMat.HasProperty("_KeyAmbient")) _bodyMat.SetFloat("_KeyAmbient", 0.03f);
+            if (_bodyMat.HasProperty("_Ambient")) _bodyMat.SetColor("_Ambient", HeroAmbient);
+            if (_bodyMat.HasProperty("_FogAmount")) _bodyMat.SetFloat("_FogAmount", 0.25f);
             var outlineBase = Resources.Load<Material>("Materials/UmbraOutline");
             if (outlineBase != null)
             {
                 _outlineMat = new Material(outlineBase) { name = "UmbraOutline" };
                 _outlineMat.SetColor("_RimColor", RimColor);
-            }
-            _ghostMatBase = MaterialLibrary.Create("UnlitTransparent");
-            _facingYaw = 0f;
-
-            Visual = new GameObject("Visual").transform;
-            Visual.SetParent(transform, false);
-            if (UseSkinnedHero && TryBuildHero()) return;
-
-            var eyeMat = MaterialLibrary.Tinted("Unlit", EyeColor);
-            _eyeMat = eyeMat;
-
-            _pelvis = Joint("Pelvis", Visual, new Vector3(0f, PelvisHeight, 0f));
-            Part("PelvisMesh", _sphere, _pelvis, new Vector3(0f, 0.02f, 0f), new Vector3(0.34f, 0.22f, 0.26f));
-
-            _torso = Joint("Torso", _pelvis, Vector3.zero);
-            Part("Abdomen", _capsule, _torso, new Vector3(0f, 0.2f, 0f), new Vector3(0.27f, 0.2f, 0.22f));
-            Part("Chest", _sphere, _torso, new Vector3(0.02f, 0.44f, 0f), new Vector3(0.42f, 0.36f, 0.3f));
-
-            _neck = Joint("Neck", _torso, new Vector3(0.03f, 0.6f, 0f));
-            Part("NeckMesh", _capsule, _neck, new Vector3(0f, 0.04f, 0f), new Vector3(0.1f, 0.07f, 0.1f));
-            _head = Joint("Head", _neck, new Vector3(0.02f, 0.1f, 0f));
-            Part("Skull", _sphere, _head, new Vector3(0f, 0.11f, 0f), new Vector3(0.26f, 0.3f, 0.26f));
-            Part("Jaw", _sphere, _head, new Vector3(0.05f, 0.03f, 0f), new Vector3(0.16f, 0.12f, 0.2f));
-            // Eyes: thin glowing slits, near eye toward the camera (−Z).
-            Part("EyeNear", _sphere, _head, new Vector3(0.11f, 0.13f, -0.07f), new Vector3(0.07f, 0.028f, 0.03f), eyeMat, false);
-            Part("EyeFar", _sphere, _head, new Vector3(0.11f, 0.13f, 0.07f), new Vector3(0.07f, 0.028f, 0.03f), eyeMat, false);
-
-            float zn = -0.13f, zf = 0.13f;
-            _armNearU = Limb("ArmNearU", _torso, new Vector3(0f, 0.52f, zn), 0.32f, 0.12f);
-            _armNearL = Limb("ArmNearL", _armNearU, new Vector3(0f, -0.32f, 0f), 0.31f, 0.1f);
-            Part("HandNear", _sphere, _armNearL, new Vector3(0f, -0.34f, 0f), new Vector3(0.11f, 0.12f, 0.1f));
-            _armFarU = Limb("ArmFarU", _torso, new Vector3(0f, 0.52f, zf), 0.32f, 0.12f);
-            _armFarL = Limb("ArmFarL", _armFarU, new Vector3(0f, -0.32f, 0f), 0.31f, 0.1f);
-            Part("HandFar", _sphere, _armFarL, new Vector3(0f, -0.34f, 0f), new Vector3(0.11f, 0.12f, 0.1f));
-
-            _legNearU = Limb("LegNearU", _pelvis, new Vector3(0f, -0.02f, zn * 0.7f), 0.47f, 0.17f);
-            _legNearL = Limb("LegNearL", _legNearU, new Vector3(0f, -0.47f, 0f), 0.46f, 0.13f);
-            Part("FootNear", _sphere, _legNearL, new Vector3(0.07f, -0.47f, 0f), new Vector3(0.24f, 0.08f, 0.12f));
-            _legFarU = Limb("LegFarU", _pelvis, new Vector3(0f, -0.02f, zf * 0.7f), 0.47f, 0.17f);
-            _legFarL = Limb("LegFarL", _legFarU, new Vector3(0f, -0.47f, 0f), 0.46f, 0.13f);
-            Part("FootFar", _sphere, _legFarL, new Vector3(0.07f, -0.47f, 0f), new Vector3(0.24f, 0.08f, 0.12f));
-        }
-
-        bool TryBuildHero()
-        {
-            GameObject prefab = null;
-            try { prefab = Resources.Load<GameObject>("Hero/UmbraModel"); } catch (System.Exception e) { Debug.LogWarning("[LumenWave] Hero load failed: " + e.Message); }
-            if (prefab == null) return false;
-
-            // Skinned body: crisp light-facing Schlick rim on the mesh itself plus the stencil outline hull.
-            var heroMat = MaterialLibrary.Create("Umbra");
-            heroMat.name = "UmbraHeroBody";
-            heroMat.SetColor("_BaseColor", new Color(0.004f, 0.004f, 0.007f));
-            heroMat.SetColor("_RimColor", RimColor);
-            heroMat.SetFloat("_RimPower", HeroRimPower);
-            heroMat.SetFloat("_RimF0", 0f);
-            if (heroMat.HasProperty("_RimStrength")) heroMat.SetFloat("_RimStrength", HeroRimStrength);
-            if (heroMat.HasProperty("_KeyAmbient")) heroMat.SetFloat("_KeyAmbient", 0.03f);
-            if (heroMat.HasProperty("_Ambient")) heroMat.SetColor("_Ambient", HeroAmbient);
-            if (heroMat.HasProperty("_FogAmount")) heroMat.SetFloat("_FogAmount", 0.25f);
-
-            var eye = MaterialLibrary.Create("Glow"); eye.name = "UmbraEye";
-            eye.SetColor("_Color", EyeColor * 0.75f);
-            if (eye.HasProperty("_Falloff")) eye.SetFloat("_Falloff", 1.6f);
-            var halo = MaterialLibrary.Create("Glow"); halo.name = "UmbraEyeHalo";
-            halo.SetColor("_Color", EyeColor * 0.05f);
-            if (halo.HasProperty("_Falloff")) halo.SetFloat("_Falloff", 2.5f);
-
-            var hero = UmbraHero.Create(prefab, Visual, this, _ctl, heroMat, eye, halo);
-            if (hero == null) { Destroy(heroMat); Destroy(eye); Destroy(halo); return false; }
-            if (_outlineMat != null && UseHeroOutline)
-            {
-                // Limbo / Shadow Fight rim: strong and a little wider on the key-light (upper/back) edge,
-                // a faint thin line on the other side so Umbra still reads on dark backgrounds.
                 if (_outlineMat.HasProperty("_Ambient")) _outlineMat.SetFloat("_Ambient", 0.09f);
                 if (_outlineMat.HasProperty("_KeyPower")) _outlineMat.SetFloat("_KeyPower", 5f);
                 if (_outlineMat.HasProperty("_WidthUnlit")) _outlineMat.SetFloat("_WidthUnlit", 0.45f);
                 if (_outlineMat.HasProperty("_Width")) _outlineMat.SetFloat("_Width", 0.028f);
-                hero.Body.sharedMaterials = new[] { heroMat, _outlineMat };
             }
-            Destroy(_bodyMat);
-            _bodyMat = heroMat;
-            _eyeMat = eye; _haloMat = halo;
-            _hero = hero;
-            _neck = hero.NeckBone;
-            _head = hero.HeadBone;
-            _renderers.Add(hero.Body);
-            return true;
+            _eyeMat = MaterialLibrary.Create("Glow"); _eyeMat.name = "UmbraEye";
+            _eyeMat.SetColor("_Color", EyeColor * 0.75f);
+            if (_eyeMat.HasProperty("_Falloff")) _eyeMat.SetFloat("_Falloff", 1.6f);
+            _haloMat = MaterialLibrary.Create("Glow"); _haloMat.name = "UmbraEyeHalo";
+            _haloMat.SetColor("_Color", EyeColor * 0.05f);
+            if (_haloMat.HasProperty("_Falloff")) _haloMat.SetFloat("_Falloff", 2.5f);
+
+            _hero = UmbraHero.Create(prefab, Visual, this, _ctl, _bodyMat, _eyeMat, _haloMat);
+            if (_hero == null) return;
+            SetOutline(true);
+            _neck = _hero.NeckBone;
         }
 
-        const float HeroRimPower = 5f, HeroRimStrength = 0.22f;
-        static readonly Color HeroAmbient = new Color(0.006f, 0.008f, 0.013f);
-        static bool UseHeroOutline = true;
+        SkinnedMeshRenderer _outlineSmr;
 
-        static Mesh PrimitiveMesh(PrimitiveType t)
+        /// <summary>
+        /// The stencil outline hull is a second SkinnedMeshRenderer that shares the hero's mesh and bones with
+        /// the outline material on every submesh (an extra material slot would only draw the last submesh).
+        /// </summary>
+        void SetOutline(bool on)
         {
-            var go = GameObject.CreatePrimitive(t);
-            var m = go.GetComponent<MeshFilter>().sharedMesh;
-            if (Application.isPlaying) Destroy(go); else DestroyImmediate(go);
-            return m;
-        }
-
-        Transform Joint(string name, Transform parent, Vector3 localPos)
-        {
-            var t = new GameObject(name).transform;
-            t.SetParent(parent, false);
-            t.localPosition = localPos;
-            return t;
-        }
-
-        Transform Limb(string name, Transform parent, Vector3 localPos, float length, float thickness)
-        {
-            var j = Joint(name, parent, localPos);
-            Part(name + "Mesh", _capsule, j, new Vector3(0f, -length * 0.5f, 0f), new Vector3(thickness, length * 0.5f + thickness * 0.25f, thickness));
-            return j;
-        }
-
-        void Part(string name, Mesh mesh, Transform parent, Vector3 localPos, Vector3 scale, Material mat = null, bool shadows = true)
-        {
-            var go = new GameObject(name);
-            go.layer = Layers.Player;
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = scale;
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var r = go.AddComponent<MeshRenderer>();
-            if (mat == null && _outlineMat != null) r.sharedMaterials = new[] { _bodyMat, _outlineMat };
-            else r.sharedMaterial = mat != null ? mat : _bodyMat;
-            r.shadowCastingMode = shadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
-            r.receiveShadows = false;
-            _renderers.Add(r);
+            if (_hero == null) return;
+            var body = _hero.Body;
+            int n = Mathf.Max(1, body.sharedMesh.subMeshCount);
+            if (body.sharedMaterials.Length != n)
+            {
+                var mats = new Material[n];
+                for (int i = 0; i < n; i++) mats[i] = _bodyMat;
+                body.sharedMaterials = mats;
+            }
+            if (_outlineMat == null) return;
+            if (_outlineSmr == null && on)
+            {
+                var go = new GameObject("Outline");
+                go.layer = Layers.Player;
+                go.transform.SetParent(body.transform.parent, false);
+                go.transform.localPosition = body.transform.localPosition;
+                go.transform.localRotation = body.transform.localRotation;
+                go.transform.localScale = body.transform.localScale;
+                _outlineSmr = go.AddComponent<SkinnedMeshRenderer>();
+                _outlineSmr.sharedMesh = body.sharedMesh;
+                _outlineSmr.rootBone = body.rootBone;
+                _outlineSmr.bones = body.bones;
+                _outlineSmr.updateWhenOffscreen = true;
+                _outlineSmr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                _outlineSmr.receiveShadows = false;
+                _outlineSmr.skinnedMotionVectors = false;
+                var om = new Material[n];
+                for (int i = 0; i < n; i++) om[i] = _outlineMat;
+                _outlineSmr.sharedMaterials = om;
+            }
+            if (_outlineSmr != null) _outlineSmr.enabled = on;
         }
 
         void OnEnable()
@@ -248,9 +169,9 @@ namespace LumenWave
         void OnLanded()
         {
             if (_ctl == null) return;
+            // Whole-body squash on hard landings (the land dust comes from the Jump_Land animation event).
             float s = Mathf.Clamp01(_ctl.LastLandingSpeed / 18f);
-            _squash = new Vector3(1f + 0.25f * s, 1f - 0.3f * s, 1f);
-            if (s > 0.45f) UmbraFx.Dust(transform.position, s);
+            _squash = new Vector3(1f + 0.12f * s, 1f - 0.14f * s, 1f);
         }
 
         void LateUpdate()
@@ -261,13 +182,11 @@ namespace LumenWave
             var v = _ctl.Velocity;
             var cmd = _ctl.Current;
 
-            // State selection.
             if (dead) Current = State.Dead;
             else if (_ctl.IsDashing) Current = State.Dash;
             else if (!_ctl.Grounded) Current = v.y > 0.5f ? State.Jump : State.Fall;
             else Current = Mathf.Abs(v.x) > 0.4f ? State.Run : State.Idle;
 
-            // Death / respawn transitions.
             if (dead && !_wasDead)
             {
                 _deathTimer = 0f;
@@ -276,143 +195,34 @@ namespace LumenWave
             }
             if (!dead && _wasDead) _respawnTimer = 0.45f;
             _wasDead = dead;
-            if (_hero != null) { HeroLateUpdate(dt, dead, cmd); return; }
+            if (_hero == null) return;
 
-            float speedN = Mathf.Clamp01(Mathf.Abs(v.x) / Mathf.Max(0.01f, _ctl.maxSpeed));
-            float t = Time.time;
+            _squash = Vector3.Lerp(_squash, Vector3.one, 1f - Mathf.Exp(-dt * 12f));
+            if (_respawnTimer > 0f) _respawnTimer -= dt;
+            if (dead) _deathTimer += dt;
+            _hero.LateTick(dt, Visual, _squash, _bodyMat);
 
-            // Targets.
-            float tTorso = 0, tHead = 0, tANU = 6, tANL = 12, tAFU = -6, tAFL = 12, tLNU = 3, tLNL = -4, tLFU = -3, tLFL = -4, tPelvis = 0;
-            switch (Current)
-            {
-                case State.Idle:
-                {
-                    float br = Mathf.Sin(t * 2.2f);
-                    tTorso = 2f + br * 1.5f; tHead = -br * 2f;
-                    tANU = 8 + br * 3; tAFU = -5 - br * 3; tANL = 14; tAFL = 10;
-                    tPelvis = -0.01f + br * 0.008f;
-                    break;
-                }
-                case State.Run:
-                {
-                    _runPhase += dt * Mathf.Abs(v.x) / 2.3f * Mathf.PI * 2f;
-                    float s = Mathf.Sin(_runPhase), sf = Mathf.Sin(_runPhase + Mathf.PI);
-                    tTorso = -9f * speedN - 3f; tHead = 6f * speedN;
-                    tLNU = s * 42f * speedN + 4; tLFU = sf * 42f * speedN + 4;
-                    tLNL = -Mathf.Max(0f, Mathf.Sin(_runPhase - 1.3f)) * 80f * speedN - 10f;
-                    tLFL = -Mathf.Max(0f, Mathf.Sin(_runPhase + Mathf.PI - 1.3f)) * 80f * speedN - 10f;
-                    tANU = -s * 38f * speedN + 8; tAFU = -sf * 38f * speedN + 8;
-                    tANL = 35f + Mathf.Max(0f, -s) * 35f; tAFL = 35f + Mathf.Max(0f, -sf) * 35f;
-                    tPelvis = -0.05f * speedN + Mathf.Abs(Mathf.Cos(_runPhase)) * 0.07f * speedN;
-                    break;
-                }
-                case State.Jump:
-                    tTorso = -6; tHead = 8;
-                    tLNU = 55; tLNL = -85; tLFU = -12; tLFL = -40;
-                    tANU = 150; tANL = 20; tAFU = -40; tAFL = 30;
-                    break;
-                case State.Fall:
-                {
-                    float w = Mathf.Sin(t * 14f) * 6f;
-                    tTorso = 4; tHead = -4;
-                    tLNU = 22; tLNL = -30; tLFU = -18; tLFL = -45;
-                    tANU = 110 + w; tANL = 25; tAFU = 70 - w; tAFL = 25;
-                    break;
-                }
-                case State.Dash:
-                    tTorso = -32; tHead = 20;
-                    tLNU = 38; tLNL = -70; tLFU = -55; tLFL = -25;
-                    tANU = -75; tANL = 10; tAFU = -65; tAFL = 10;
-                    tPelvis = -0.12f;
-                    break;
-                case State.Dead:
-                    tTorso = 20; tHead = 35; tLNU = 30; tLNL = -90; tLFU = 10; tLFL = -80;
-                    tANU = 60; tANL = 70; tAFU = 40; tAFL = 60; tPelvis = -0.4f;
-                    break;
-            }
+            // Key light on Umbra's upper-back side; it swings over smoothly when Umbra turns.
+            _keyX = Mathf.MoveTowards(_keyX, -_ctl.Facing * 0.5f, dt * 4f);
+            var key = new Vector4(_keyX, 0.85f, 0f, 0f);
+            _bodyMat.SetVector("_KeyDir", key);
+            if (_outlineMat != null) _outlineMat.SetVector("_KeyDir", key);
 
-            // Overlays: casting thrust, holding the shield (both arms raised), landing crouch.
-            if (!dead)
-            {
-                if (cmd.shieldHeld)
-                {
-                    tANU = 155; tANL = 25; tAFU = 140; tAFL = 30; tTorso += 6; tHead -= 8;
-                }
-                else if (_castTimer > 0f)
-                {
-                    float k = _castTimer / 0.38f;
-                    tANU = Mathf.Lerp(90f, 60f, 1f - k); tANL = 0f; tAFU = -30f; tTorso -= 10f * k; tHead += 4f;
-                }
-                if (_ctl.Grounded && _ctl.TimeSinceLanded < 0.12f)
-                {
-                    tPelvis -= 0.12f; tLNU += 30; tLNL -= 50; tLFU += 25; tLFL -= 45;
-                }
-            }
-
-            // Finale: Umbra sings — arms open wide and lift, head tilts up, chest swells on each breath.
-            if (!dead && Singing > 0.001f)
-            {
-                float sg = Mathf.Clamp01(Singing), br = Mathf.Sin(t * 2.6f);
-                tANU = Mathf.Lerp(tANU, 128f + 6f * br, sg); tANL = Mathf.Lerp(tANL, 18f, sg);
-                tAFU = Mathf.Lerp(tAFU, 112f - 6f * br, sg); tAFL = Mathf.Lerp(tAFL, 22f, sg);
-                tHead = Mathf.Lerp(tHead, 24f, sg); tTorso = Mathf.Lerp(tTorso, 9f, sg);
-                tLNU = Mathf.Lerp(tLNU, 4f, sg); tLNL = Mathf.Lerp(tLNL, 0f, sg);
-                tLFU = Mathf.Lerp(tLFU, -6f, sg); tLFL = Mathf.Lerp(tLFL, 0f, sg);
-            }
-
-            float k1 = 1f - Mathf.Exp(-dt * (Current == State.Run ? 30f : 16f));
-            _aTorso = Mathf.LerpAngle(_aTorso, tTorso, k1);
-            _aHead = Mathf.LerpAngle(_aHead, tHead, k1);
-            _aANU = Mathf.LerpAngle(_aANU, tANU, k1); _aANL = Mathf.LerpAngle(_aANL, tANL, k1);
-            _aAFU = Mathf.LerpAngle(_aAFU, tAFU, k1); _aAFL = Mathf.LerpAngle(_aAFL, tAFL, k1);
-            _aLNU = Mathf.LerpAngle(_aLNU, tLNU, k1); _aLNL = Mathf.LerpAngle(_aLNL, tLNL, k1);
-            _aLFU = Mathf.LerpAngle(_aLFU, tLFU, k1); _aLFL = Mathf.LerpAngle(_aLFL, tLFL, k1);
-            _pelvisY = Mathf.Lerp(_pelvisY, tPelvis, k1);
-
-            _pelvis.localPosition = new Vector3(0f, PelvisHeight + _pelvisY, 0f);
-            _torso.localRotation = Quaternion.Euler(0, 0, _aTorso);
-            _head.localRotation = Quaternion.Euler(0, 0, _aHead);
-            _armNearU.localRotation = Quaternion.Euler(0, 0, _aANU); _armNearL.localRotation = Quaternion.Euler(0, 0, _aANL);
-            _armFarU.localRotation = Quaternion.Euler(0, 0, _aAFU); _armFarL.localRotation = Quaternion.Euler(0, 0, _aAFL);
-            _legNearU.localRotation = Quaternion.Euler(0, 0, _aLNU); _legNearL.localRotation = Quaternion.Euler(0, 0, _aLNL);
-            _legFarU.localRotation = Quaternion.Euler(0, 0, _aLFU); _legFarL.localRotation = Quaternion.Euler(0, 0, _aLFL);
-            // Breathing chest
-            _torso.localScale = new Vector3(1f, 1f + (Current == State.Idle ? Mathf.Sin(t * 2.2f) * 0.015f : 0f), 1f);
-
-            // Facing: quick 3D turn (yaw) — near/far limbs swap naturally.
-            float targetYaw = _ctl.Facing > 0 ? 0f : 180f;
-            _facingYaw = Mathf.MoveTowardsAngle(_facingYaw, targetYaw, dt * 1600f);
-
-            // Squash & stretch.
-            Vector3 targetScale = Vector3.one;
-            if (Current == State.Dash) targetScale = new Vector3(1.22f, 0.88f, 1f);
-            else if (Current == State.Jump) targetScale = new Vector3(0.92f, 1.08f, 1f);
-            _squash = Vector3.Lerp(_squash, targetScale, 1f - Mathf.Exp(-dt * 14f));
-
-            float lifeScale = 1f;
-            if (dead)
-            {
-                _deathTimer += dt;
-                lifeScale = Mathf.Clamp01(1f - (_deathTimer - 0.25f) / 0.6f);
-            }
-            else if (_respawnTimer > 0f)
-            {
-                _respawnTimer -= dt;
-                lifeScale = 1f - Mathf.Clamp01(_respawnTimer / 0.45f);
-            }
-            Visual.localRotation = Quaternion.Euler(0f, _facingYaw, 0f);
-            // Squash is in world X/Y — apply before yaw so it doesn't flip.
-            Visual.localScale = new Vector3(_squash.x, _squash.y, 1f) * Mathf.Max(0.001f, lifeScale);
+            // The outline hull would outline the holes of the dissolve: drop it while dissolving.
+            bool wantOutline = _hero.Dissolve < 0.02f && _outlineMat != null;
+            if (_outlineSmr != null && wantOutline != _outlineSmr.enabled) SetOutline(wantOutline);
 
             _castTimer -= dt; _hurtTimer -= dt;
-            ApplyRim(dead, cmd, t);
+            ApplyRim(dead, cmd, Time.time);
+            if (_bodyMat.HasProperty("_DissolveEdge"))
+                _bodyMat.SetColor("_DissolveEdge", dead ? new Color(1.2f, 2.2f, 3.4f) : new Color(1.6f, 2.6f, 3.6f) * 1.4f);
             UpdateGhosts(dt);
         }
 
         /// <summary>Rim colour: hurt flash (white core, then red), respawn flash bright, shield cool, singing gold.</summary>
         void ApplyRim(bool dead, PlayerCommands cmd, float t)
         {
-            if (_bodyMat == null || !_bodyMat.HasProperty("_RimColor")) return;
+            if (_bodyMat == null) return;
             Color rim = RimColor;
             if (_hurtTimer > 0f)
             {
@@ -427,15 +237,11 @@ namespace LumenWave
             {
                 rim = Color.Lerp(rim, new Color(2.0f, 1.6f, 1.05f) * (0.9f + 0.25f * Mathf.Sin(t * 5.2f)), Mathf.Clamp01(Singing));
                 var eyeC = Color.Lerp(EyeColor, new Color(2.6f, 2.3f, 1.7f) * 3f, Mathf.Clamp01(Singing));
-                if (_eyeMat != null)
-                {
-                    if (_hero != null) _eyeMat.SetColor("_Color", eyeC * 0.75f);
-                    else _eyeMat.SetColor("_BaseColor", eyeC);
-                }
+                if (_eyeMat != null) _eyeMat.SetColor("_Color", eyeC * 0.75f);
                 if (_haloMat != null) _haloMat.SetColor("_Color", eyeC * Mathf.Lerp(0.05f, 0.07f, Mathf.Clamp01(Singing)));
             }
             _bodyMat.SetColor("_RimColor", rim);
-            if (_hero != null && _bodyMat.HasProperty("_Ambient"))
+            if (_bodyMat.HasProperty("_Ambient"))
                 _bodyMat.SetColor("_Ambient", _hurtTimer > 0f ? Color.Lerp(HeroAmbient, new Color(0.28f, 0.03f, 0.02f), Mathf.Clamp01(_hurtTimer / 0.25f)) : HeroAmbient);
             if (_outlineMat != null) _outlineMat.SetColor("_RimColor", rim);
         }
@@ -450,63 +256,10 @@ namespace LumenWave
             else _ghostTimer = 0f;
         }
 
-        float _keyX = -0.5f;
-
-        void HeroLateUpdate(float dt, bool dead, PlayerCommands cmd)
-        {
-            float t = Time.time;
-            Vector3 targetScale = Vector3.one;
-            if (Current == State.Dash) targetScale = new Vector3(1.2f, 0.9f, 1f);
-            else if (Current == State.Jump) targetScale = new Vector3(0.94f, 1.06f, 1f);
-            _squash = Vector3.Lerp(_squash, targetScale, 1f - Mathf.Exp(-dt * 14f));
-            if (_respawnTimer > 0f) _respawnTimer -= dt;
-            if (dead) _deathTimer += dt;
-
-            _hero.LateTick(dt, Visual, _squash, _bodyMat);
-
-            // Key light sits on Umbra's upper-back side; it swings over smoothly when Umbra turns.
-            _keyX = Mathf.MoveTowards(_keyX, -_ctl.Facing * 0.5f, dt * 4f);
-            var key = new Vector4(_keyX, 0.85f, 0f, 0f);
-            _bodyMat.SetVector("_KeyDir", key);
-            if (_outlineMat != null) _outlineMat.SetVector("_KeyDir", key);
-
-            // The outline hull would outline the holes of the dissolve: drop it while dissolving.
-            if (_outlineMat != null && UseHeroOutline)
-            {
-                bool wantOutline = _hero.Dissolve < 0.02f;
-                var mats = _hero.Body.sharedMaterials;
-                if (wantOutline != (mats.Length > 1))
-                    _hero.Body.sharedMaterials = wantOutline ? new[] { _bodyMat, _outlineMat } : new[] { _bodyMat };
-            }
-
-            _castTimer -= dt; _hurtTimer -= dt;
-            ApplyRim(dead, cmd, t);
-            // Materialise flash: the dissolve edge is brighter while the body re-forms.
-            if (_bodyMat.HasProperty("_DissolveEdge"))
-                _bodyMat.SetColor("_DissolveEdge", dead ? new Color(1.2f, 2.2f, 3.4f) : new Color(1.6f, 2.6f, 3.6f) * 1.4f);
-            UpdateGhosts(dt);
-        }
-
+        /// <summary>Rim-only afterimage from a baked snapshot of the skinned mesh (one draw, no bones).</summary>
         void SpawnGhost()
         {
-            if (_hero != null) { SpawnHeroGhost(); return; }
-            var ghost = Instantiate(Visual.gameObject, Visual.position, Visual.rotation);
-            ghost.name = "UmbraGhost";
-            ghost.transform.localScale = Visual.lossyScale;
-            var mat = new Material(_ghostMatBase);
-            var c = new Color(0.35f, 0.9f, 1.3f, 0.4f);
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
-            foreach (var r in ghost.GetComponentsInChildren<Renderer>())
-            {
-                r.sharedMaterials = new[] { mat };
-                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            }
-            ghost.AddComponent<UmbraGhost>().Init(mat, c, 0.28f);
-        }
-
-        /// <summary>Afterimage from a baked snapshot of the skinned mesh (one draw, no bones).</summary>
-        void SpawnHeroGhost()
-        {
+            if (_hero == null) return;
             var mesh = _hero.BakeSnapshot(out var m);
             var ghost = new GameObject("UmbraGhost");
             ghost.layer = Layers.Player;
@@ -514,13 +267,15 @@ namespace LumenWave
             ghost.transform.localScale = m.lossyScale;
             ghost.AddComponent<MeshFilter>().sharedMesh = mesh;
             var r = ghost.AddComponent<MeshRenderer>();
-            // Rim-only additive afterimage (LumenWave/UmbraGhost); plain transparent fallback.
             var ghostBase = Resources.Load<Material>("Materials/UmbraGhost");
             var mat = new Material(ghostBase != null ? ghostBase : _ghostMatBase);
             var c = ghostBase != null ? new Color(0.4f, 1.2f, 2.2f, 0.8f) : new Color(0.5f, 1.2f, 2.0f, 0.45f);
             if (ghostBase != null) { mat.SetFloat("_RimPower", 3.2f); mat.SetFloat("_Fill", 0.015f); }
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
-            r.sharedMaterial = mat;
+            var subs = Mathf.Max(1, mesh.subMeshCount);
+            var mats = new Material[subs];
+            for (int i = 0; i < subs; i++) mats[i] = mat;
+            r.sharedMaterials = mats;
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             r.receiveShadows = false;
             var g = ghost.AddComponent<UmbraGhost>();
@@ -533,11 +288,8 @@ namespace LumenWave
             if (_bodyMat != null) Destroy(_bodyMat);
             if (_outlineMat != null) Destroy(_outlineMat);
             if (_ghostMatBase != null) Destroy(_ghostMatBase);
-            if (_hero != null)
-            {
-                if (_eyeMat != null) Destroy(_eyeMat);
-                if (_haloMat != null) Destroy(_haloMat);
-            }
+            if (_eyeMat != null) Destroy(_eyeMat);
+            if (_haloMat != null) Destroy(_haloMat);
         }
     }
 
