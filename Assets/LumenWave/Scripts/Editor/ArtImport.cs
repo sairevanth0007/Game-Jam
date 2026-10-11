@@ -15,6 +15,8 @@ namespace LumenWave.EditorTools
         const string Root = "Assets/LumenWave/ThirdParty/";
 
         static bool IsHero(string p) => p.StartsWith(Root + "QuaterniusHuman/");
+        /// <summary>Quaternius Universal Animation Library 1+2 (mannequin + 250 humanoid clips), set up per the pack's Unity guide.</summary>
+        static bool IsUal(string p) => p.StartsWith(Root + "QuaterniusUAL/");
 
         void OnPreprocessModel()
         {
@@ -24,7 +26,17 @@ namespace LumenWave.EditorTools
             mi.importLights = false;
             mi.isReadable = false;
             mi.materialImportMode = ModelImporterMaterialImportMode.None;
-            if (IsHero(assetPath))
+            if (IsUal(assetPath))
+            {
+                mi.bakeAxisConversion = true;
+                mi.animationType = ModelImporterAnimationType.Human;
+                mi.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                mi.importAnimation = true;
+                mi.optimizeGameObjects = false;
+                mi.importBlendShapes = false;
+                mi.animationCompression = ModelImporterAnimationCompression.Optimal;
+            }
+            else if (IsHero(assetPath))
             {
                 mi.animationType = ModelImporterAnimationType.Human;
                 mi.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
@@ -44,6 +56,28 @@ namespace LumenWave.EditorTools
 
         void OnPreprocessAnimation()
         {
+            if (IsUal(assetPath))
+            {
+                var ui = (ModelImporter)assetImporter;
+                var all = ui.defaultClipAnimations;
+                if (all == null || all.Length == 0) return;
+                foreach (var c in all)
+                {
+                    // Pack guide: loop the clips whose name ends in _Loop. Root motion stays off in the Animator;
+                    // bake root rotation/height/XZ into the pose so the gameplay controller alone moves Umbra.
+                    bool loop = c.name.EndsWith("_Loop");
+                    c.loopTime = loop;
+                    c.loopPose = loop;
+                    c.lockRootRotation = true;
+                    c.lockRootHeightY = true;
+                    c.lockRootPositionXZ = true;
+                    c.keepOriginalOrientation = false;
+                    c.keepOriginalPositionY = true;
+                    c.keepOriginalPositionXZ = false;
+                }
+                ui.clipAnimations = all;
+                return;
+            }
             if (!IsHero(assetPath)) return;
             var mi = (ModelImporter)assetImporter;
             var clips = mi.defaultClipAnimations;
@@ -103,6 +137,22 @@ namespace LumenWave.EditorTools
                 ti.maxTextureSize = 1024;
                 ti.anisoLevel = 4;
             }
+        }
+
+        /// <summary>Batch probe: lists the Universal Animation Library clips and avatar validity.</summary>
+        public static void ProbeUalBatch()
+        {
+            foreach (var p in new[] { Root + "QuaterniusUAL/UAL1_Standard.fbx", Root + "QuaterniusUAL/UAL2_Standard.fbx" })
+            {
+                var all = AssetDatabase.LoadAllAssetsAtPath(p);
+                var av = all.OfType<Avatar>().FirstOrDefault();
+                Debug.Log($"[LumenWave] {p} avatar valid={av != null && av.isValid} human={av != null && av.isHuman}");
+                Debug.Log("[LumenWave] Clips: " + string.Join(" | ", all.OfType<AnimationClip>().Where(c => !c.name.StartsWith("__preview")).Select(c => $"{c.name}({c.length:0.0}{(c.isLooping ? "L" : "")})")));
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(p);
+                foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>())
+                    Debug.Log($"[LumenWave] SMR {smr.name} verts={smr.sharedMesh.vertexCount} bounds={smr.bounds}");
+            }
+            EditorApplication.Exit(0);
         }
 
         /// <summary>Batch probe: logs the hero's clips, avatar validity and bone mapping.</summary>

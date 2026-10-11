@@ -17,6 +17,16 @@
 | **Child of Light** (Ubisoft) | Light as both a weapon and a guide. |
 | **Sound Shapes** (Queasy Games) | Levels that are also music. Hazards and platforms move to the beat. |
 
+### How these shaped the visual overhaul
+- **Limbo / Inside:** solid platforms whose interiors fall into black, with texture only along lit edges. Blurred black foreground silhouettes (branches, chains, roots) pass in front of the camera, and midground ruins fade into height fog and mist sheets.
+- **Shadow Fight:** Umbra is a real skinned humanoid rendered pure black. The only light on him is a rim on the key-light side, plus glowing eyes. Animation carries the character: a guard stance at idle, lean into the run, a stretch on the dash.
+- **Ori:** god rays from the moon and every lamp, drifting fireflies, embers and snow, bloom tuned so coloured light glows without washing out, and a distinct palette per level (moonlit forest, ice cavern, overgrown crystal garden, gold clockwork, prism hall, dawn).
+
+| Before (RC4) | After |
+|---|---|
+| ![](docs/images/before_after/before/L5.jpg) | ![](docs/images/before_after/after/L5.jpg) |
+| ![](docs/images/before_after/before/L10.jpg) | ![](docs/images/before_after/after/L10.jpg) |
+
 ## The science, and where it shows up
 
 ### 1. Inverse-square law: `I = I₀ / d²`

@@ -56,7 +56,7 @@ bot 77.6 3 do=jump
 bot 82 3 do=pulse
 bot 83.6 3 do=jump
 bot 86.8 3 do=pulse
-bot 88.6 3 do=jump
+bot 88.6 3 do=jump any=1
 orb 100.5 7
 checkpoint 96.5 3
 tutorial 122 3 text=Two_mirrors._{Pulse}_turns_both:_angle_in_=_angle_out. radius=3

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.IO;
 using UnityEngine;
@@ -58,6 +58,23 @@ namespace LumenWave
             Time.timeScale = 1f;
             int deathsBefore = GameSession.Deaths;
 
+            // Event trace so a failing run shows exactly what happened (damage source, failed powers, deaths).
+            var playerT = rt.Player.transform;
+            System.Action<float, LightColor> onDmg = (a, c) => { if (a >= 5f) Debug.Log($"[LumenWave] Autoplay damage {a:F1} {c} at x={playerT.position.x:F1} y={playerT.position.y:F1}"); };
+            System.Action onDied = () => Debug.Log($"[LumenWave] Autoplay DIED at x={playerT.position.x:F1} y={playerT.position.y:F1} last={bot?.LastAction}");
+            System.Action<PowerType> onFail = pw => Debug.Log($"[LumenWave] Autoplay power FAILED {pw} at x={playerT.position.x:F1}");
+            {
+                var cols = UnityEngine.Object.FindObjectsByType<Collider>(FindObjectsSortMode.None);
+                var byName = new System.Collections.Generic.Dictionary<string, int>();
+                foreach (var c in cols) { var k = LayerMask.LayerToName(c.gameObject.layer) + ":" + c.gameObject.name; byName.TryGetValue(k, out var v); byName[k] = v + 1; }
+                var top = new System.Collections.Generic.List<string>();
+                foreach (var kv in byName) if (kv.Value >= 5) top.Add(kv.Key + "=" + kv.Value);
+                Debug.Log($"[LumenWave] Autoplay colliders total={cols.Length} " + string.Join(", ", top));
+            }
+            System.Action<PowerType> onUse = pw => { if (pw == PowerType.Pulse) Debug.Log($"[LumenWave] Autoplay pulse at x={playerT.position.x:F1} y={playerT.position.y:F1} t={Time.time:F2}"); };
+            System.Action onJump = () => Debug.Log($"[LumenWave] Autoplay jump at x={playerT.position.x:F2} t={Time.time:F2}");
+            GameEvents.PlayerDamaged += onDmg; GameEvents.PlayerDied += onDied; GameEvents.PowerFailed += onFail; GameEvents.PowerUsed += onUse; GameEvents.PlayerJumped += onJump;
+
             float t = 0f, nextShot = 0.5f, nextLog = 0f, finaleShot = -1f;
             float maxX = rt.Player.transform.position.x;
             var frameTimes = new System.Collections.Generic.List<float>(8192);
@@ -92,6 +109,7 @@ namespace LumenWave
             yield return new WaitForEndOfFrame();
             yield return new WaitForSecondsRealtime(0.5f);
             LogFrameStats(frameTimes);
+            GameEvents.PlayerDamaged -= onDmg; GameEvents.PlayerDied -= onDied; GameEvents.PowerFailed -= onFail; GameEvents.PowerUsed -= onUse; GameEvents.PlayerJumped -= onJump;
             Debug.Log($"[LumenWave] Autoplay DONE level {level} '{rt.Data.Name}': completed={rt.Completed} time={t:F1}s deaths={GameSession.Deaths - deathsBefore} maxX={maxX:F1}/{rt.Data.Width}");
             bot?.Dispose();
             Application.Quit(rt.Completed ? 0 : 1);

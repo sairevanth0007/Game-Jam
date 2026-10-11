@@ -20,6 +20,8 @@ namespace LumenWave
         float _prevX;
         float _dir = 1f, _dirRevertAt = -1f, _dirRevertTo = 1f;
         float _jumpHoldUntil, _shieldUntil, _waitUntil;
+        float _pendingJumpUntil = -1f, _pendingJumpHold;   // jump hint crossed while airborne: fire on landing
+        readonly IPlayerBody _body;
         bool _jump, _dash, _echo, _pulse;
         int _beatWait; // 0 none, 1 waiting to see hot, 2 waiting for hot to end
         float _beatWaitStarted;
@@ -37,6 +39,7 @@ namespace LumenWave
             _fired = new bool[_markers.Count];
             _prevX = player.position.x;
             _lastProgressX = _prevX;
+            _body = player.GetComponent<IPlayerBody>();
             GameEvents.PlayerRespawned += OnRespawn;
         }
 
@@ -57,6 +60,7 @@ namespace LumenWave
             _prevX = _player != null ? _player.position.x : 0f;
             _lastProgressX = _prevX;
             _jumpHoldUntil = _shieldUntil = _waitUntil = 0f;
+            _pendingJumpUntil = -1f;
             _beatWait = 0;
             _dir = 1f; _dirRevertAt = -1f;
             _jump = _dash = _echo = _pulse = false;
@@ -91,6 +95,14 @@ namespace LumenWave
                 _scheduled.RemoveAt(i);
             }
             _prevX = pos.x;
+
+            // A jump hint reached in mid-air (e.g. at the end of a long jump) is kept until Umbra lands,
+            // instead of being lost when the input buffer expires. Makes bot runs independent of sub-frame timing.
+            if (_pendingJumpUntil > 0f)
+            {
+                if (now > _pendingJumpUntil) _pendingJumpUntil = -1f;
+                else if (_body != null && _body.Grounded) { _jump = true; _jumpHoldUntil = now + _pendingJumpHold; _pendingJumpUntil = -1f; }
+            }
 
             if (_dirRevertAt > 0f && now >= _dirRevertAt) { _dir = _dirRevertTo; _dirRevertAt = -1f; }
 
@@ -139,7 +151,10 @@ namespace LumenWave
             LastAction = action;
             switch (action)
             {
-                case "jump": _jump = true; _jumpHoldUntil = now + (t > 0f ? t : 0.45f); break;
+                case "jump":
+                    _jump = true; _jumpHoldUntil = now + (t > 0f ? t : 0.45f);
+                    if (_body != null && !_body.Grounded) { _pendingJumpUntil = now + 0.35f; _pendingJumpHold = t > 0f ? t : 0.45f; }
+                    break;
                 case "tap": _jump = true; _jumpHoldUntil = now + (t > 0f ? t : 0.08f); break;
                 case "dash": _dash = true; break;
                 case "jumpdash":
