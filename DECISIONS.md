@@ -24,3 +24,50 @@ Format: time (Sun 11 Oct 2026) — decision — why.
 - 03:05 — Assist mode instead of an easier default difficulty: the bot proves solvability, and assist covers the gap between a bot and human timing.
 - 03:45 — Added the Flare enemy because the brief says the shield blocks *projectiles* and no enemy had any.
 - 04:30 — Deadline met early. Remaining time goes to small, verified polish only; no risky refactors.
+
+## Visual overhaul (branch `lumenwave-visual`, from `lumenwave-25d` at RC4)
+- 07:51 — New branch `lumenwave-visual` from `lumenwave-25d` (a242ee2). RC4 on `lumenwave-25d` stays untouched as the safe fallback. The visual release zip is `Release/LumenWave-Windows-visual.zip`, so the RC4 zip is never overwritten.
+- 07:52 — Windows MCP still fails to connect (connection timeout), so assets come from the command line (curl) instead. No browser and no logins.
+- 07:53 — Hero source: Kenney's CC0 animated characters only have idle/run/jump and chibi proportions. Quaternius' Universal Animation Library is only on itch.io, which sits behind a Cloudflare bot check, and we don't bypass bot checks. Picked **Quaternius "Animated Human" (CC0, OpenGameArt direct link)**: realistic proportions, Humanoid-compatible rig (avatar valid, all major bones mapped), Idle/Run/Walk/Jump/Punch/Death clips. Fall, land, dash, cast, shield, hurt and sing are built on top procedurally (Animator + LateUpdate overlays).
+- 07:55 — Environment art: Kenney Nature, Graveyard and Castle kits (CC0 FBX, untextured, so we can apply our own silhouette/rock materials), ambientCG 1K rock/moss/ice/brick textures, two Poly Haven pure night skies. Only the files we use were imported.
+- 07:58 — Third-party files live under `ThirdParty/<Pack>/Resources/Art/<Pack>/`, so runtime code loads them with `Resources.Load("Art/<Pack>/<name>")`. That fits the existing "everything is built at runtime from code" architecture, with no scene or prefab wiring.
+- 08:00 — Build and screenshot scripts take `-Name`, so the three parallel workers (hero, environment, UI/VFX) each build into `Builds/<name>/` and never overwrite a player that is still running.
+- 08:00 — Before screenshots: same 10 framings as the after shots (one per level) plus the title, from the RC4 build → `docs/images/before_after/before/`.
+
+### Visual overhaul — hero
+- 08:10 — The skinned hero (`UmbraHero`) sits behind the unchanged `UmbraRig` API. If `Resources/Hero/UmbraModel` is missing or invalid (no avatar, controller or head bone), `UmbraRig` builds the old primitive rig automatically. `UmbraRig.UseSkinnedHero = false` forces the primitive rig.
+- 08:12 — The Animator states are picked from code with `CrossFadeInFixedTime`, so the controller has no transition graph to maintain. Jump, Fall and Land all play the Jump clip through a time parameter (`AirTime`) mapped from vertical velocity: rising runs 0.13→0.34, falling runs 0.38→0.56 with a slow wobble, landing runs 0.70→0.95. Air poses always match the physics, including in blue light.
+- 08:12 — Import fixes per clip, in ArtImport (hero part):
+  - Idle and Punch use body orientation, because they were authored about 45° off forward.
+  - Jump's vertical travel is not baked into the pose, because the controller does the rise.
+  - Death's forward slide is not baked, so the body stays inside the collider.
+- 08:15 — `HeroSetup.Ensure()` (one line in `ProjectSetup.Run`) builds the controller and prefab only when they are missing or `Version` changed. That keeps GUIDs stable across `compile.ps1 -Setup` runs.
+- 08:20 — Rendered height is `ctl.height × 1.06`, measured from the bind-pose mesh bounds, with feet on the collider bottom. Girth is ×1.14 on the model's X/Z for a bulkier silhouette. The model faces ±X with a 22° turn toward the camera and turns through the camera-facing view.
+- 08:25 — Look:
+  - Same Umbra shader, with new properties (rim strength, key direction, ambient, fog amount, dissolve). Old names and defaults are kept, so the primitive rig looks the same as before.
+  - The hero uses a light-facing Schlick rim on the mesh plus the existing stencil outline hull. The outline is dropped while dissolving.
+  - The hero gets only 25% of the scene fog, so it stays inky.
+  - Eyes are camera-facing Glow quads that follow the head bone and blink.
+- 08:30 — Procedural layers:
+  - Shield, singing and head look use humanoid IK. Hand goals are in world space relative to the feet, so they don't depend on bone axes.
+  - Lean, hurt flinch and breathing are spine and chest rotations about world Z in LateUpdate.
+  - Foot IK raycasts Ground/Bridge only when standing still (idle/land), so running strides are never altered.
+- 08:32 — Dash ghosts bake a snapshot of the skinned mesh each time (`BakeMesh`). The ghost owns the mesh and destroys it.
+- 08:32 — Death runs a noise dissolve from the top down with rising GlowParticle motes. Respawn reverses it in 0.5 s.
+- 08:35 — Debug mode `-lw-heroposes <dir>` (Player/HeroPoseDirector.cs) captures every hero state in the real build and logs Umbra's screen rectangle for cropping. We used it to tune the poses.
+
+### Visual overhaul — UI/VFX
+- 09:10 — Typography: Kenney Future (CC0) for the logo, headings, numbers, buttons and HUD labels. Its R/K/M glyphs read as A/H/m at small sizes, so sentences (tutorial banner, credits, end line) and every key-cap stay in the built-in body font (bold). Kenney Future Narrow was tried and dropped: same ambiguity at HUD sizes.
+- 09:10 — UI stays code-built uGUI with procedural sprites (gradients, diamond, sine icon, ring) plus two small helpers: `UIGradient` (vertex-colour gradient and light sweep) and `UIWaveLine` (an animated waveform mesh; it skips rebuilds while invisible). No textures or prefabs to import.
+- 09:10 — HUD: thick rounded, masked bars with a red damage trail, segment dividers, a leading-edge glow and icons. The resonance bar has cost ticks (shield start, pulse, echo; assist-scaled), and power chips light up when a power is affordable, flash on use and turn red on failure. Key hints are key-cap boxes rebuilt only when the bindings change.
+- 09:10 — Title: logo and menu on the left over a soft left-hand gradient, so the environment worker's live backdrop stays visible on the right. Button labels, names and order are unchanged, so FlowTestDirector and the UI tests didn't need changes.
+- 09:10 — Effects all go through `ImpactFx` (Enemies/ImpactFx.cs): five pooled world-space particle systems (sparks, motes, flash, ring, mesh glass shards) driven by `Emit(EmitParams)`. No allocations per hit, capped particle counts, and its own xorshift RNG so cosmetic randomness never consumes `UnityEngine.Random` (keeps bot runs deterministic). Flare bolt bursts used to create a ParticleSystem and a material per bolt; they now use the pool.
+- 09:10 — Shield hit ripples: four `_HitN` slots in the shader (object-space direction and age). Inputs are absorbed flare bolts, wisps or moths pushed off the dome, and beams ending on its collider (throttled). Pulse camera shake goes through `CameraRig.Shake`, so the Screen shake setting still applies. No gameplay values or timings were changed.
+- 09:10 — The flow test sets `InputSystem.settings.backgroundBehavior = IgnoreFocus` (flow-test mode only). Its injected key events were dropped whenever another window had focus, which made the run fail for reasons unrelated to the UI.
+- 09:25 — Fonts: Kenney Future's R and K read as A and H ("AED LIGHT"), and every Kenney font looks pixel/gamey next to the Limbo/Ori mood. Switched to GGBotNet's CC0 fonts from OpenGameArt: **OSerif** (elegant serif caps) for logo and headings, **Jupiteroid** (clean sans) for HUD and body text. Kenney fonts stay imported but unused.
+- 09:15 — Hero polish round 2:
+  - Rim reads like Limbo / Shadow Fight: the outline hull is strong and wider on the key-light side (`_KeyPower` 5, `_WidthUnlit` 0.45), with only a faint minimum line on the far side. The key direction follows Umbra's upper-back edge and swings smoothly when Umbra turns. The body fill is darker (mesh rim 0.22, ambient halved).
+  - Idle guard stance (all IK): the body drops 4.5% of height with breathing, the front/back stride narrows to 50% with feet planted, and fists come up in front of the chest with elbows down.
+  - Dash ghosts: new additive rim-only `LumenWave/UmbraGhost` shader, cyan, fading over 0.25 s. `BakeMesh` must use `useScale=false` for this model, because the 69× armature scale is already in the bones; `useScale=true` produced 3 cm ghosts.
+  - The scarf tip trail is brighter.
+- 09:40 — Fonts replaced (supersedes the Kenney typography note above): GGBotNet CC0 OSerif for the logo, headings, level names and end title, and Jupiteroid (Regular/Bold/Light) for everything else. Numbers (timer, level numbers, end-screen stats) use Jupiteroid too, because OSerif's ornamented 0 reads poorly in digits. Key caps use Jupiteroid Regular, since Bold looks cramped at key-cap sizes.

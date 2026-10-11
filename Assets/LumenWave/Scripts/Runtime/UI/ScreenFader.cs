@@ -54,6 +54,7 @@ namespace LumenWave
             var cardBack = UIKit.Image(card, "Back", new Color(0f, 0f, 0.01f, 0.55f), UIKit.Glow);
             UIKit.Place(cardBack.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 10), new Vector2(1300, 300));
             _cardNumber = UIKit.Heading(card, "", 28, TextAnchor.MiddleCenter, UIStyle.Accent, "Number", 0);
+            _cardNumber.font = UIKit.Font;
             UIKit.Place(_cardNumber.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 62), new Vector2(1400, 44));
             _cardName = UIKit.Heading(card, "", 70, TextAnchor.MiddleCenter, UIStyle.Text, "Name", 0);
             UIKit.Place(_cardName.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, -6), new Vector2(1600, 100));

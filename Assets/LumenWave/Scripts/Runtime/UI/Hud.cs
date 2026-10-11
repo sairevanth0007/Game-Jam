@@ -259,7 +259,8 @@ namespace LumenWave.UI
             BuildChips(gameplay);
 
             // Top-right: level number + name, timer.
-            _levelNumber = UIKit.Heading(gameplay, "", 26, TextAnchor.UpperRight, UIStyle.Accent, "LevelNumber", 0);
+            _levelNumber = UIKit.Heading(gameplay, "", 24, TextAnchor.UpperRight, UIStyle.Accent, "LevelNumber", 0);
+            _levelNumber.font = UIKit.Font;   // digits read better in the sans
             UIKit.Place(_levelNumber.rectTransform, new Vector2(1f, 1f), new Vector2(-60, -40), new Vector2(300, 34), new Vector2(1f, 1f));
             LevelText = UIKit.Heading(gameplay, "", 34, TextAnchor.UpperRight, Color.white, "Level", 0);
             UIKit.Place(LevelText.rectTransform, new Vector2(1f, 1f), new Vector2(-60, -74), new Vector2(1000, 46), new Vector2(1f, 1f));
@@ -267,8 +268,9 @@ namespace LumenWave.UI
             var rule = UIKit.Image(gameplay, "Rule", new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.55f), UIKit.HGradient, false);
             UIKit.Place(rule.rectTransform, new Vector2(1f, 1f), new Vector2(-60, -126), new Vector2(340, 2), new Vector2(1f, 0.5f));
             rule.rectTransform.localScale = new Vector3(-1f, 1f, 1f);   // bright at the right edge
-            TimerText = UIKit.Heading(gameplay, "00:00.00", 30, TextAnchor.UpperRight, UIStyle.Accent, "Timer", 0);
+            TimerText = UIKit.Heading(gameplay, "00:00.00", 36, TextAnchor.UpperRight, UIStyle.Accent, "Timer", 0);
             UIKit.Place(TimerText.rectTransform, new Vector2(1f, 1f), new Vector2(-60, -138), new Vector2(400, 40), new Vector2(1f, 1f));
+            TimerText.font = UIKit.Font;   // the serif's ornamented 0 reads poorly in numbers
             var tsh = TimerText.gameObject.AddComponent<Shadow>(); tsh.effectColor = new Color(0, 0, 0, 0.8f); tsh.effectDistance = new Vector2(2, -2);
 
             // Message banner (lower middle, over the dark ground so it never hides lights or enemies).
@@ -282,7 +284,7 @@ namespace LumenWave.UI
             var mline = UIKit.Image(_messageRoot, "Line", new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.8f), UIKit.HGradientCentered);
             UIKit.Place(mline.rectTransform, new Vector2(0.5f, 0f), new Vector2(0, 2), new Vector2(700, 2), new Vector2(0.5f, 0.5f));
             MessageText = UIKit.Label(_messageRoot, "", 34, TextAnchor.MiddleCenter, Color.white, "Text");
-            MessageText.fontStyle = FontStyle.Bold;
+            MessageText.font = UIKit.Font;
             MessageText.supportRichText = true;
             UIKit.Stretch(MessageText.rectTransform, 8);
             var msh = MessageText.gameObject.AddComponent<Shadow>(); msh.effectColor = new Color(0, 0, 0, 0.9f); msh.effectDistance = new Vector2(2, -2);
@@ -321,7 +323,8 @@ namespace LumenWave.UI
             _bannerWave.color = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.85f);
             _bannerWave.thickness = 3f; _bannerWave.glowWidth = 3f; _bannerWave.amplitude = 0.5f; _bannerWave.raycastTarget = false;
             UIKit.Place(_bannerWave.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, -16), new Vector2(760, 30), new Vector2(0.5f, 0.5f));
-            _bannerSub = UIKit.Heading(banner, "", 30, TextAnchor.MiddleCenter, UIStyle.Accent, "Sub", 0);
+            _bannerSub = UIKit.Heading(banner, "", 32, TextAnchor.MiddleCenter, UIStyle.Accent, "Sub", 0);
+            _bannerSub.font = UIKit.Font;
             UIKit.Place(_bannerSub.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, -58), new Vector2(1400, 44), new Vector2(0.5f, 0.5f));
 
             // Death overlay.
@@ -505,8 +508,8 @@ namespace LumenWave.UI
                     cap.anchoredPosition = new Vector2(x, 0f);
                     x += cap.sizeDelta.x + 6f;
                 }
-                var lbl = UIKit.Label(_legendRoot, h.action.ToUpperInvariant(), 21, TextAnchor.MiddleLeft, UIStyle.Text, "Action");
-                lbl.font = UIKit.Narrow;
+                var lbl = UIKit.Label(_legendRoot, UIKit.Spaced(h.action.ToUpperInvariant()), 20, TextAnchor.MiddleLeft, UIStyle.Text, "Action");
+                lbl.font = UIKit.Font;
                 lbl.horizontalOverflow = HorizontalWrapMode.Overflow;
                 var sh = lbl.gameObject.AddComponent<Shadow>(); sh.effectColor = new Color(0, 0, 0, 0.85f); sh.effectDistance = new Vector2(1.5f, -1.5f);
                 float w = lbl.preferredWidth;

@@ -143,8 +143,8 @@ namespace LumenWave.UI
                     cap.anchoredPosition = new Vector2(x, 0f);
                     x += cap.sizeDelta.x + 5f;
                 }
-                var lbl = UIKit.Label(root, h.action.ToUpperInvariant(), keySize, TextAnchor.MiddleLeft, UIStyle.TextDim, "Action");
-                lbl.font = UIKit.Narrow;
+                var lbl = UIKit.Label(root, UIKit.Spaced(h.action.ToUpperInvariant()), keySize, TextAnchor.MiddleLeft, UIStyle.TextDim, "Action");
+                lbl.font = UIKit.Font;
                 lbl.horizontalOverflow = HorizontalWrapMode.Overflow;
                 float w = lbl.preferredWidth;
                 UIKit.Place(lbl.rectTransform, new Vector2(0f, 0.5f), new Vector2(x + 2f, 0f), new Vector2(w + 4f, 30f), new Vector2(0f, 0.5f));
@@ -190,7 +190,7 @@ namespace LumenWave.UI
             MenuBackdrop.Build(root, 0.12f, true);
             Stack = gameObject.AddComponent<MenuStack>();
 
-            // ---- Logo: big letter-spaced Kenney Future with a vertical gradient, glow, a light sweep and a live waveform through it.
+            // ---- Logo: big letter-spaced OSerif with a vertical gradient, glow, a light sweep and a live waveform through it.
             const float logoX = 150f, logoY = -260f;
             var logoGroup = UIKit.Rect(root, "LogoGroup");
             UIKit.Stretch(logoGroup);
@@ -220,13 +220,13 @@ namespace LumenWave.UI
             _logoGradient.bottom = new Color(0.5f, 0.9f, 1f);
 
             _wave2 = UIKit.Rect(logoGroup, "LogoWaveFront").gameObject.AddComponent<UIWaveLine>();
-            _wave2.color = new Color(0.85f, 1f, 1f, 0.9f);
+            _wave2.color = new Color(0.85f, 1f, 1f, 0.6f);
             _wave2.thickness = 2.5f; _wave2.glowWidth = 3f; _wave2.amplitude = 0.42f; _wave2.speed = 1.2f; _wave2.phaseOffset = 0.0f; _wave2.envelopeWidth = 2.2f;
             _wave2.raycastTarget = false;
             UIKit.Place(_wave2.rectTransform, new Vector2(0f, 1f), new Vector2(logoX - 90f, logoY - 6f), new Vector2(logoW + 180f, 150f), new Vector2(0f, 0.5f));
 
             var tag = UIKit.Label(logoGroup, UIKit.Spaced("A SONG OF SHADOW AND LIGHT", 1), 26, TextAnchor.MiddleLeft, new Color(0.75f, 0.85f, 0.95f, 0.95f), "Tagline");
-            tag.font = UIKit.Narrow;
+            tag.font = UIKit.Light;
             tag.horizontalOverflow = HorizontalWrapMode.Overflow;
             UIKit.Place(tag.rectTransform, new Vector2(0f, 1f), new Vector2(logoX + 8f, logoY - 104f), new Vector2(1200, 40), new Vector2(0f, 0.5f));
             var line = UIKit.Image(logoGroup, "TitleLine", new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.7f), UIKit.HGradient, false);
@@ -265,7 +265,7 @@ namespace LumenWave.UI
                 ("A|D", "Move"), (LumenInput.Prompt(LumenInput.Jump), "Jump"), (LumenInput.Prompt(LumenInput.Dash), "Dash"),
                 (LumenInput.Prompt(LumenInput.Echo), "Echo"), (LumenInput.Prompt(LumenInput.Shield), "Shield"),
                 (LumenInput.Prompt(LumenInput.Pulse), "Pulse"), ("Esc", "Pause"),
-            }, 18);
+            }, 20);
             UIKit.Place(foot, new Vector2(0f, 0f), new Vector2(logoX, 52), foot.sizeDelta, new Vector2(0f, 0.5f));
             var pad = UIKit.Label(root, UIKit.Spaced("GAMEPAD SUPPORTED"), 16, TextAnchor.MiddleLeft, new Color(0.6f, 0.68f, 0.8f, 0.7f), "Gamepad");
             pad.font = UIKit.Narrow;
@@ -392,7 +392,8 @@ namespace LumenWave.UI
             var l = UIKit.Label(card, UIKit.Spaced(label), 20, TextAnchor.MiddleCenter, UIStyle.TextDim, "Label");
             l.font = UIKit.Narrow;
             UIKit.Place(l.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -34), new Vector2(320, 30), new Vector2(0.5f, 0.5f));
-            var v = UIKit.Heading(card, value, 48, TextAnchor.MiddleCenter, valueColor, "Value", 0);
+            var v = UIKit.Heading(card, value, 50, TextAnchor.MiddleCenter, valueColor, "Value", 0);
+            v.font = UIKit.Font;
             UIKit.Place(v.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, -8), new Vector2(320, 64), new Vector2(0.5f, 0.5f));
             UIKit.GlowText(v, UIStyle.Accent, 1.2f);
             if (!string.IsNullOrEmpty(note))
@@ -427,7 +428,7 @@ namespace LumenWave.UI
             UIKit.Place(wave.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 252), new Vector2(900, 40), new Vector2(0.5f, 0.5f));
 
             _line = UIKit.Label(main, "Umbra sang, and every light remembered its harmony.", 34, TextAnchor.MiddleCenter, Color.white, "Line");
-            _line.fontStyle = FontStyle.Italic;
+            _line.font = UIKit.Light;
             _line.horizontalOverflow = HorizontalWrapMode.Overflow;
             UIKit.Place(_line.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 196), new Vector2(1600, 60), new Vector2(0.5f, 0.5f));
             var lsh = _line.gameObject.AddComponent<Shadow>(); lsh.effectColor = new Color(0, 0, 0, 0.8f); lsh.effectDistance = new Vector2(2, -2);

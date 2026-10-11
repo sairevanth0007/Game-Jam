@@ -14,6 +14,7 @@ Audio is fully synthesised in code. Shaders, VFX and many meshes are procedural;
 | Graveyard Kit (crooked pines, iron fences, pillars, crypts, walls, lamp posts) | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/graveyard-kit | Ruins, foreground and background silhouettes (`ThirdParty/KenneyGraveyard`) |
 | Castle Kit (towers, walls, gates, bridges) | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/castle-kit | Fortress and ruin layers (`ThirdParty/KenneyCastle`) |
 | Kenney Fonts (Kenney Future, Kenney Future Narrow) | Kenney (kenney.nl) | CC0 1.0 | https://kenney.nl/assets/kenney-fonts | Logo, headings, HUD (`ThirdParty/KenneyFonts`) |
+| GGBotNet Fonts CC0 (OSerif Regular, Jupiteroid Regular/Bold/Light) | GGBotNet | CC0 1.0 | https://opengameart.org/content/ggbotnet-fonts-cc0-all-in-1 | Logo/headings (OSerif), HUD and body text (Jupiteroid) (`ThirdParty/GGBotNetFonts`) |
 | Rock035, Rock030, Rock051 (rock), Moss002 (moss), Ground037 (ground), Ice002 (ice), PavingStones131 (cobbles), Bricks066 (stone blocks), 1K JPG colour + normal maps | ambientCG (Lennart Demes) | CC0 1.0 | https://ambientcg.com/view?id=Rock035 (same pattern for each id) | Platform and ruin materials (`ThirdParty/AmbientCG`) |
 | Kloppenheim 02 (Pure Sky), Kloppenheim 07 (Pure Sky), 2K HDR | Greg Zaal, Jarod Guest (Poly Haven) | CC0 1.0 | https://polyhaven.com/a/kloppenheim_02_puresky , https://polyhaven.com/a/kloppenheim_07_puresky | Night sky with stars / clouds (`ThirdParty/PolyHaven`) |
 

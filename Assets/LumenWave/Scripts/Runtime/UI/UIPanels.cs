@@ -179,8 +179,7 @@ namespace LumenWave.UI
             rt.offsetMin = rt.offsetMax = Vector2.zero;
             var le = b.GetComponent<LayoutElement>(); if (le != null) le.ignoreLayout = true;
             label = b.GetComponentInChildren<Text>();
-            label.font = UIKit.Font;            // key names need unambiguous glyphs (K vs H, Y)
-            label.fontStyle = FontStyle.Bold;
+            label.font = UIKit.Bold;
             label.fontSize = 24;
             refresh();
             refreshers.Add(refresh);

@@ -29,34 +29,26 @@ namespace LumenWave.UI
     /// <summary>Helpers to build uGUI hierarchies in code.</summary>
     public static class UIKit
     {
-        static Font _font, _display;
+        static Font _builtin, _font, _bold, _light, _display;
         static Sprite _soft, _radial, _glow, _hgrad, _vgrad, _diamond, _waveIcon, _ring;
 
-        /// <summary>Body font (built-in, widest glyph coverage: long texts, credits, symbols).</summary>
-        public static Font Font
+        static Font Builtin => _builtin != null ? _builtin : (_builtin = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
+        static Font Load(ref Font cache, string name)
         {
-            get
-            {
-                if (_font == null) _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                return _font;
-            }
+            if (cache == null) cache = Resources.Load<Font>("Art/GGBotNetFonts/" + name);
+            return cache != null ? cache : Builtin;
         }
 
-        /// <summary>Kenney Future (CC0): titles, headings and numbers.</summary>
-        public static Font Display
-        {
-            get
-            {
-                if (_display == null) _display = Resources.Load<Font>("Art/KenneyFonts/KenneyFuture");
-                return _display != null ? _display : Font;
-            }
-        }
-
-        /// <summary>
-        /// Font for uppercase UI labels (buttons, bar labels, chips). Kenney Future (the narrow cut's R/K glyphs read
-        /// as A/H at small sizes, so labels use the regular cut). Sentences and key caps use the body font.
-        /// </summary>
-        public static Font Narrow => Display;
+        /// <summary>Body font: Jupiteroid Regular (GGBotNet, CC0), a clean humanist sans. Sentences, hints, credits.</summary>
+        public static Font Font => Load(ref _font, "Jupiteroid-Regular");
+        /// <summary>Jupiteroid Bold: key caps, buttons, HUD labels, the tutorial banner.</summary>
+        public static Font Bold => Load(ref _bold, "Jupiteroid-Bold");
+        /// <summary>Jupiteroid Light: quiet secondary lines (taglines, end line).</summary>
+        public static Font Light => Load(ref _light, "Jupiteroid-Light");
+        /// <summary>OSerif (GGBotNet, CC0), an elegant capital serif: logo, headings, level names, big numbers.</summary>
+        public static Font Display => Load(ref _display, "OSerif-Regular");
+        /// <summary>Font for short uppercase UI labels (buttons, bar labels, chips): Jupiteroid Bold.</summary>
+        public static Font Narrow => Bold;
 
         static Sprite MakeSprite(int w, int h, string name, Func<float, float, float> alpha, Vector4 border = default)
         {
@@ -294,7 +286,7 @@ namespace LumenWave.UI
             return t;
         }
 
-        /// <summary>Big letter-spaced Kenney Future heading.</summary>
+        /// <summary>Big letter-spaced OSerif heading.</summary>
         public static Text Heading(Transform parent, string text, int size, TextAnchor anchor = TextAnchor.MiddleCenter, Color? color = null, string name = "Title", int spacing = 1)
         {
             var t = Label(parent, spacing > 0 ? Spaced(text.ToUpperInvariant(), spacing) : text, size, anchor, color, name);
@@ -303,7 +295,7 @@ namespace LumenWave.UI
             return t;
         }
 
-        /// <summary>Panel title: Kenney heading + a short glowing underline.</summary>
+        /// <summary>Panel title: serif heading + a short glowing underline.</summary>
         public static Text PanelTitle(RectTransform panel, string text, float y = -62, int size = 40)
         {
             var title = Heading(panel, text, size, TextAnchor.MiddleCenter, Color.white, "Title", 1);
@@ -330,7 +322,7 @@ namespace LumenWave.UI
             lip.rectTransform.anchorMin = new Vector2(0f, 0f); lip.rectTransform.anchorMax = new Vector2(1f, 0.22f);
             lip.rectTransform.offsetMin = new Vector2(1, 1); lip.rectTransform.offsetMax = new Vector2(-1, 0);
             label = Label(box, key, fontSize, TextAnchor.MiddleCenter, Color.white, "Key");
-            label.fontStyle = FontStyle.Bold;   // body font: unambiguous K/R/M glyphs
+            label.font = Font;   // Regular reads cleaner than Bold at key-cap sizes
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
             Stretch(label.rectTransform);
             label.rectTransform.offsetMin = new Vector2(0, 2);
