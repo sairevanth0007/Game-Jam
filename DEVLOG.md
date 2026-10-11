@@ -48,3 +48,30 @@
 - The fullscreen toggle showed the wrong state.
 
 Pause is now blocked during the finale. Tests 38 + 77 pass; flow test 0 fails; autoplay at 60 fps.
+
+**07:50–12:05 · Visual overhaul (branch `lumenwave-visual`; RC4 untouched on `lumenwave-25d`).**
+- **Assets (CC0, downloaded with curl, no login):**
+  - Quaternius Universal Animation Library 1 + 2 (mannequin and 250+ humanoid clips).
+  - Kenney Nature, Graveyard and Castle kits.
+  - ambientCG rock, moss, ice and brick textures.
+  - Poly Haven night skies.
+  - GGBotNet fonts (OSerif, Jupiteroid).
+  - Windows MCP still fails to connect, so there was no browser.
+- **Hero:**
+  - Umbra is the UAL mannequin with a Humanoid avatar and an Animator Controller.
+  - Clips: a walk/jog/sprint blend tree on speed, then jump start, fall loop, land, dash, death and sing. Cast, shield and hurt are on an upper-body layer.
+  - Root motion off, Foot IK, and footstep/land animation events for dust.
+  - No code-driven limbs (user correction at 11:00). The first pass used the Quaternius Animated Human with procedural overlays; that was replaced.
+  - Black silhouette with a key-side rim, eyes on the head bone, verlet scarf, dissolve on death, cyan dash afterimages.
+- **Camera:** Cinemachine with a position composer (dead zone, look-ahead), a 3D confiner and impulse shake. It is closer, so Umbra is about 15 % of the screen. Depth of field on the far background.
+- **World:**
+  - Bevelled triplanar rock platforms whose interiors fade to black (Limbo-style), with moss, snow, ice or paving caps and roots.
+  - Blurred foreground silhouettes, 3D Kenney mid- and background layers in height and distance fog, mist sheets.
+  - Poly Haven sky, a moon with corona and god rays, light shafts under every lamp, fireflies, embers and snow.
+  - A theme per level: forest, canyon, ruins, ice cavern, garden, clockwork with gears ticking on the beat, prism hall, fortress, dawn.
+  - Prefabs for 66 props and the lamp post. Timeline drives the finale.
+- **Enemies:** silhouette redesign (a hooded lantern-warden, a corona wisp, a winged moth, a horned flare).
+- **Effects:** Echo bridge ripples and motes, Shield shimmer with hit ripples, Pulse ring with camera shake, enemy hit flashes, crystal shards.
+- **UI:** TextMeshPro with SDF fonts (OSerif headings, Jupiteroid body), segmented health bar, resonance cost ticks, key-cap hints, and a title logo with a waveform over a live scene.
+- *Problem:* the bot sometimes died in level 8 of the real build. *Cause:* a long jump landed after the next jump hint, and the hint's height check failed in mid-air, so the hint was skipped. It depends on sub-frame timing and on the beat phase at load. *Fix:* bot-only. Any-height hints (`any=1`) crossed in mid-air are kept until landing. Game code unchanged.
+- **Verified:** tests 38 + 77 pass. Built player: all 10 levels completed by the bot with 0 deaths at 60 fps (p95 16.7 ms), flow test 0 fails (plus verify). Before/after screenshots are in `docs/images/before_after/`.

@@ -17,6 +17,12 @@
 M0 setup · M1 Umbra · M2 light system · M3 sound powers + audio · M4 enemies, levels, HUD, menus, bot · M5 polish · M6 verified Windows build + MALink. **All done.**
 Release candidates pushed: RC1 02:45, RC2 03:39, RC3 04:45, RC4 about 05:15 (Sun 11 Oct 2026; bug-hunt fixes).
 
+## Visual overhaul (branch `lumenwave-visual`)
+- Release: `Release/LumenWave-Windows-visual.zip`. RC4 (`lumenwave-25d`, `Release/LumenWave-Windows.zip`) is the fallback.
+- Hero: Quaternius UAL mannequin with Animator clips. Camera: Cinemachine. UI: TextMeshPro. Finale: Timeline. Prefabs for props and lamps. CC0 art from Kenney, ambientCG and Poly Haven. Everything is listed in CREDITS.md.
+- Verify: `scripts/test.ps1`, `scripts/build.ps1 -Name visual`, `scripts/autoplay.ps1 -Name visual`, `scripts/screenshot.ps1 -Name visual`. Compare images with `tools/before_after.py`.
+- The "Final status" section below describes RC4, before the overhaul. The hero, camera and UI described there were replaced as above.
+
 ## Final status
 
 ### What works
