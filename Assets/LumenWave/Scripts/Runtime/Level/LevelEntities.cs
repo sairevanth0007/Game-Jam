@@ -165,7 +165,7 @@ namespace LumenWave
         {
             var go = Root("Finale", s, ctx);
             var f = go.AddComponent<FinaleTrigger>();
-            f.duration = s.Float("time", 7f);
+            f.duration = s.Float("time", 11f);
             return go;
         }
 

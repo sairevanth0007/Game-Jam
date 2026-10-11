@@ -1,0 +1,84 @@
+name: Beat Lasers
+intro: Yellow light fires on the beat. Move between the pulses.
+fog: 0.04
+mood: gold
+drone: 7
+---
+##############################################################################################################################################################################################################
+##############################################################################################################################################################################################################
+##############################################################################################################################################################################################################
+##############################################################################################################################################################################################################
+##############################################################################################################################################################################################################
+##############################################################################################################################################################################################################
+##############################################################################################################################################################################################################
+##############################################################################################################################################################################################################
+##############################################################################################################################################################################################################
+##                                                                                                                                                                                                          ##
+##                                                                                                                                                                                                          ##
+##                                                                                                                                                                                                          ##
+##                                                                                                                                                                                                          ##
+##                                                                                                                                                     ######                                               ##
+##                                                                                                                                                     ######                                               ##
+##                                                                                                                                                 ##############                                           ##
+##                                                                                                                                                 ##############                                           ##
+##                                                                                                                                             ######################                                       ##
+##  P                   C                         C             C                                            C                           C     ######################  C                                E   ##
+########################################################    ##################################################################################################################################################
+########################################################    ##################################################################################################################################################
+########################################################    ##################################################################################################################################################
+---
+tutorial 9.5 3 text=Yellow_lasers_pulse_on_the_beat_(100_BPM)._Cross_after_a_flash. radius=3
+beam 18.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 17 3 do=waitbeat
+beam 32.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+beam 36.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+beam 40.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+beam 44.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+tutorial 27.5 3 text=Run_on_the_rhythm radius=3
+bot 30.9 3 do=waitbeat
+bot 34.9 3 do=waitbeat
+bot 38.9 3 do=waitbeat
+bot 42.9 3 do=waitbeat
+beam 58 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 54.4 3 do=waitbeat
+bot 55 3 do=jump
+orb 58 8.5
+tutorial 67.5 3 text=Red_+_green_light_mix_into_yellow:_safe_between_beats radius=3.5
+beam 74.5 12.9 color=red dir=-90 range=11 intensity=1.2 width=1.2
+beam 74.5 3.1 color=green dir=90 range=11 intensity=1.2 width=1.2
+bot 72.6 3 do=waitbeat
+beam 84.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+beam 88.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 82.9 3 do=waitbeat
+bot 86.9 3 do=waitbeat
+checkpoint 80.5 3
+tutorial 112 3 text=Faster_now:_two_lasers,_one_beat_apart. radius=3
+beam 118.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 116.9 3 do=waitbeat
+beam 122.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 120.9 3 do=waitbeat
+beam 126.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 124.9 3 do=waitbeat
+tutorial 131 3 text=Jump_the_low_laser_between_beats. radius=3
+beam 136 3.45 color=yellow dir=180 range=3 intensity=1.5 width=0.4 beat=1
+bot 131.8 3 t=0.5 do=jump
+tutorial 140 3 text=Steps_of_light:_climb_on_the_rhythm. radius=3
+beam 144.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 140.8 3 do=waitbeat
+bot 141.7 3 t=0.45 do=jump
+beam 148.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 144.8 5 do=waitbeat
+bot 145.7 5 t=0.45 do=jump
+beam 152.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 148.8 7 do=waitbeat
+bot 149.7 7 t=0.45 do=jump
+orb 156.5 13
+tutorial 170 3 text=The_last_corridor._Feel_the_beat. radius=3
+beam 176.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 174.9 3 do=waitbeat
+beam 180.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 178.9 3 do=waitbeat
+beam 184.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 182.9 3 do=waitbeat
+beam 188.5 12.9 color=yellow dir=-90 range=11 intensity=1.5 width=0.6 beat=1
+bot 186.9 3 do=waitbeat

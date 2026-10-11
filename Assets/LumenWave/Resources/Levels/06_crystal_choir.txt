@@ -1,0 +1,64 @@
+name: Crystal Choir
+intro: Crystals hold the light. A Pulse can break their song.
+fog: 0.04
+mood: blue
+drone: 6
+---
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                                                      ##
+##                                                                                 ####          #####                  ##
+##                                                                                 ####          #####                  ##
+##                                                                          ###########          #########              ##
+##  P              C                 C                 C               C    ###########          #########          E   ##
+#############################################################hhhhhh####################          #########################
+#############################################################      ####################          #########################
+#############################################################^^^^^^####################^^^^^^^^^^#########################
+---
+tutorial 11 3 text=Light_crystals_block_the_way._{Pulse}_shatters_them. radius=3
+crystal 16.5 3 h=3
+bot 13.5 3 do=pulse
+bot 13.6 3 t=0.5 do=wait
+tutorial 22 3 text=Crystals_also_block_light._Break_only_what_you_must. radius=3
+beam 29.5 12.9 color=red dir=-90 range=11 intensity=6 width=0.9
+crystal 29.5 7 h=1
+crystal 34.5 3 h=3
+bot 31.5 3 do=pulse
+bot 31.6 3 t=0.5 do=wait
+tutorial 40 3 text=Echo_moths_hunt_any_song._Sing,_then_shield. radius=3
+moth 50.5 8
+lamp 45.5 9 color=green radius=4 intensity=1.2
+bot 44.5 3 t=1 do=wait
+crystal 48.5 3 h=3
+bot 45.5 3 do=pulse
+bot 45.6 3 t=3 do=shield
+orb 54.5 8
+tutorial 58 3 text=Pulse_once:_reveal_the_path_and_break_the_crystal. radius=3
+bot 60 3 do=pulse
+bot 60.1 3 t=0.4 do=wait
+crystal 67.5 3 h=3
+tutorial 73 3 text=A_choir_of_crystals._Climb. radius=3
+bot 74.7 3 t=0.45 do=jump
+crystal 80.5 5 h=2
+bot 77.5 5 do=pulse
+bot 77.6 5 t=0.5 do=wait
+bot 81.7 5 t=0.45 do=jump
+orb 88.5 11
+lamp 85 11 color=green radius=4 intensity=1.2
+bot 84.5 7 t=1.2 do=wait
+bot 86 7 do=echo
+bot 92 7 do=echo

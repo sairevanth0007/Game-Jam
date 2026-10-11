@@ -100,7 +100,8 @@ namespace LumenWave
             else
             {
                 // Fallback: generic scene + loader picks level from GameSession.
-                Debug.LogWarning("[LumenWave] Scene " + scene + " not in build, using Level01 shell");
+                Debug.LogWarning("[LumenWave] Scene " + scene + " not in build, loading level " + n + " into the Level01 shell");
+                SceneBootstrap.PendingLevelOverride = n;
                 SceneManager.LoadScene(LevelScene(1));
             }
         }

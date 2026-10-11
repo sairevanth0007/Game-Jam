@@ -16,9 +16,14 @@ namespace LumenWave
         /// <summary>Raised for every scene before content is built: (kind, level). Visual rigs, UI, audio hook in here.</summary>
         public static event Action<string, int> Booting;
 
+        /// <summary>Set by SceneFlow when a level has no scene of its own and is loaded into another level's shell.</summary>
+        public static int PendingLevelOverride;
+
         void Awake()
         {
-            if (kind == "level") BootLevel(levelNumber);
+            int n = levelNumber;
+            if (kind == "level" && PendingLevelOverride > 0) { n = PendingLevelOverride; PendingLevelOverride = 0; }
+            if (kind == "level") BootLevel(n);
             else Boot(kind, 0);
         }
 

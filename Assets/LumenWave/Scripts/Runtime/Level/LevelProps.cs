@@ -383,7 +383,8 @@ namespace LumenWave
     {
         public static bool Present;
         public static bool Started;
-        public float duration = 7f;
+        /// <summary>Seconds of cinematic (Umbra sings, lights turn harmonious) before the level completes.</summary>
+        public float duration = 11f;
         public Vector2 size = new Vector2(2f, 6f);
         float _t;
 
@@ -397,6 +398,10 @@ namespace LumenWave
                 if (PlayerQuery.Overlaps((Vector2)transform.position + Vector2.up * size.y * 0.5f, size))
                 {
                     Started = true;
+                    // Umbra stands still and sings: lock gameplay input for the cinematic.
+                    var p = LevelRuntime.Current != null ? LevelRuntime.Current.Player : null;
+                    var ctrl = p != null ? p.GetComponent<UmbraController>() : null;
+                    if (ctrl != null) { ctrl.InputLocked = true; ctrl.Velocity = new Vector2(0f, ctrl.Velocity.y); }
                     Debug.Log("[LumenWave] Finale started");
                     GameEvents.RaiseFinale();
                 }
