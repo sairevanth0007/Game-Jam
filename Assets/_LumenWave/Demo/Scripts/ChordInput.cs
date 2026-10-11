@@ -29,6 +29,9 @@ namespace LumenWave.Demo
         public bool ChordPressed { get; private set; }
         public bool MajorPressed { get; private set; }
         public bool RestartPressed { get; private set; }
+        
+        public int MovementHeld { get; private set; }
+        public int MovementPressed { get; private set; }
         public static int Direction(int mask)
         {
             bool left = (mask & (LeftFirst | LeftSecond)) == (LeftFirst | LeftSecond);
@@ -43,6 +46,8 @@ namespace LumenWave.Demo
             Horizontal = Direction(movementMask);
             bool jumpChord = Horizontal != 0 && jumpHeld;
             JumpPressed = jumpChord && !(Direction(previousMovement) != 0 && previousJump);
+            MovementPressed = movementMask & ~previousMovement;
+            MovementHeld = movementMask;
             previousMovement = movementMask;
             previousJump = jumpHeld;
             ChordPressed = (mask & (C | E)) == (C | E) && (old & (C | E)) != (C | E);

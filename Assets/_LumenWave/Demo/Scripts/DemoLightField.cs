@@ -3,7 +3,8 @@ using UnityEngine;
 namespace LumenWave.Demo
 {
     [DefaultExecutionOrder(-100)]
-    [RequireComponent(typeof(LightController), typeof(ShadowGenerator))]
+    [RequireComponent(typeof(LightController), typeof(ShadowGenerator), typeof(LightSweep))]
+    
     public sealed class DemoLightField : MonoBehaviour
     {
         [SerializeField] ChordInput playerInput;
@@ -11,7 +12,7 @@ namespace LumenWave.Demo
         [SerializeField] float hearingRadius = 11;
         LightController controller;
         ShadowGenerator contour;
-        BeamSpline beam;
+        // CHANGED: removed the unused "BeamSpline beam" field
         float until, strength;
         public LightColorType Kind => controller.profile.lightColor;
         public float Remaining => Mathf.Max(0, until - Time.time);
@@ -21,10 +22,11 @@ namespace LumenWave.Demo
         {
             controller = GetComponent<LightController>();
             contour = GetComponent<ShadowGenerator>();
-            beam = GetComponent<BeamSpline>();
+            // CHANGED: removed the unused beam = GetComponent<BeamSpline>() line
         }
         public void TriggerChord(bool major)
         {
+            if (controller.profile == null) return; // CHANGED: stops the crash when no profile is set yet
             if ((Kind == LightColorType.Blue) || (Kind == LightColorType.Red && major))
             {
                 if (playerInput != null) controller.BendAwayFrom(playerInput.transform.position);
@@ -38,8 +40,11 @@ namespace LumenWave.Demo
             {
                 if (playerInput.ChordPressed || playerInput.MajorPressed) TriggerChord(playerInput.MajorPressed);
             }
+
+            if (playerInput != null && Remaining > 0)
+                controller.TrackPlayer(playerInput.transform.position);
             float target = Remaining > .4f ? 1 : Remaining / .4f;
-            strength = Mathf.MoveTowards(strength, target, Time.deltaTime / .10f);
+            strength = Mathf.MoveTowards(strength, target, Time.deltaTime / .25f);
             controller.SetResonance(strength);
         }
         // The exact boundary drawn by ShadowRenderer is also used for exposure.

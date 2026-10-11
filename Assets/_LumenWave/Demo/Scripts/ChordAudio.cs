@@ -7,8 +7,15 @@ namespace LumenWave.Demo
     public sealed class ChordAudio : MonoBehaviour
     {
         [Range(0, .3f)] [SerializeField] float volume = .09f;
-        readonly AudioSource[] voices = new AudioSource[3];
-        readonly float[] frequencies = { 130.8128f, 164.8138f, 195.9977f };
+        [Range(0, .3f)] [SerializeField] float movementVolume = .06f; // CHANGED: movement notes, a bit quieter
+        const int NoteCount = 3;                                      // CHANGED: C, E, G
+        readonly AudioSource[] voices = new AudioSource[7];           // CHANGED: 3 notes + 4 movement keys
+        readonly float[] frequencies =
+        {
+            130.8128f, 164.8138f, 195.9977f,   // C, E, G
+            146.8324f, 174.6141f,              // CHANGED: LeftFirst = D, LeftSecond = F
+            220.0000f, 261.6256f               // CHANGED: RightFirst = A, RightSecond = C (higher)
+        };
         ChordInput input;
         void Awake()
         {
@@ -38,9 +45,16 @@ namespace LumenWave.Demo
             double onset = AudioSettings.dspTime + .015;
             for (int i = 0; i < voices.Length; i++)
             {
-                bool held = (input.Held & (1 << i)) != 0;
-                if ((input.Pressed & (1 << i)) != 0) { voices[i].Stop(); voices[i].PlayScheduled(onset); }
-                voices[i].volume = Mathf.MoveTowards(voices[i].volume, held ? volume : 0, Time.deltaTime * (held ? 1.5f : .5f));
+                // CHANGED: the first 3 voices read the note keys, the rest read the movement keys.
+                bool isNote = i < NoteCount;
+                int bit = 1 << (isNote ? i : i - NoteCount);
+                int heldMask = isNote ? input.Held : input.MovementHeld;
+                int pressedMask = isNote ? input.Pressed : input.MovementPressed;
+                float level = isNote ? volume : movementVolume;
+
+                bool held = (heldMask & bit) != 0;
+                if ((pressedMask & bit) != 0) { voices[i].Stop(); voices[i].PlayScheduled(onset); }
+                voices[i].volume = Mathf.MoveTowards(voices[i].volume, held ? level : 0, Time.deltaTime * (held ? 1.5f : .5f));
             }
         }
         void OnDisable() { foreach (var voice in voices) if (voice != null) voice.Stop(); }

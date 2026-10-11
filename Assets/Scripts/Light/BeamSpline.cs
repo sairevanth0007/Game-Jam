@@ -3,7 +3,7 @@ using UnityEngine;
 public class BeamSpline : MonoBehaviour
 {
     public Vector3[] points;
-    [Min(2)] public int pointCount = 5;
+    [Min(2)] public int pointCount = 33;
     [Min(.1f)] public float length = 8;
 
     private void Awake()
