@@ -12,9 +12,12 @@
 - M1–M4: Umbra, light system, sound powers + audio, enemies (3), 8 levels, bot, UI, visuals. 95/95 tests pass, and the bot completes all levels. First Windows build is OK and its screenshots have been reviewed.
 - MALink: OSC encoder + grandMA3 mapping + F9 overlay + UDP listener test (docs/MALINK.md).
 
-## Next (02:00)
-- Second wave: visual polish (solid Umbra silhouette, tile faces, camera framing, moods) and gameplay QA (1× bot fairness, soft-locks, hints, `-lw-autoplay` real-build verification).
-- Then: final review build, docs with screenshots, release zip.
+- Second/third waves: visual polish, gameplay QA at 1×, 10 levels, cinematic finale. **RC1 pushed at 02:45** (Release/LumenWave-Windows.zip, verified).
+
+## Next (02:50)
+- Deep QA worker: audio capture analysis, frame-time profiling, menu/pause/respawn/rebinding flows in the real build, log check.
+- Docs: screenshots embedded (docs/images). Then RC2.
 
 ## Known issues
-- Windows MCP not available in session → visual checks via screenshot mode.
+- Windows MCP is not available in this session, so the real build is verified with `-lw-autoplay` / `-lw-screenshots` (the bot plays the build and screenshots are reviewed).
+- The bot is better than a human at beat timing; the 1× bot tests are the fairness proxy.

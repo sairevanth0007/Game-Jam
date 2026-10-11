@@ -17,3 +17,12 @@
 - Enemies: Sentinel, Wisp, Echo Moth. 8 levels plus a hint-driven bot. UI: title, HUD, pause, settings with rebinding, credits, end screen.
 - *Problem:* builds crashed with "level0 is corrupted". *Cause:* `SceneBootstrap` lived in `LevelRuntime.cs`. A MonoBehaviour in a scene must be in a file with a matching name, otherwise the script reference goes missing. *Fix:* moved it to its own file.
 - **Verified:** 38 EditMode + 57 PlayMode tests pass, and the bot finishes all 8 levels with 0 deaths. Windows build is 94 MB, zip 34.6 MB.
+
+**01:55–02:45 · Second and third waves.**
+- Visual polish: Umbra became a true black silhouette with a stencil-masked outline (no inner limb lines). Added a stone-face shader (bricks, cracks, gradient into darkness), a single moon, new camera framing (ground at about 25% from the bottom), damage sparks and heal motes.
+- *Problem:* red beams looked orange under ACES tonemapping. *Fix:* more saturated red display colour and lower core HDR. The red mood was also desaturated so red hazards pop.
+- Gameplay QA: all levels are beatable at 1× against the real beat clock with 0 deaths. Added checkpoints to long final stretches. Added the `-lw-autoplay` real-build verification.
+- Content: levels expanded about 2× and two new levels added (Echo Canyon, Crystal Choir), for 10 in total, roughly 12–15 min for a human.
+- Finale: Umbra raises their arms and sings. Six spectrum rings (radii 1:2:3:4:5:6) pulse on the beat, every beam and lamp turns warm white and breathes, enemies calm, the sky turns to dawn, then the ending text appears.
+- *Problem:* a level whose scene isn't in the build silently loaded level 1. *Fix:* `SceneBootstrap.PendingLevelOverride`.
+- **RC1 (02:45):** 108/108 tests pass. The real build autoplays level 1 to completion in 31.6 s with 0 deaths. Release zip is 34.6 MB.

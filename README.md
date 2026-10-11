@@ -5,6 +5,11 @@ Freeze sound into bridges, raise a resonating shield, and pulse waves through th
 
 Built with Unity 6000.2.9f1 · URP (Universal Renderer, Forward+) · Input System. All art and audio are procedural.
 
+![LumenWave](docs/images/run.png)
+
+**10 levels** (about 12–15 min): First Light · Echo Path · Echo Canyon · Red Light · Blue Ascent · Crystal Choir · Beat Lasers · Prism and Mirror · Sentinels · Harmony (finale).
+**Enemies:** the Sentinel (a floating lamp sweeping a red beam; Pulse stuns it), the Wisp (a light that chases you; the Shield repels it), and the Echo Moth (hunts whenever you use a power; climb in silence). Each level hides secret light shards.
+
 ## Play
 - **Windows build:** unzip `Release/LumenWave-Windows.zip` and run `LumenWave.exe`.
 - **From the editor:** open the project in Unity 6000.2.9f1, run **LumenWave → Build All Levels** once, open `Assets/LumenWave/Scenes/Title.unity` and press Play.
@@ -20,7 +25,7 @@ Built with Unity 6000.2.9f1 · URP (Universal Renderer, Forward+) · Input Syste
 | Resonance Shield (hold) | K / Right mouse | Left trigger |
 | Pulse | L / Middle mouse | Y / Triangle |
 | Pause | Esc | Start |
-| MALink overlay | F9 | — |
+| MALink overlay (grandMA3 OSC, off by default) | F9 | — |
 
 ## Rules of light
 - **Red** burns over time, and intense beams kill. Block it with the **Shield**.

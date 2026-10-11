@@ -2,6 +2,8 @@
 
 *A shadow learns to sing. Every light in LumenWave follows real optics, and every sound follows real acoustics.*
 
+![Umbra in the finale: harmonic rings 1:2:3:4:5:6](docs/images/finale.png)
+
 ## Games that inspired us
 
 | Game | What we took from it |
@@ -21,6 +23,8 @@
 A point source spreads its energy over a sphere of area 4πd², so intensity falls with the square of distance.
 **In game:** red burns harder close to a lamp, and green heals more at the centre of a pool. `LightMath.InverseSquare` (d is clamped to a minimum so it never divides by zero).
 
+![A red beam burns; green heals in the distance](docs/images/red_light.png)
+
 ### 2. Beer–Lambert law: `I = I₀ · e^(−σd)`
 Light passing through fog, dust or smoke is absorbed and scattered exponentially with distance.
 **In game:** beams fade along their length in the `Beam` shader, and the fog density σ also reduces gameplay intensity (`LightMath.BeerLambert`, `LightMath.Attenuate`).
@@ -36,6 +40,8 @@ Glass has a refractive index that depends on wavelength, so short wavelengths (b
 ### 5. Law of reflection: `r = d − 2(d·n)n`
 The angle of incidence equals the angle of reflection.
 **In game:** mirrors bounce beams. A Pulse rotates a mirror so the light lands somewhere new (`LightMath.Reflect`).
+
+![White light split by a prism into R, G, B; a mirror reflects the blue ray](docs/images/prism_mirror.png)
 
 ### 6. Fresnel effect (Schlick's approximation): `F = F₀ + (1 − F₀)(1 − cos θ)⁵`
 Surfaces reflect more light at grazing angles.
@@ -60,4 +66,4 @@ A stable, simple way to simulate ropes and cloth using positions only, plus dist
 ### 11. The beat
 Yellow lights and the music share one 100 BPM clock, locked to the audio DSP clock (`BeatClock`), so the visuals and the sound never drift apart.
 
-*(Screenshots: see `Screenshots/`.)*
+*(More screenshots: `docs/images/` and `Screenshots/`. They are rendered by the built game itself in screenshot/autoplay mode.)*

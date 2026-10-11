@@ -60,9 +60,11 @@ namespace LumenWave
 
             float t = 0f, nextShot = 0.5f, nextLog = 0f, finaleShot = -1f;
             float maxX = rt.Player.transform.position.x;
+            var frameTimes = new System.Collections.Generic.List<float>(8192);
             while (t < seconds && !rt.Completed)
             {
                 t += Time.unscaledDeltaTime;
+                if (t > 1f) frameTimes.Add(Time.unscaledDeltaTime);
                 var p = rt.Player.transform.position;
                 maxX = Mathf.Max(maxX, p.x);
                 if (t >= nextShot) { Shot(t); nextShot += shotInterval; }
@@ -87,9 +89,19 @@ namespace LumenWave
             }
             yield return new WaitForEndOfFrame();
             yield return new WaitForSecondsRealtime(0.5f);
+            LogFrameStats(frameTimes);
             Debug.Log($"[LumenWave] Autoplay DONE level {level} '{rt.Data.Name}': completed={rt.Completed} time={t:F1}s deaths={GameSession.Deaths - deathsBefore} maxX={maxX:F1}/{rt.Data.Width}");
             bot?.Dispose();
             Application.Quit(rt.Completed ? 0 : 1);
+        }
+
+        static void LogFrameStats(System.Collections.Generic.List<float> ft)
+        {
+            if (ft.Count == 0) return;
+            float sum = 0f; foreach (var f in ft) sum += f;
+            var sorted = new System.Collections.Generic.List<float>(ft); sorted.Sort();
+            float avg = sum / ft.Count, p95 = sorted[Mathf.Min(sorted.Count - 1, (int)(sorted.Count * 0.95f))], max = sorted[sorted.Count - 1];
+            Debug.Log($"[LumenWave] Autoplay frames={ft.Count} avg={avg * 1000f:F2}ms ({1f / avg:F0} fps) p95={p95 * 1000f:F2}ms max={max * 1000f:F1}ms res={Screen.width}x{Screen.height}");
         }
 
         void Shot(float t, string tag = null)
