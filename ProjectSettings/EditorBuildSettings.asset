@@ -33,6 +33,12 @@ EditorBuildSettings:
     path: Assets/LumenWave/Scenes/Level08.unity
     guid: aa09a91ef3f9253498eeb7184e559bff
   - enabled: 1
+    path: Assets/LumenWave/Scenes/Level09.unity
+    guid: 119526d66aa4da84cadccc430cbe24ad
+  - enabled: 1
+    path: Assets/LumenWave/Scenes/Level10.unity
+    guid: 69150d3761208d94d9f30006c9cc7806
+  - enabled: 1
     path: Assets/LumenWave/Scenes/End.unity
     guid: f11f2b640ae38b34c88774012c9189af
   m_configObjects:

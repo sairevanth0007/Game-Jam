@@ -18,6 +18,9 @@ namespace LumenWave
         public State Current { get; private set; }
         public Transform Visual { get; private set; }
         public Transform Neck => _neck;
+        /// <summary>0..1: finale "singing" pose (arms open and raised, head up, golden rim, bright eyes). Set by FinaleDirector.</summary>
+        public float Singing { get; set; }
+        Material _eyeMat;
 
         UmbraController _ctl;
         PlayerHealth _health;
@@ -61,6 +64,7 @@ namespace LumenWave
                 _outlineMat.SetColor("_RimColor", RimColor);
             }
             var eyeMat = MaterialLibrary.Tinted("Unlit", EyeColor);
+            _eyeMat = eyeMat;
 
             Visual = new GameObject("Visual").transform;
             Visual.SetParent(transform, false);
@@ -277,6 +281,17 @@ namespace LumenWave
                 }
             }
 
+            // Finale: Umbra sings — arms open wide and lift, head tilts up, chest swells on each breath.
+            if (!dead && Singing > 0.001f)
+            {
+                float sg = Mathf.Clamp01(Singing), br = Mathf.Sin(t * 2.6f);
+                tANU = Mathf.Lerp(tANU, 128f + 6f * br, sg); tANL = Mathf.Lerp(tANL, 18f, sg);
+                tAFU = Mathf.Lerp(tAFU, 112f - 6f * br, sg); tAFL = Mathf.Lerp(tAFL, 22f, sg);
+                tHead = Mathf.Lerp(tHead, 24f, sg); tTorso = Mathf.Lerp(tTorso, 9f, sg);
+                tLNU = Mathf.Lerp(tLNU, 4f, sg); tLNL = Mathf.Lerp(tLNL, 0f, sg);
+                tLFU = Mathf.Lerp(tLFU, -6f, sg); tLFL = Mathf.Lerp(tLFL, 0f, sg);
+            }
+
             float k1 = 1f - Mathf.Exp(-dt * (Current == State.Run ? 30f : 16f));
             _aTorso = Mathf.LerpAngle(_aTorso, tTorso, k1);
             _aHead = Mathf.LerpAngle(_aHead, tHead, k1);
@@ -329,6 +344,11 @@ namespace LumenWave
                 if (_hurtTimer > 0f) rim = Color.Lerp(RimColor, new Color(3f, 0.3f, 0.2f), _hurtTimer / 0.25f);
                 if (_respawnTimer > 0f) rim = Color.Lerp(RimColor, RimColor * 3f, _respawnTimer / 0.45f);
                 if (cmd.shieldHeld && !dead) rim = Color.Lerp(rim, new Color(0.9f, 1.3f, 2.2f) * 2f, 0.5f);
+                if (Singing > 0.001f)
+                {
+                    rim = Color.Lerp(rim, new Color(2.0f, 1.6f, 1.05f) * (0.9f + 0.25f * Mathf.Sin(t * 5.2f)), Mathf.Clamp01(Singing));
+                    if (_eyeMat != null) _eyeMat.SetColor("_BaseColor", Color.Lerp(EyeColor, new Color(2.6f, 2.3f, 1.7f) * 3f, Mathf.Clamp01(Singing)));
+                }
                 _bodyMat.SetColor("_RimColor", rim);
                 if (_outlineMat != null) _outlineMat.SetColor("_RimColor", rim);
             }

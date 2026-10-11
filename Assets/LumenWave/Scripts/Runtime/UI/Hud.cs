@@ -80,6 +80,16 @@ namespace LumenWave.UI
         float _damagePulse;
         float _legendRefresh;
 
+        // Finale cinematic mode: gameplay HUD fades away, two lines of ending text, then a fade to white.
+        public bool Cinematic { get; private set; }
+        public float CinematicTime { get; private set; }
+        CanvasGroup _gameplayGroup;
+        Text _endLine1, _endLine2;
+        Image _whiteout;
+        float _finaleLength = 11f;
+        bool _finaleCompleted;
+        float _completedAt;
+
         void Awake()
         {
             Instance = this;
@@ -96,6 +106,7 @@ namespace LumenWave.UI
             GameEvents.PlayerRespawned += OnRespawned;
             GameEvents.CheckpointReached += OnCheckpoint;
             GameEvents.LevelStarted += OnLevelStarted;
+            GameEvents.FinaleStarted += OnFinale;
         }
 
         void OnDisable()
@@ -108,6 +119,7 @@ namespace LumenWave.UI
             GameEvents.PlayerRespawned -= OnRespawned;
             GameEvents.CheckpointReached -= OnCheckpoint;
             GameEvents.LevelStarted -= OnLevelStarted;
+            GameEvents.FinaleStarted -= OnFinale;
         }
 
         void OnDestroy() { if (Instance == this) Instance = null; }
@@ -119,14 +131,20 @@ namespace LumenWave.UI
             _damageVignette = UIKit.Image(root, "DamageVignette", new Color(1f, 0.1f, 0.05f, 0f), UIKit.Radial, false);
             UIKit.Stretch(_damageVignette.rectTransform, -60);
 
+            // Everything gameplay-related sits in one group so the finale can fade it out.
+            var gameplay = UIKit.Rect(root, "Gameplay");
+            UIKit.Stretch(gameplay);
+            _gameplayGroup = gameplay.gameObject.AddComponent<CanvasGroup>();
+            _gameplayGroup.interactable = false; _gameplayGroup.blocksRaycasts = false;
+
             // Top-left: bars
-            Health = HudBar.Build(root, "Health", UIStyle.Health, new Vector2(56, -64), 380);
-            ResonanceBar = HudBar.Build(root, "Resonance", UIStyle.Resonance, new Vector2(56, -124), 380);
+            Health = HudBar.Build(gameplay, "Health", UIStyle.Health, new Vector2(56, -64), 380);
+            ResonanceBar = HudBar.Build(gameplay, "Resonance", UIStyle.Resonance, new Vector2(56, -124), 380);
 
             // Top-right: level + timer
-            LevelText = UIKit.Label(root, "", 26, TextAnchor.UpperRight, UIStyle.Text, "Level");
+            LevelText = UIKit.Label(gameplay, "", 26, TextAnchor.UpperRight, UIStyle.Text, "Level");
             UIKit.Place(LevelText.rectTransform, new Vector2(1f, 1f), new Vector2(-56, -44), new Vector2(900, 40), new Vector2(1f, 1f));
-            TimerText = UIKit.Label(root, "00:00.00", 22, TextAnchor.UpperRight, UIStyle.Accent, "Timer");
+            TimerText = UIKit.Label(gameplay, "00:00.00", 22, TextAnchor.UpperRight, UIStyle.Accent, "Timer");
             UIKit.Place(TimerText.rectTransform, new Vector2(1f, 1f), new Vector2(-56, -84), new Vector2(400, 34), new Vector2(1f, 1f));
 
             // Message banner (lower middle, over the dark ground so it never hides lights or enemies)
@@ -143,7 +161,7 @@ namespace LumenWave.UI
             UIKit.Stretch(MessageText.rectTransform, 12);
 
             // Bottom-left legend
-            LegendText = UIKit.Label(root, "", 20, TextAnchor.LowerLeft, UIStyle.TextDim, "Legend");
+            LegendText = UIKit.Label(gameplay, "", 20, TextAnchor.LowerLeft, UIStyle.TextDim, "Legend");
             UIKit.Place(LegendText.rectTransform, new Vector2(0f, 0f), new Vector2(56, 40), new Vector2(1200, 30), new Vector2(0f, 0f));
 
             // Centre banner (level complete / checkpoint)
@@ -163,8 +181,60 @@ namespace LumenWave.UI
             _deathText = UIKit.Label(root, UIKit.Spaced("THE LIGHT TOOK YOU", 2), 44, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0), "DeathText");
             UIKit.Place(_deathText.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1400, 80), new Vector2(0.5f, 0.5f));
 
+            // Finale whiteout + text (on top of everything; text above the whiteout).
+            _whiteout = UIKit.Image(root, "Whiteout", new Color(1f, 0.97f, 0.92f, 0f), null, false);
+            UIKit.Stretch(_whiteout.rectTransform, -10);
+            _endLine1 = UIKit.Label(root, UIKit.Spaced("UMBRA SANG."), 46, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0f), "EndLine1");
+            UIKit.Place(_endLine1.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 250), new Vector2(1600, 70), new Vector2(0.5f, 0.5f));
+            UIKit.GlowText(_endLine1, new Color(1f, 0.85f, 0.6f), 2f);
+            _endLine2 = UIKit.Label(root, UIKit.Spaced("and every light remembered its harmony."), 30, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0f), "EndLine2");
+            UIKit.Place(_endLine2.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 185), new Vector2(1600, 50), new Vector2(0.5f, 0.5f));
+
             RefreshLegend();
             RefreshLevelName();
+        }
+
+        /// <summary>Enters cinematic mode (normally on GameEvents.FinaleStarted).</summary>
+        public void SetCinematic(bool on)
+        {
+            Cinematic = on;
+            CinematicTime = 0f;
+            _finaleCompleted = false;
+            if (on)
+            {
+                _messageUntil = 0f;
+                var trig = FindAnyObjectByType<FinaleTrigger>();
+                if (trig != null) _finaleLength = Mathf.Max(6f, trig.duration);
+            }
+        }
+
+        void OnFinale() => SetCinematic(true);
+
+        void TickCinematic(float dt)
+        {
+            float g = Cinematic ? 0f : 1f;
+            _gameplayGroup.alpha = Mathf.MoveTowards(_gameplayGroup.alpha, g, dt * (Cinematic ? 0.8f : 3f));
+            if (!Cinematic)
+            {
+                _endLine1.color = new Color(1f, 1f, 1f, 0f); _endLine2.color = new Color(1f, 1f, 1f, 0f);
+                _whiteout.color = new Color(1f, 0.97f, 0.92f, 0f);
+                return;
+            }
+            CinematicTime += dt;
+            float t = CinematicTime;
+            float a1 = Mathf.Clamp01((t - 2.0f) / 1.5f);
+            float a2 = Mathf.Clamp01((t - 4.5f) / 1.8f);
+            // Whiteout: starts ~1.5 s before the level completes, and is complete ~1 s after.
+            float wStart = _finaleCompleted ? Mathf.Min(_completedAt - 0.5f, _finaleLength - 1.5f) : _finaleLength - 1.5f;
+            float w = Mathf.Clamp01((t - wStart) / 2.5f);
+            // Text glows through the whiteout, then dissolves into it at the very end.
+            float textFade = 1f - Mathf.Clamp01((w - 0.6f) / 0.4f);
+            // Gold over the night; deepens to warm umber as the screen turns white, so it stays readable.
+            float dawnK = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(3f, 8f, t));
+            var gold = Color.Lerp(new Color(1f, 0.93f, 0.8f), new Color(0.3f, 0.2f, 0.16f), Mathf.Clamp01(Mathf.Max(dawnK * 0.8f, w * 1.6f)));
+            _endLine1.color = new Color(gold.r, gold.g, gold.b, a1 * textFade);
+            _endLine2.color = new Color(gold.r, gold.g, gold.b, a2 * textFade);
+            _whiteout.color = new Color(1f, 0.97f, 0.92f, w);
         }
 
         void RefreshLegend()
@@ -197,6 +267,7 @@ namespace LumenWave.UI
             }
             Health.Tick(dt);
             ResonanceBar.Tick(dt);
+            TickCinematic(dt);
             TimerText.text = UIKit.FormatTime(GameSession.LevelTime);
             if (string.IsNullOrEmpty(LevelText.text)) RefreshLevelName();
 
@@ -240,7 +311,11 @@ namespace LumenWave.UI
         void OnMessage(string m) => ShowMessage(m, Mathf.Clamp(2.5f + m.Length * 0.06f, 3.5f, 8f));
         void OnDamaged(float amount, LightColor c) { Health.flash = 1f; _damagePulse = Mathf.Clamp01(_damagePulse + amount / 25f); }
         void OnPowerFailed(PowerType p) { ResonanceBar.shake = 1f; }
-        void OnLevelCompleted(int level, float time) => ShowBanner(UIKit.Spaced("LEVEL COMPLETE", 2), UIKit.FormatTime(time), 3f);
+        void OnLevelCompleted(int level, float time)
+        {
+            if (Cinematic) { _finaleCompleted = true; _completedAt = CinematicTime; return; }   // the ending speaks for itself
+            ShowBanner(UIKit.Spaced("LEVEL COMPLETE", 2), UIKit.FormatTime(time), 3f);
+        }
         void OnDied() { }
         void OnRespawned() { Health.flash = 0.6f; }
         void OnCheckpoint(int i) => ShowBanner("", UIKit.Spaced("CHECKPOINT"), 1.5f);

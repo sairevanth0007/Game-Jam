@@ -4,32 +4,32 @@ fog: 0.035
 mood: violet
 drone: 3
 ---
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                                                                                               ##
-##                                                                        C                                                                      ##
-##                                                                hhh  ########      ###                                                         ##
-##                                                                     ########      ###                                                         ##
-##                                                           hhh       ########      ###                                                         ##
-##                                                                     ########      ######          #####                                       ##
-##                                                      hhh            ########      ######          #####                                       ##
-##  P                         C                 C                      ########      ######          #####   C                               E   ##
-################           ##########hhhhhhhh#########                 ########      ######          ##############hhhhh           ################
-################           ##########        #########                 ########      ######          ##############                ################
-################^^^^^^^^^^^##########^^^^^^^^#########^^^^^^^^^^^^^^^^^########^^^^^^######^^^^^^^^^^##############^^^^^^^^^^^^^^^^################
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                                                                                                                                      ##
+##                                                                            C                                                                                                         ##
+##                                                                  hhhhh  ########      ###                                                                                            ##
+##                                                                         ########      ###                                                                                            ##
+##                                                            hhhhh        ########      ###                                                                                            ##
+##                                                                         ########      ######          #####                                                                          ##
+##                                                      hhhhh              ########      ######          #####                  ###                                                     ##
+##  P                         C                 C                          ########      ######          #####   C              ###                 C                               E   ##
+################           ##########hhhhhhhh##########                    ########      ######          ##############      ######      ###      ########hhhhh           ################
+################           ##########        ##########                    ########      ######          ##############      ######      ###      ########                ################
+################^^^^^^^^^^^##########^^^^^^^^##########^^^^^^^^^^^^^^^^^^^^########^^^^^^######^^^^^^^^^^##############^^^^^^######^^^^^^###^^^^^^########^^^^^^^^^^^^^^^^################
 ---
 tutorial 11 3 text=Combine_them:_sing_a_bridge,_then_{Dash}_off_its_end. radius=3
 bot 15 3 do=echo
@@ -39,22 +39,27 @@ bot 36.2 3 do=pulse
 bot 36.3 3 t=0.4 do=wait
 orb 53.5 7
 tutorial 51 3 text=The_wave_travels_outward._Watch_the_ghosts_appear. radius=3
-bot 53 3 do=pulse
-bot 53.1 3 t=0.4 do=wait
-bot 53.4 3 t=0.45 do=jump
-bot 56.4 5 do=pulse
-bot 58.4 5 t=0.45 do=jump
-bot 61.4 7 do=pulse
-bot 63.4 7 t=0.45 do=jump
-bot 68.4 9 t=0.45 do=jump
-orb 80.5 13
-tutorial 77 9 text=Sing_from_the_cliff_edge_and_walk_the_air. radius=3
-bot 78 9 do=echo
-bot 90 6 do=echo
-bot 96 6 do=echo
-tutorial 112 3 text=Everything_at_once:_Pulse,_sing,_dash. radius=3
-bot 114 3 do=pulse
-bot 114.1 3 t=0.4 do=wait
-bot 119 3 do=echo
-bot 125.4 3 t=0.22 do=jumpdash
-orb 134.5 8
+bot 53.5 3 do=pulse
+bot 54.6 3 t=0.45 do=jump
+bot 57 5 do=pulse
+bot 60.6 5 t=0.45 do=jump
+bot 63 7 do=pulse
+bot 66.6 7 t=0.45 do=jump
+bot 72.4 9 t=0.45 do=jump
+orb 84.5 13
+tutorial 81 9 text=Sing_from_the_cliff_edge_and_walk_the_air. radius=3
+bot 82 9 do=echo
+bot 94 6 do=echo
+bot 100 6 do=echo
+tutorial 116 3 text=Relay:_bridge,_pillar,_bridge. radius=3
+bot 118 3 do=echo
+bot 126.7 3 t=0.45 do=jump
+bot 130 5 do=echo
+bot 139.6 3 t=0.22 do=jumpdash
+orb 149.5 8
+tutorial 151 3 text=Everything_at_once:_Pulse,_sing,_dash. radius=3
+bot 153 3 do=pulse
+bot 153.1 3 t=0.4 do=wait
+bot 158 3 do=echo
+bot 164.4 3 t=0.22 do=jumpdash
+orb 173.5 8

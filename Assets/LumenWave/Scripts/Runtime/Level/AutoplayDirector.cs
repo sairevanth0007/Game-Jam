@@ -58,7 +58,7 @@ namespace LumenWave
             Time.timeScale = 1f;
             int deathsBefore = GameSession.Deaths;
 
-            float t = 0f, nextShot = 0.5f, nextLog = 0f;
+            float t = 0f, nextShot = 0.5f, nextLog = 0f, finaleShot = -1f;
             float maxX = rt.Player.transform.position.x;
             while (t < seconds && !rt.Completed)
             {
@@ -66,6 +66,8 @@ namespace LumenWave
                 var p = rt.Player.transform.position;
                 maxX = Mathf.Max(maxX, p.x);
                 if (t >= nextShot) { Shot(t); nextShot += shotInterval; }
+                // Finale: denser captures so the ending sequence can be reviewed.
+                if (FinaleTrigger.Started) { if (finaleShot < 0f) finaleShot = t + 1f; if (t >= finaleShot) { Shot(t, "finale"); finaleShot += 1.5f; } }
                 if (t >= nextLog)
                 {
                     Debug.Log($"[LumenWave] Autoplay t={t:F1}s x={p.x:F1} y={p.y:F1} deaths={GameSession.Deaths - deathsBefore} last={bot?.LastAction}");
@@ -78,6 +80,10 @@ namespace LumenWave
                 // Let the completion banner show, then capture it.
                 yield return new WaitForSecondsRealtime(1.0f);
                 Shot(t + 1f);
+                if (FinaleTrigger.Started)
+                {
+                    yield return new WaitForSecondsRealtime(1.2f); Shot(t + 2.2f, "finale");
+                }
             }
             yield return new WaitForEndOfFrame();
             yield return new WaitForSecondsRealtime(0.5f);
@@ -86,9 +92,11 @@ namespace LumenWave
             Application.Quit(rt.Completed ? 0 : 1);
         }
 
-        void Shot(float t)
+        void Shot(float t, string tag = null)
         {
-            var path = Path.Combine(outDir, $"autoplay_L{level}_{Mathf.RoundToInt(t):000}.png");
+            var path = tag == null
+                ? Path.Combine(outDir, $"autoplay_L{level}_{Mathf.RoundToInt(t):000}.png")
+                : Path.Combine(outDir, $"autoplay_L{level}_{tag}_{Mathf.RoundToInt(t * 10f):0000}.png");
             ScreenCapture.CaptureScreenshot(path);
         }
     }

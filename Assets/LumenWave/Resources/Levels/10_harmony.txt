@@ -40,5 +40,5 @@ bot 22.7 3 t=0.45 do=jump
 bot 32.7 4 t=0.45 do=jump
 orb 48.5 10
 tutorial 54 5 text=Every_light_you_feared_was_a_note_waiting_for_a_song. radius=3
-ending 62.5 6 time=7
-bot 62.6 5 t=9 do=wait
+ending 62.5 6 time=11
+bot 62.6 5 t=13 do=wait

@@ -31,7 +31,7 @@ namespace LumenWave.Tests
 
         /// <summary>Debug aid: per-frame position trace for one level between two x values.</summary>
         public static int TraceLevel = 0;
-        public static float TraceFromX = 39f, TraceToX = 53f;
+        public static float TraceFromX = 50f, TraceToX = 60f;
 
         const float TimeLimit = 240f;   // game seconds per level
         const float TimeScale = 2.5f;
@@ -85,7 +85,7 @@ namespace LumenWave.Tests
                 if (TraceLevel == level && tp.x > TraceFromX && tp.x < TraceToX && traced < 400)
                 {
                     traced++;
-                    Debug.Log($"[LumenWave] TRACE t={t:F2} pos=({tp.x:F2},{tp.y:F2}) v={body.Velocity} grounded={body.Grounded}");
+                    Debug.Log($"[LumenWave] TRACE t={t:F2} pos=({tp.x:F2},{tp.y:F2}) v={body.Velocity} grounded={body.Grounded} last={bot.LastAction} res={rt.Player.GetComponent<Resonance>()?.current:F0}");
                 }
                 yield return null;
             }
