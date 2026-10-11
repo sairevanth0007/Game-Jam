@@ -57,6 +57,7 @@ namespace LumenWave.Demo
                 voices[i].volume = Mathf.MoveTowards(voices[i].volume, held ? level : 0, Time.deltaTime * (held ? 1.5f : .5f));
             }
         }
+        //  task
         void OnDisable() { foreach (var voice in voices) if (voice != null) voice.Stop(); }
         void OnDestroy() { foreach (var voice in voices) if (voice != null && voice.clip != null) Destroy(voice.clip); }
     }
