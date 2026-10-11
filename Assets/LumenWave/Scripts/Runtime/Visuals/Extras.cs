@@ -125,7 +125,7 @@ namespace LumenWave
         }
 
         // ------------------------------------------------------------------ crystals
-        public static void Crystals(Transform root, float x0, float x1, float groundY, Mood mood, Theme theme, System.Random rng)
+        public static void Crystals(Transform root, float x0, float x1, float groundY, Mood mood, Theme theme, System.Random rng, System.Func<float, float> floorAt = null)
         {
             var parent = new GameObject("CrystalClusters").transform;
             parent.SetParent(root, false);
@@ -150,7 +150,7 @@ namespace LumenWave
                 float scale = isNear ? 0.5f + (float)rng.NextDouble() * 0.6f : 1.2f + (float)rng.NextDouble() * 1.8f;
                 var cl = new GameObject("Cluster").transform;
                 cl.SetParent(parent, false);
-                cl.localPosition = new Vector3(x, groundY - 1.2f + (float)rng.NextDouble() * 1.5f, z);
+                cl.localPosition = new Vector3(x, (floorAt != null ? floorAt(x) : groundY) - 1.2f + (float)rng.NextDouble() * 1.5f, z);
                 int n = 3 + rng.Next(5);
                 for (int i = 0; i < n; i++)
                 {
@@ -169,7 +169,7 @@ namespace LumenWave
                 }
                 // Soft glow behind the cluster.
                 var g = LightVisuals.Glow(cl, new Vector3(0f, scale * 1.6f, 0.5f), scale * 6f, theme.crystalColor * 0.1f, "ClusterGlow");
-                x += isNear ? 9f + (float)rng.NextDouble() * 14f : 6f + (float)rng.NextDouble() * 10f;
+                x += (isNear ? 9f + (float)rng.NextDouble() * 14f : 6f + (float)rng.NextDouble() * 10f) / Mathf.Max(0.5f, theme.crystalDensity);
             }
         }
 

@@ -95,3 +95,8 @@ Format: time (Sun 11 Oct 2026) — decision — why.
   - **Flare:** a horned black bell creature with glowing trim rings, vents and a snout-lantern head.
   - We built them procedurally rather than from the Kenney pieces: one consistent rim look, no extra assets.
   - `-lw-enemyposes <dir>` (HeroPoseDirector) captures close-ups of all four enemies calm, hunting and stunned.
+- 10:15 — Env polish round 2:
+  - Limbo-style detail band: rock texture and normal detail only show within about 1.5 m of the walkable top (strongest) and of exposed sides and undersides (uv1.y holds the distance to the nearest exposed edge). Block interiors fade to a calm near-black silhouette, and texture contrast is lower overall.
+  - A floating lamp with no ceiling gets a lamp post and arm, so it reads as a lantern rather than a second moon.
+  - Fortress, ruins and prism themes get warm fire glows (or soft violet light pools), stronger mid-layer rims, and denser prism crystals.
+  - Stronger lip highlight on dust and paving caps.

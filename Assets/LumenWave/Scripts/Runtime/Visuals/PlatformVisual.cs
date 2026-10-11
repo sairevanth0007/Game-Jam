@@ -67,7 +67,7 @@ namespace LumenWave
             m.SetFloat("_DarkDepth", 1.2f);
             m.SetFloat("_DarkMin", 0.35f);
             // Soft moonlit rim on the front lip (readable, but not a neon line).
-            m.SetColor("_LipColor", Color.Lerp(mood.edge, Color.white, 0.35f) * (th.capKind == CapKind.Snow ? 0.16f : 0.12f));
+            m.SetColor("_LipColor", Color.Lerp(mood.edge, Color.white, 0.35f) * (th.capKind == CapKind.Snow ? 0.16f : th.capKind == CapKind.Paving || th.capKind == CapKind.Dust ? 0.22f : 0.12f));
             m.SetColor("_Bounce", mood.edge * 0.05f);
             m.SetColor("_FillColor", Color.Lerp(Color.white, mood.moonlight, 0.5f) * 1.1f);
             m.SetFloat("_NormalStrength", 1.2f);
@@ -82,7 +82,7 @@ namespace LumenWave
 
         // ---------------------------------------------------------------- body
         /// <summary>Builds the visual body for a block (local to the block's parent).</summary>
-        public static GameObject Body(Transform parent, Vector3 center, Vector3 size, bool ledge, float[] columnSurface, int colStart, Material mat)
+        public static GameObject Body(Transform parent, Vector3 center, Vector3 size, bool ledge, float[] columnSurface, int colStart, Material mat, System.Func<float, float, float> edgeDist = null)
         {
             var mn = center - size * 0.5f;
             var mx = center + size * 0.5f;
@@ -114,7 +114,9 @@ namespace LumenWave
                         verts.Add(p); norms.Add(n);
                         int col = Mathf.Clamp(Mathf.FloorToInt(p.x) - colStart, 0, columnSurface.Length - 1);
                         float depth = Mathf.Max(0f, columnSurface[col] - p.y);
-                        uv1.Add(new Vector2(depth, 0f));
+                        // uv1.y: distance to the nearest exposed side / underside edge (texture band in the shader).
+                        float side = edgeDist != null ? edgeDist(p.x, p.y) : 0f;
+                        uv1.Add(new Vector2(depth, side));
                         // Cavity: darker right under the cap overhang and in noise hollows.
                         float ao = Mathf.Lerp(0.7f, 1f, Mathf.Clamp01(depth / 0.45f)) * (0.8f + 0.2f * Fbm(p * 1.7f));
                         if (depth > 50f) ao = 1f;

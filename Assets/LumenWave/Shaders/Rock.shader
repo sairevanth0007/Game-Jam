@@ -80,7 +80,7 @@ Shader "LumenWave/Rock"
                 float3 positionWS : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
                 half4 color : TEXCOORD2;
-                float depth : TEXCOORD3;
+                float2 depth : TEXCOORD3;
                 half fogFactor : TEXCOORD4;
             };
 
@@ -92,7 +92,7 @@ Shader "LumenWave/Rock"
                 o.positionWS = p.positionWS;
                 o.normalWS = TransformObjectToWorldNormal(v.normalOS);
                 o.color = v.color;
-                o.depth = v.uv1.x;
+                o.depth = v.uv1;
                 o.fogFactor = ComputeFogFactor(p.positionCS.z);
                 return o;
             }
@@ -128,8 +128,14 @@ Shader "LumenWave/Rock"
                 half3 avgC = SAMPLE_TEXTURE2D_LOD(_CapTex, sampler_CapTex, float2(0.5, 0.5), 12).rgb;
                 half lumS = max(0.02, dot(avgS, half3(0.2126, 0.7152, 0.0722)));
                 half lumC = max(0.02, dot(avgC, half3(0.2126, 0.7152, 0.0722)));
-                half3 side = (cX * w.x + cZ * w.z + cYs * w.y * (1 - top)) / lumS * _Tint.rgb;
-                half3 cap = cYc / lumC * _CapTint.rgb;
+                // Limbo-style detail band: texture/normal detail only within ~1.5 m of an exposed edge (top lip
+                // strongest, sides/undersides weaker); the interior of big masses becomes a calm dark silhouette.
+                float topBand = 1 - smoothstep(0.25, 1.6, i.depth.x);
+                float sideBand = 1 - smoothstep(0.1, 1.2, i.depth.y);
+                float detail = max(topBand, sideBand * 0.6);
+                half texK = lerp(0.12, 0.7, detail);           // also lowers the overall texture contrast
+                half3 side = lerp(avgS, cX * w.x + cZ * w.z + cYs * w.y * (1 - top), texK) / lumS * _Tint.rgb;
+                half3 cap = lerp(avgC, cYc, 0.8) / lumC * _CapTint.rgb;
                 half3 albedo = side * (1 - top * w.y) + cap * (top * w.y);
                 // Large-scale tone variation breaks texture repetition.
                 float big = vnoise(wp.xy * 0.13 + 3.1) * 0.6 + vnoise(wp.xy * 0.41) * 0.4;
@@ -145,12 +151,14 @@ Shader "LumenWave/Rock"
                 tY = half3(tY.xy + n.xz, abs(tY.z) * n.y);
                 tZ = half3(tZ.xy + n.xy, abs(tZ.z) * n.z);
                 float3 N = normalize(tX.zyx * w.x + tY.xzy * w.y + tZ.xyz * w.z);
+                N = normalize(lerp(n, N, saturate(detail + top)));
 
                 // Sink into darkness below the walkable lip.
-                float d = saturate(i.depth / max(0.01, _DarkDepth));
+                float d = saturate(i.depth.x / max(0.01, _DarkDepth));
                 float dark = lerp(1.0, _DarkMin, d * d * (3 - 2 * d));
+                dark = max(dark, 0.45 * sideBand);   // exposed side edges keep a lit rim band
                 half ao = i.color.r;
-                albedo *= dark * ao;
+                albedo *= dark * ao * lerp(0.45, 1.0, detail);
 
                 InputData inputData = (InputData)0;
                 inputData.positionWS = wp;

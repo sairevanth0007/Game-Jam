@@ -10,6 +10,31 @@ namespace LumenWave
     /// </summary>
     public static class TileStyle
     {
+        /// <summary>
+        /// Distance (world units, capped at 6) from a point inside solid ground to the nearest exposed side or
+        /// underside (an empty cell left/right in the same row, or below in the same column). Level borders and
+        /// the level bottom don't count as exposed.
+        /// </summary>
+        public static System.Func<float, float, float> EdgeDistance(LevelData d)
+        {
+            return (x, y) =>
+            {
+                int col = Mathf.Clamp(Mathf.FloorToInt(x), 0, d.Width - 1);
+                int row = Mathf.FloorToInt(y - 0.02f);
+                float best = 6f;
+                int e = col;
+                while (col - e < 6 && e - 1 >= 0 && LevelData.IsSolid(d.Tile(e - 1, row))) e--;
+                if (col - e < 6 && e - 1 >= 0) best = Mathf.Min(best, x - e);
+                e = col;
+                while (e - col < 6 && e + 1 < d.Width && LevelData.IsSolid(d.Tile(e + 1, row))) e++;
+                if (e - col < 6 && e + 1 < d.Width) best = Mathf.Min(best, e + 1 - x);
+                int r = row;
+                while (row - r < 6 && r - 1 >= 0 && LevelData.IsSolid(d.Tile(col, r - 1))) r--;
+                if (row - r < 6 && r - 1 >= 0) best = Mathf.Min(best, y - r);
+                return Mathf.Max(0f, best);
+            };
+        }
+
         public static void Style(GameObject block, char tile, LevelContext ctx)
         {
             var mood = SceneRig.Instance != null ? SceneRig.Instance.Mood : Mood.Get(ctx?.data?.Get("mood", "blue"));
@@ -34,7 +59,7 @@ namespace LumenWave
             var r = block.GetComponent<MeshRenderer>();
             if (r != null) r.enabled = false;
             var parent = block.transform.parent;
-            PlatformVisual.Body(parent, p, s, ledge, surf, x0, PlatformVisual.BodyMaterial(theme, mood));
+            PlatformVisual.Body(parent, p, s, ledge, surf, x0, PlatformVisual.BodyMaterial(theme, mood), ctx != null ? EdgeDistance(ctx.data) : null);
 
             // Exposed runs along the top: columns whose cell above is not solid.
             var mb = new MeshBuilderN();

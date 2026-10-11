@@ -85,6 +85,7 @@ namespace LumenWave
             };
             // Near-black albedo: layers read as silhouettes; depth comes from the fog (atmosphere) amount.
             var baseAlbedo = Color.Lerp(mood.layer, theme.rockTint * 0.15f, 0.5f);
+            for (int i = 1; i < specs.Length - 1; i++) specs[i].rim *= theme.rimBoost;
             foreach (var L in specs)
             {
                 float zMid = (L.z0 + L.z1) * 0.5f;
@@ -220,9 +221,10 @@ namespace LumenWave
         }
 
         // ------------------------------------------------------------------ glows
-        public static void DistantGlows(Transform root, float width, float height, Mood mood, System.Random rng)
+        public static void DistantGlows(Transform root, float width, float height, Mood mood, System.Random rng, Theme theme = null, System.Func<float, float> floorAt = null)
         {
-            int glows = Mathf.Max(2, Mathf.RoundToInt(width / 22f));
+            float mult = theme != null ? theme.glowCount : 1f;
+            int glows = Mathf.Max(2, Mathf.RoundToInt(width / 22f * mult));
             for (int i = 0; i < glows; i++)
             {
                 var g = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -230,10 +232,14 @@ namespace LumenWave
                 g.name = "DistantGlow";
                 g.transform.SetParent(root, false);
                 float z = 22f + (float)rng.NextDouble() * 30f;
-                g.transform.position = new Vector3((float)rng.NextDouble() * width, 1f + (float)rng.NextDouble() * 9f, z);
+                float gx = (float)rng.NextDouble() * width;
+                float baseY = floorAt != null ? floorAt(gx) : 0f;
+                bool warm = theme != null && theme.glowColor.HasValue;
+                // Warm fires / soft light pools sit low, near the ground of the far layers.
+                g.transform.position = new Vector3(gx, baseY + (warm ? -1f + (float)rng.NextDouble() * 5f : 1f + (float)rng.NextDouble() * 9f), z);
                 float s = 5f + (float)rng.NextDouble() * 8f;
                 g.transform.localScale = new Vector3(s, s, 1f);
-                var gc = mood.edge * 0.12f; gc.a = 1f;
+                var gc = (warm ? theme.glowColor.Value * 0.2f : mood.edge * 0.12f); gc.a = 1f;
                 g.GetComponent<MeshRenderer>().sharedMaterial = MaterialLibrary.Tinted("Glow", gc);
                 Backdrop.Shadowless(g);
             }

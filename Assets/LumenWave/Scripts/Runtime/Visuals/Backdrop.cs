@@ -22,9 +22,9 @@ namespace LumenWave
             System.Func<float, float> floorAt = data != null ? FloorProfile(data, groundY) : null;
             Scenery.Layers(root, 0f, width, groundY, mood, theme, rng, floorAt);
             Scenery.Mist(root, 0f, width, groundY, mood, theme);
-            Scenery.DistantGlows(root, width, height, mood, rng);
+            Scenery.DistantGlows(root, width, height, mood, rng, theme, floorAt);
             if (theme.gears) Extras.Gears(root, 0f, width, groundY, mood, rng);
-            if (theme.crystals) Extras.Crystals(root, 0f, width, groundY, mood, theme, rng);
+            if (theme.crystals) Extras.Crystals(root, 0f, width, groundY, mood, theme, rng, floorAt);
             if (data != null) Scenery.Dressing(root, data, mood, theme, rng);
             var cam = SceneRig.Instance != null ? SceneRig.Instance.Camera : Camera.main;
             Foreground.Build(root, 0f, width, mood, theme, seed + 17, cam, camDist);
@@ -168,7 +168,7 @@ namespace LumenWave
                 var surf = new float[cols];
                 for (int i = 0; i < cols; i++) surf[i] = top;
                 var size = new Vector3(xb - xa, top - bottom, 4f);
-                PlatformVisual.Body(vis, new Vector3((xa + xb) * 0.5f, (top + bottom) * 0.5f, 0f), size, false, surf, Mathf.FloorToInt(xa), body);
+                PlatformVisual.Body(vis, new Vector3((xa + xb) * 0.5f, (top + bottom) * 0.5f, 0f), size, false, surf, Mathf.FloorToInt(xa), body, (x, y) => x - xa);
                 var mb = new MeshBuilderN();
                 PlatformVisual.Cap(mb, xa, xb, top, 4f, openL, false, theme.capKind, false, rng);
                 var go = new GameObject("TopCap");

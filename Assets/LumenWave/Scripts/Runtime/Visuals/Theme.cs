@@ -38,6 +38,9 @@ namespace LumenWave
         public Color crystalColor = new Color(0.3f, 1f, 0.6f);
         public float iridescence = 0.3f;
         public bool foregroundChains, foregroundVines = true, foregroundGrass = true, foregroundRuins;
+        /// <summary>Distant glows: colour (null = mood edge), count multiplier; rim boost for mid/far layers.</summary>
+        public Color? glowColor;
+        public float glowCount = 1f, rimBoost = 1f, crystalDensity = 1f;
 
         public static string Default(string mood)
         {
@@ -73,6 +76,7 @@ namespace LumenWave
                     t.foregroundVines = false; t.foregroundRuins = true;
                     break;
                 case "ruins":
+                    t.glowColor = new Color(1f, 0.45f, 0.15f); t.glowCount = 1.8f; t.rimBoost = 1.6f;
                     t.rock = "Bricks066"; t.cap = "PavingStones131"; t.capKind = CapKind.Paving;
                     t.rockTint = new Color(0.298f, 0.230f, 0.226f); t.capTint = new Color(0.173f, 0.138f, 0.131f);
                     t.rockScale = 3f; t.wet = 0.3f;
@@ -86,6 +90,7 @@ namespace LumenWave
                     t.foregroundRuins = true; t.foregroundChains = true; t.foregroundVines = false;
                     break;
                 case "fortress":
+                    t.glowColor = new Color(1f, 0.42f, 0.12f); t.glowCount = 3.5f; t.rimBoost = 3f;
                     t.rock = "Bricks066"; t.cap = "Rock035"; t.capKind = CapKind.Paving;
                     t.rockTint = new Color(0.264f, 0.216f, 0.216f); t.capTint = new Color(0.162f, 0.138f, 0.138f);
                     t.rockScale = 2.6f; t.wet = 0.35f;
@@ -138,6 +143,7 @@ namespace LumenWave
                     t.foregroundChains = true; t.foregroundVines = false; t.foregroundGrass = false; t.foregroundRuins = true;
                     break;
                 case "prism":
+                    t.glowColor = new Color(0.65f, 0.55f, 1f); t.glowCount = 2f; t.rimBoost = 1.6f; t.crystalDensity = 2.2f;
                     t.rock = "Rock035"; t.cap = "Rock035"; t.capKind = CapKind.Dust;
                     t.rockTint = new Color(0.202f, 0.192f, 0.264f); t.capTint = new Color(0.192f, 0.184f, 0.238f);
                     t.rockScale = 6f; t.wet = 0.9f;
