@@ -47,6 +47,14 @@ namespace LumenWave.EditorTools
             return path;
         }
 
+        /// <summary>Build output (override with <c>-lw-build-path Builds/xyz/LumenWave.exe</c> so parallel builds don't clash).</summary>
+        static string OutputPath()
+        {
+            var a = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < a.Length - 1; i++) if (a[i] == "-lw-build-path") return a[i + 1];
+            return BuildPath;
+        }
+
         [MenuItem("LumenWave/Build Windows Player")]
         public static bool BuildWindows()
         {
@@ -54,14 +62,14 @@ namespace LumenWave.EditorTools
             var opts = new BuildPlayerOptions
             {
                 scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray(),
-                locationPathName = BuildPath,
+                locationPathName = OutputPath(),
                 target = BuildTarget.StandaloneWindows64,
                 targetGroup = BuildTargetGroup.Standalone,
                 options = BuildOptions.None,
             };
             var report = BuildPipeline.BuildPlayer(opts);
             var s = report.summary;
-            Debug.Log($"[LumenWave] Build {s.result}: {s.totalSize / (1024 * 1024)} MB, {s.totalErrors} errors, {s.totalTime.TotalSeconds:F0}s -> {BuildPath}");
+            Debug.Log($"[LumenWave] Build {s.result}: {s.totalSize / (1024 * 1024)} MB, {s.totalErrors} errors, {s.totalTime.TotalSeconds:F0}s -> {OutputPath()}");
             return s.result == BuildResult.Succeeded;
         }
 
