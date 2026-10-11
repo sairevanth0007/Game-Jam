@@ -212,6 +212,7 @@ namespace LumenWave
             bool wantOutline = _hero.Dissolve < 0.02f && _outlineMat != null;
             if (_outlineSmr != null && wantOutline != _outlineSmr.enabled) SetOutline(wantOutline);
 
+            UpdateBurn(dt, dead);
             _castTimer -= dt; _hurtTimer -= dt;
             ApplyRim(dead, cmd, Time.time);
             if (_bodyMat.HasProperty("_DissolveEdge"))
@@ -224,6 +225,8 @@ namespace LumenWave
         {
             if (_bodyMat == null) return;
             Color rim = RimColor;
+            // Burning in red/yellow light: rim glows orange-red, stronger with damage per second.
+            if (_burn > 0.001f) rim = Color.Lerp(RimColor, BurnRim * (0.85f + 0.15f * Mathf.Sin(t * 23f)), Mathf.Clamp01(_burn));
             if (_hurtTimer > 0f)
             {
                 float k = _hurtTimer / 0.25f;
@@ -242,8 +245,94 @@ namespace LumenWave
             }
             _bodyMat.SetColor("_RimColor", rim);
             if (_bodyMat.HasProperty("_Ambient"))
-                _bodyMat.SetColor("_Ambient", _hurtTimer > 0f ? Color.Lerp(HeroAmbient, new Color(0.28f, 0.03f, 0.02f), Mathf.Clamp01(_hurtTimer / 0.25f)) : HeroAmbient);
+                _bodyMat.SetColor("_Ambient", _hurtTimer > 0f ? Color.Lerp(HeroAmbient, new Color(0.28f, 0.03f, 0.02f), Mathf.Clamp01(_hurtTimer / 0.25f))
+                                              : Color.Lerp(HeroAmbient, new Color(0.09f, 0.025f, 0.005f), Mathf.Clamp01(_burn)));
             if (_outlineMat != null) _outlineMat.SetColor("_RimColor", rim);
+        }
+
+        // ---- Burning (red / yellow light) -------------------------------------------------------------
+        static readonly Color BurnRim = new Color(2.3f, 0.42f, 0.07f);
+        LightReceiver _receiver;
+        float _burn;
+        ParticleSystem _smoke, _embers;
+
+        /// <summary>
+        /// Burn level from the light the receiver measures (exposure-based, so it also shows in god mode):
+        /// rises with damage per second, fades out within ~0.4 s after leaving the light.
+        /// </summary>
+        void UpdateBurn(float dt, bool dead)
+        {
+            if (_receiver == null) _receiver = GetComponent<LightReceiver>();
+            float dps = (!dead && _receiver != null) ? _receiver.LastEffect.damagePerSecond : 0f;
+            float target = dps > 0.01f ? Mathf.Clamp01(0.75f + dps / 120f) : 0f;
+            _burn = target > _burn ? Mathf.MoveTowards(_burn, target, dt * 8f) : Mathf.MoveTowards(_burn, target, dt / 0.4f);
+            if (_burn > 0.001f && _smoke == null) BuildBurnFx();
+            if (_smoke == null) return;
+            var se = _smoke.emission; se.rateOverTime = 34f * _burn;
+            var ee = _embers.emission; ee.rateOverTime = 45f * _burn;
+        }
+
+        void BuildBurnFx()
+        {
+            var parent = _hero != null && _hero.Animator != null ? _hero.Animator.GetBoneTransform(HumanBodyBones.Spine) : null;
+            float h = _ctl.height;
+            _smoke = BurnSystem("BurnSmoke", parent, h, false);
+            _embers = BurnSystem("BurnEmbers", parent, h, true);
+        }
+
+        ParticleSystem BurnSystem(string name, Transform bone, float h, bool embers)
+        {
+            var go = new GameObject(name);
+            go.layer = Layers.Player;
+            go.transform.SetParent(transform, false);
+            go.transform.localPosition = new Vector3(0f, h * 0.5f, 0f);
+            if (bone != null) { var f = go.AddComponent<UmbraFollow>(); f.target = bone; }
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.loop = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = embers ? 60 : 40;
+            var em = ps.emission; em.rateOverTime = 0f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(0.45f, h * 0.75f, 0.25f);
+            var col = ps.colorOverLifetime; col.enabled = true;
+            var g = new Gradient();
+            var r = go.GetComponent<ParticleSystemRenderer>();
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            if (embers)
+            {
+                main.startLifetime = new ParticleSystem.MinMaxCurve(0.35f, 0.8f);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(0.6f, 2.2f);
+                main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.07f);
+                main.startColor = new ParticleSystem.MinMaxGradient(new Color(3f, 1.1f, 0.25f), new Color(2.4f, 0.5f, 0.1f));
+                main.gravityModifier = -0.35f;
+                var noise = ps.noise; noise.enabled = true; noise.strength = 0.8f; noise.frequency = 2f;
+                g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(new Color(1f, 0.4f, 0.2f), 1f) },
+                          new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
+                r.sharedMaterial = EnemyUtil.GlowMaterial(Color.white);
+                r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.04f; r.lengthScale = 1.2f;
+            }
+            else
+            {
+                main.startLifetime = new ParticleSystem.MinMaxCurve(0.8f, 1.5f);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.6f);
+                main.startSize = new ParticleSystem.MinMaxCurve(0.25f, 0.55f);
+                main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+                main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.32f, 0.29f, 0.27f, 0.6f), new Color(0.45f, 0.4f, 0.37f, 0.45f));
+                main.gravityModifier = -0.12f;
+                var sz = ps.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.6f, 1f, 1.6f));
+                g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                          new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.2f), new GradientAlphaKey(0f, 1f) });
+                var m = MaterialLibrary.Create("ParticleAlpha");
+                if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", EnemyUtil.SoftDot);
+                if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", EnemyUtil.SoftDot);
+                r.sharedMaterial = m;
+                r.sortingFudge = 2f;
+            }
+            col.color = g;
+            ps.Play();
+            return ps;
         }
 
         void UpdateGhosts(float dt)
@@ -291,6 +380,13 @@ namespace LumenWave
             if (_eyeMat != null) Destroy(_eyeMat);
             if (_haloMat != null) Destroy(_haloMat);
         }
+    }
+
+    /// <summary>Keeps an effect emitter on a bone's position (no rotation, no limb control).</summary>
+    public class UmbraFollow : MonoBehaviour
+    {
+        public Transform target;
+        void LateUpdate() { if (target != null) transform.position = target.position + Vector3.up * 0.15f; }
     }
 
     /// <summary>Fading afterimage left behind by a dash.</summary>

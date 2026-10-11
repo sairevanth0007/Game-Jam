@@ -1,5 +1,5 @@
 name: Red Light
-intro: Red light burns. Your song can shield you.
+intro: Red light burns. White-hot light kills.
 fog: 0.04
 mood: red
 theme: ruins
@@ -28,9 +28,9 @@ drone: 4
 #####################################################################################################################################################################################################################
 #####################################################################################################################################################################################################################
 ---
-tutorial 9.5 3 text=Red_light_burns radius=3
+tutorial 9.5 3 text=Red_light_burns._Don't_linger. radius=3
 beam 16.5 12.9 color=red dir=-90 range=11 intensity=0.6 width=0.8
-tutorial 22.5 3 text=Hold_{Shield}_to_block_light_with_a_standing_wave radius=3
+tutorial 22.5 3 text=White-hot_light_kills_instantly._Hold_{Shield}_or_avoid_it. radius=3
 bot 25.4 3 do=shield t=1.4
 beam 28.5 12.9 color=red dir=-90 range=11 intensity=10 width=1.0
 lamp 34.5 7 color=green radius=4 intensity=1.2

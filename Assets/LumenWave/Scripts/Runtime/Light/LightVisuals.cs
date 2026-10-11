@@ -231,6 +231,117 @@ namespace LumenWave
             return ps;
         }
 
+        /// <summary>
+        /// Effect particles that give each light colour one consistent look: green heal = small soft motes
+        /// rising steadily; blue low gravity = larger cool specks floating up slowly and drifting. Box shape
+        /// (local X across, local Y along); world simulation; caller sets transform + shape scale.
+        /// </summary>
+        public static ParticleSystem EffectMotes(Transform parent, LightColor c, string name = "EffectMotes")
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            bool blue = c == LightColor.Blue;
+            var col = LightMath.DisplayColor(c);
+            var main = ps.main;
+            main.loop = true;
+            main.startSpeed = 0f;
+            main.startLifetime = blue ? new ParticleSystem.MinMaxCurve(2.5f, 4f) : new ParticleSystem.MinMaxCurve(1.2f, 2.2f);
+            main.startSize = blue ? new ParticleSystem.MinMaxCurve(0.08f, 0.16f) : new ParticleSystem.MinMaxCurve(0.04f, 0.09f);
+            var c0 = col; c0.a = 0.9f;
+            main.startColor = c0;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 60;
+            var em = ps.emission; em.rateOverTime = 10f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = Vector3.one;
+            var vel = ps.velocityOverLifetime;
+            vel.enabled = true;
+            vel.space = ParticleSystemSimulationSpace.World;
+            vel.x = blue ? new ParticleSystem.MinMaxCurve(-0.15f, 0.15f) : new ParticleSystem.MinMaxCurve(-0.03f, 0.03f);
+            vel.y = blue ? new ParticleSystem.MinMaxCurve(0.15f, 0.35f) : new ParticleSystem.MinMaxCurve(0.5f, 0.9f);
+            vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+            var noise = ps.noise; noise.enabled = true; noise.strength = blue ? 0.35f : 0.12f; noise.frequency = 0.5f;
+            var cl = ps.colorOverLifetime; cl.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                      new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.25f), new GradientAlphaKey(blue ? 0.8f : 0.6f, 0.7f), new GradientAlphaKey(0f, 1f) });
+            cl.color = g;
+            var r = go.GetComponent<ParticleSystemRenderer>();
+            r.sharedMaterial = ParticleMaterial;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            ps.Play();
+            return ps;
+        }
+
+        /// <summary>Hot embers rising from where a lethal beam hits.</summary>
+        public static ParticleSystem Embers(Transform parent)
+        {
+            var go = new GameObject("Embers");
+            go.transform.SetParent(parent, false);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.4f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 1.4f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.1f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.55f, 0.15f), new Color(1f, 0.85f, 0.5f));
+            main.gravityModifier = -0.25f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 80;
+            var em = ps.emission; em.rateOverTime = 30f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 35f; sh.radius = 0.3f;
+            var noise = ps.noise; noise.enabled = true; noise.strength = 0.6f; noise.frequency = 1.2f;
+            var cl = ps.colorOverLifetime; cl.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(new Color(1f, 0.3f, 0.1f), 1f) },
+                      new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
+            cl.color = g;
+            var r = go.GetComponent<ParticleSystemRenderer>();
+            r.sharedMaterial = ParticleMaterial;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            ps.Play();
+            return ps;
+        }
+
+        static Texture2D _warning;
+        /// <summary>Procedural warning glyph: a rounded triangle outline with an exclamation mark (white on clear).</summary>
+        public static Texture2D WarningTexture
+        {
+            get
+            {
+                if (_warning != null) return _warning;
+                const int n = 128;
+                _warning = new Texture2D(n, n, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Clamp, name = "LW_Warning" };
+                var px = new Color[n * n];
+                Vector2 A = new Vector2(0.5f, 0.93f), B = new Vector2(0.06f, 0.12f), C = new Vector2(0.94f, 0.12f);
+                for (int y = 0; y < n; y++)
+                    for (int x = 0; x < n; x++)
+                    {
+                        var p = new Vector2((x + 0.5f) / n, (y + 0.5f) / n);
+                        float d = Mathf.Min(SegDist(p, A, B), Mathf.Min(SegDist(p, B, C), SegDist(p, C, A)));
+                        bool inside = Cross(B - A, p - A) <= 0 && Cross(C - B, p - B) <= 0 && Cross(A - C, p - C) <= 0;
+                        float outline = Mathf.Clamp01(1f - Mathf.Abs(d - 0.0f) / 0.06f);
+                        float fill = inside ? 0.18f : 0f;
+                        // Exclamation mark: bar + dot.
+                        float bar = (Mathf.Abs(p.x - 0.5f) < 0.045f && p.y > 0.4f && p.y < 0.72f) ? 1f : 0f;
+                        float dot = Vector2.Distance(p, new Vector2(0.5f, 0.28f)) < 0.055f ? 1f : 0f;
+                        float a = Mathf.Max(Mathf.Max(outline, fill), Mathf.Max(bar, dot));
+                        px[y * n + x] = new Color(1f, 1f, 1f, a);
+                    }
+                _warning.SetPixels(px);
+                _warning.Apply(true);
+                return _warning;
+            }
+        }
+        static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
+        static float SegDist(Vector2 p, Vector2 a, Vector2 b)
+        {
+            var ab = b - a; float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
+            return Vector2.Distance(p, a + ab * t);
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics() { _hasBeamShader = null; _hasGlowShader = null; }
     }

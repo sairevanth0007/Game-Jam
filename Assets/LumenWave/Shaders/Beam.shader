@@ -11,6 +11,12 @@ Shader "LumenWave/Beam"
         _Length("Beam length (world units)", Float) = 10
         _Flicker("Flicker", Range(0, 1)) = 0.15
         _Core("Core sharpness", Range(1, 60)) = 18
+        _PathStart("Optical path before this segment", Float) = 0
+        _NearRadius("Inverse-square reference distance", Float) = 3
+        _HotCore("White-hot core (lethal)", Range(0, 1)) = 0
+        _Wobble("Heat shimmer", Range(0, 0.3)) = 0
+        _Pulse("Pulse", Range(0, 1)) = 0
+        _Dust("Dust amount", Range(0, 1)) = 0.6
     }
     SubShader
     {
@@ -35,6 +41,12 @@ Shader "LumenWave/Beam"
                 half _Length;
                 half _Flicker;
                 half _Core;
+                float _PathStart;
+                float _NearRadius;
+                half _HotCore;
+                half _Wobble;
+                half _Pulse;
+                half _Dust;
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
@@ -62,15 +74,29 @@ Shader "LumenWave/Beam"
             {
                 float along = i.uv.y * _Length;
                 float att = exp(-_FogSigma * along);                    // Beer–Lambert
-                float across = abs(i.uv.x * 2.0 - 1.0);
-                float body = exp(-across * across * 3.0);                // soft gaussian shaft
-                float core = exp(-across * across * _Core);              // hot centre line
+                // Inverse square along the whole optical path: brighter and wider near the source.
+                float path = _PathStart + along;
+                float r0 = max(0.1, _NearRadius);
+                float inv = r0 * r0 / (r0 * r0 + path * path);
+                float near = saturate(0.35 + 0.65 * inv * 1.6);
+                // Heat shimmer: the centre line wobbles with scrolling noise (lethal beams).
+                float wob = (vnoise(float2(along * 2.7 - _Time.y * 9.0, _Time.y * 3.0)) - 0.5) * 2.0 * _Wobble;
+                float across = abs((i.uv.x + wob) * 2.0 - 1.0);
+                float widthK = lerp(0.75, 1.25, near);
+                float ax = across / widthK;
+                float body = exp(-ax * ax * 3.0);                        // soft gaussian shaft
+                float core = exp(-ax * ax * _Core);                      // hot centre line
                 float ends = smoothstep(0.0, 0.04, i.uv.y) * smoothstep(1.0, 0.85, i.uv.y);
                 float dust = vnoise(float2(i.positionWS.x * 2.3 + i.positionWS.y * 0.7, i.positionWS.y * 2.3 - _Time.y * 0.6));
-                dust = lerp(1.0, 0.55 + 0.9 * dust, 0.6);
+                dust = lerp(1.0, 0.55 + 0.9 * dust, _Dust);
                 float flick = 1.0 - _Flicker * (0.5 + 0.5 * sin(_Time.y * 31.0 + along * 0.7)) * vnoise(float2(_Time.y * 7.0, 0));
-                float a = (body * 0.45 * dust + core * 1.1) * att * ends * flick * _Intensity;
-                return half4(_Color.rgb * a, 1);
+                float pulse = 1.0 + _Pulse * 0.35 * sin(_Time.y * 9.0);
+                float a = (body * 0.45 * dust + core * 1.1) * att * ends * flick * _Intensity * lerp(0.55, 1.35, near) * pulse;
+                // Lethal: the core burns white-hot, the edges stay red-orange.
+                half3 hot = lerp(_Color.rgb, max(_Color.rgb, half3(1, 0.85, 0.7) * max(_Color.r, max(_Color.g, _Color.b))) * 1.2, core * core * core * _HotCore);
+                // Lethal edges lean orange (heat), the body stays clearly red.
+                hot = lerp(hot, hot * half3(1.0, 1.0 + 0.6 * (1 - core), 1.0), _HotCore * body);
+                return half4(hot * a, 1);
             }
             ENDHLSL
         }

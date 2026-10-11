@@ -165,8 +165,11 @@ namespace LumenWave.UI
         Image _deathVignette;
         TMP_Text _deathText;
         float _death;
-        Image _damageVignette;
+        Image _damageVignette, _burnFlash;
         float _damagePulse;
+        // Burn feedback (danger readability): smoothed burn level 0..1 from the light receiver's damage per second.
+        public float BurnLevel { get; private set; }
+        float _burnPhase, _nearLethalCooldown, _hpSampleT, _hpPrev = -1f, _hpPrev2 = -1f;
         float _legendRefresh;
         string _legendKey;
         RectTransform _legendRoot;
@@ -222,12 +225,14 @@ namespace LumenWave.UI
             GameEvents.FinaleStarted -= OnFinale;
         }
 
-        void OnDestroy() { if (Instance == this) Instance = null; }
+        void OnDestroy() { SlowMo.Cancel(); if (Instance == this) Instance = null; }
 
         void Build()
         {
             var root = (RectTransform)transform;
 
+            _burnFlash = UIKit.Image(root, "BurnPulse", new Color(1f, 0.15f, 0.05f, 0f));
+            UIKit.Stretch(_burnFlash.rectTransform, -10);
             _damageVignette = UIKit.Image(root, "DamageVignette", new Color(1f, 0.1f, 0.05f, 0f), UIKit.Radial, false);
             UIKit.Stretch(_damageVignette.rectTransform, -60);
 
@@ -568,10 +573,34 @@ namespace LumenWave.UI
             _bannerGroup.alpha = Mathf.MoveTowards(_bannerGroup.alpha, bA, dt * 2.5f);
             if (_bannerWave != null) _bannerWave.enabled = _bannerGroup.alpha > 0.01f;
 
-            // Damage vignette (also shows low health).
+            // Burn level from the light receiver (works in god mode too, so captures show it).
+            var rec = LightReceiver.Current;
+            float dps = 0f;
+            if (rec != null && player != null && !(hp != null && hp.IsDead) && !Cinematic)
+                dps = rec.LastEffect.lethal ? 120f : rec.LastEffect.damagePerSecond;
+            float burnTarget = Mathf.Clamp01(dps / 60f);
+            BurnLevel = Mathf.MoveTowards(BurnLevel, burnTarget, dt * (burnTarget > BurnLevel ? 5f : 1.6f));
+            _burnPhase += dt * (4f + 7f * BurnLevel) * Mathf.PI * 2f;
+            float pulse = 0.5f + 0.5f * Mathf.Sin(_burnPhase);
+            if (BurnLevel > 0.02f)
+            {
+                Health.flash = Mathf.Max(Health.flash, BurnLevel * (0.25f + 0.45f * pulse));
+                Health.shake = Mathf.Max(Health.shake, 0.25f + 0.5f * BurnLevel);
+            }
+            // A lethal beam stopped by the shield: a hard red flash at the edges (near miss).
+            float shieldHit = Mathf.Clamp01(1f - (Time.unscaledTime - ShieldDome.LethalContactTime) * 3f);
+            TickNearLethal(dt, hp, shieldHit > 0.9f);
+
+            // Damage vignette: hits, low health, and a pulsing burn edge (stronger = redder and faster).
             _damagePulse = Mathf.MoveTowards(_damagePulse, 0f, dt * 2f);
             float low = Health.target < 0.3f ? (0.3f - Health.target) / 0.3f * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f)) * 0.5f : 0f;
-            _damageVignette.color = new Color(1f, 0.1f, 0.05f, Mathf.Clamp01(_damagePulse * 0.6f + low));
+            float burnA = BurnLevel * (0.22f + 0.2f * pulse);
+            var vc = Color.Lerp(new Color(1f, 0.38f, 0.08f), new Color(0.95f, 0.02f, 0.02f), BurnLevel);
+            if (shieldHit > 0f) vc = Color.Lerp(vc, new Color(1f, 0.05f, 0.05f), shieldHit);
+            // Lethal light raises a damage event every frame (god mode / the frame before death): don't stack hit pulses on it.
+            float hitA = rec != null && rec.LastEffect.lethal ? 0f : _damagePulse * 0.6f;
+            _damageVignette.color = new Color(vc.r, vc.g, vc.b, Mathf.Clamp01(hitA + low + burnA + shieldHit * 0.45f));
+            _burnFlash.color = new Color(vc.r, vc.g * 0.5f, vc.b, BurnLevel * 0.035f * pulse + shieldHit * 0.04f);
 
             // Death overlay.
             bool dead = hp != null && hp.IsDead;
@@ -618,7 +647,36 @@ namespace LumenWave.UI
             if (Cinematic) { _finaleCompleted = true; _completedAt = CinematicTime; return; }   // the ending speaks for itself
             ShowBanner(UIKit.Spaced("LEVEL COMPLETE", 1), UIKit.FormatTime(time), 3f);
         }
-        void OnDied() { }
+        void OnDied() { SlowMo.Cancel(); }
+
+        /// <summary>
+        /// Near-lethal moments (a big hit that leaves Umbra low, or a lethal beam stopped by the shield):
+        /// brief slow motion + heartbeat. Health is sampled every 0.25 s (DoT arrives in small chunks).
+        /// </summary>
+        void TickNearLethal(float dt, PlayerHealth hp, bool shieldSave)
+        {
+            _nearLethalCooldown -= dt;
+            bool trigger = shieldSave;
+            if (hp != null && !hp.IsDead)
+            {
+                _hpSampleT -= dt;
+                if (_hpSampleT <= 0f)
+                {
+                    _hpSampleT = 0.25f;
+                    float cur = hp.Normalized;
+                    float before = _hpPrev2 >= 0f ? _hpPrev2 : cur;
+                    if (before - cur >= 0.18f && cur <= 0.35f && cur > 0f) trigger = true;
+                    _hpPrev2 = _hpPrev; _hpPrev = cur;
+                }
+            }
+            else { _hpPrev = _hpPrev2 = -1f; }
+            if (!trigger || _nearLethalCooldown > 0f) return;
+            _nearLethalCooldown = 4f;
+            _damagePulse = 1f;
+            Health.flash = 1f; Health.shake = 1f;
+            if (DangerAudio.Instance != null) DangerAudio.Instance.PlayHeartbeat(1f);
+            SlowMo.Trigger(this);
+        }
         void OnRespawned() { Health.flash = 0.6f; }
         void OnCheckpoint(int i) => ShowBanner("", UIKit.Spaced("CHECKPOINT"), 1.5f);
         void OnLevelStarted(int level) { LevelText.text = ""; RefreshLevelName(); }

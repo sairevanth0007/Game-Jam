@@ -127,6 +127,77 @@ namespace LumenWave
             return data;
         }
 
+        /// <summary>Gentle saturation (tanh-like), keeps summed layers below full scale.</summary>
+        public static float SoftClip(float x) => x / (1f + Mathf.Abs(x));
+
+        /// <summary>
+        /// Loop of white noise through a one-pole high-pass (brightness 0..1 = how much low end is removed).
+        /// Start and end are cross-faded over 20 ms so the loop point doesn't click.
+        /// </summary>
+        public static float[] NoiseLoop(float seconds, float brightness, float gain, int seed, int sampleRate = SampleRate)
+        {
+            int n = Mathf.Max(64, Mathf.RoundToInt(seconds * sampleRate));
+            int fade = Mathf.Min(n / 4, sampleRate / 50);
+            var raw = new float[n + fade];
+            var rng = new System.Random(seed);
+            float lp = 0f, a = Mathf.Lerp(0.6f, 0.05f, Mathf.Clamp01(brightness));
+            for (int i = 0; i < raw.Length; i++)
+            {
+                float w = (float)(rng.NextDouble() * 2.0 - 1.0);
+                lp += (w - lp) * a;
+                raw[i] = (w - lp) * gain;
+            }
+            var data = new float[n];
+            for (int i = 0; i < n; i++) data[i] = raw[i];
+            for (int i = 0; i < fade; i++)
+            {
+                float t = i / (float)fade;
+                data[i] = raw[i] * t + raw[n + i] * (1f - t);
+            }
+            return data;
+        }
+
+        /// <summary>Sparse random crackle: short decaying impulses (about <paramref name="perSecond"/> of them per second).</summary>
+        public static float[] CrackleLoop(float seconds, float perSecond, float gain, int seed, int sampleRate = SampleRate)
+        {
+            int n = Mathf.Max(64, Mathf.RoundToInt(seconds * sampleRate));
+            var data = new float[n];
+            var rng = new System.Random(seed);
+            int count = Mathf.RoundToInt(perSecond * seconds);
+            int len = sampleRate / 250;   // 4 ms
+            for (int c = 0; c < count; c++)
+            {
+                int at = rng.Next(0, n - len);
+                float amp = (float)(0.3 + 0.7 * rng.NextDouble()) * gain * (rng.Next(2) == 0 ? -1f : 1f);
+                for (int i = 0; i < len; i++)
+                {
+                    float w = (float)(rng.NextDouble() * 2.0 - 1.0);
+                    data[at + i] += amp * w * Mathf.Exp(-i / (len * 0.25f));
+                }
+            }
+            return data;
+        }
+
+        /// <summary>Airy whoosh: noise swelling and falling while a low-pass sweeps up and back down.</summary>
+        public static float[] Whoosh(float seconds, float gain, int seed, int sampleRate = SampleRate)
+        {
+            int n = Mathf.Max(64, Mathf.RoundToInt(seconds * sampleRate));
+            var data = new float[n];
+            var rng = new System.Random(seed);
+            float lp1 = 0f, lp2 = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)n;
+                float env = Mathf.Sin(Mathf.PI * Mathf.Pow(t, 0.7f));
+                float a = Mathf.Lerp(0.02f, 0.25f, env);
+                float w = (float)(rng.NextDouble() * 2.0 - 1.0);
+                lp1 += (w - lp1) * a;
+                lp2 += (lp1 - lp2) * a;
+                data[i] = lp2 * env * env * gain * 3f;
+            }
+            return data;
+        }
+
         /// <summary>Counts sign changes — used by tests to measure frequency (crossings/2 per second).</summary>
         public static int ZeroCrossings(float[] data, int start = 0, int count = -1)
         {

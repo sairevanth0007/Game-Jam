@@ -29,6 +29,8 @@ namespace LumenWave
 
         // ---- Visual-only: hit ripples (shader slots), beam contact sparks.
         static ShieldDome _active;
+        /// <summary>Last unscaled time a lethal beam was stopped by the shield (read by the HUD for near-miss feedback).</summary>
+        public static float LethalContactTime = -10f;
         static readonly int[] HitIds =
         {
             Shader.PropertyToID("_Hit0"), Shader.PropertyToID("_Hit1"), Shader.PropertyToID("_Hit2"), Shader.PropertyToID("_Hit3"),
@@ -104,6 +106,7 @@ namespace LumenWave
                 for (int i = 0; i < segs.Count; i++)
                 {
                     if (segs[i].hitCollider != _col) continue;
+                    if (beam.Danger == LightBeam.BeamDanger.Lethal) LethalContactTime = Time.unscaledTime;
                     if (Time.time - _beamRippleT > 0.4f) { _beamRippleT = Time.time; AddHit(segs[i].end, false); }
                     if (_beamSparkT <= 0f) ImpactFx.Sparks(segs[i].end, LightMath.DisplayColor(segs[i].color) * 2f, 3, 4f, 0.09f, 0.35f);
                 }

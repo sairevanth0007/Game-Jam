@@ -203,6 +203,52 @@ namespace LumenWave
             e.r += r; e.g += g; e.b += b; e.yellowPulse += y;
         }
 
+        // ---------------------------------------------------------------- danger (readability)
+
+        /// <summary>What a red beam does to Umbra where she can actually stand in it.</summary>
+        public enum BeamDanger { Safe, Burn, Lethal }
+
+        /// <summary>Burn = damage over time; Lethal = reaches <see cref="LightRules.LethalRed"/> somewhere Umbra can be.
+        /// Uses the same inverse-square + Beer–Lambert intensity as gameplay, sampled only where there is
+        /// ground within jumping reach below (the part of a ceiling beam near its emitter is out of reach).</summary>
+        public BeamDanger Danger { get { RefreshDanger(); return _danger; } }
+
+        /// <summary>Strongest reachable red intensity (gameplay units, lethal at 4).</summary>
+        public float PeakReachableRed { get { RefreshDanger(); return _peakRed; } }
+
+        public const float ReachHeight = 4.5f;
+        BeamDanger _danger;
+        float _peakRed, _dangerAt = -1f;
+
+        void RefreshDanger()
+        {
+            if (_dangerAt >= 0f && Time.time - _dangerAt < 0.25f) return;
+            _dangerAt = Time.time;
+            _peakRed = PeakRed(this);
+            _danger = (color & LightColor.Red) == 0 || color == LightColor.White || IsBeatGated ? BeamDanger.Safe
+                    : _peakRed >= LightRules.LethalRed ? BeamDanger.Lethal
+                    : _peakRed > LightRules.Threshold ? BeamDanger.Burn : BeamDanger.Safe;
+        }
+
+        static float PeakRed(LightBeam b)
+        {
+            if (b.Segments.Count == 0) b.Trace();
+            float sigma = LightField.FogSigma, peak = 0f;
+            int mask = Layers.Mask(Layers.Ground, Layers.Bridge, Layers.Crystal);
+            foreach (var s in b.Segments)
+            {
+                if ((s.color & LightColor.Red) == 0 || s.color == LightColor.Yellow) continue;
+                float len = s.Length;
+                for (float d = 0f; d <= len; d += 0.5f)
+                {
+                    var p = Vector3.Lerp(s.start, s.end, len > 0f ? d / len : 0f);
+                    if (!Physics.Raycast(p + Vector3.up * 0.1f, Vector3.down, ReachHeight, mask, QueryTriggerInteraction.Ignore)) continue;
+                    peak = Mathf.Max(peak, LightField.BeamIntensityAt(b.intensity, s.pathStart + d, sigma));
+                }
+            }
+            return peak;
+        }
+
         // ---------------------------------------------------------------- visuals
 
         void EnsureVisualRoot()
@@ -289,6 +335,8 @@ namespace LumenWave
             while (_cores.Count < n) { _cores.Add(NewStrip(QuadMesh, "Core" + _cores.Count)); _halos.Add(NewStrip(HaloMesh, "Halo" + _halos.Count)); }
             int hitLightIdx = 0;
             Vector3 lastHit = Vector3.zero; bool anyHit = false; Vector3 lastHitNormal = Vector3.up; LightColor lastHitColor = color;
+            float lastHitPath = 0f;
+            float yBoost = YellowBoost(out float yFlicker);
             for (int i = 0; i < _cores.Count; i++)
             {
                 bool show = i < n && level > 0.001f;
@@ -302,22 +350,28 @@ namespace LumenWave
                 // Fog already absorbed before this segment started (Beer–Lambert along the whole path).
                 float fogBefore = Mathf.Exp(-sigma * s.pathStart);
                 var c = LightMath.DisplayColor(s.color);
+                var look = LookFor(s.color);
+                float boost = s.color == LightColor.Yellow ? yBoost : 1f;
 
                 var ct = _cores[i].transform;
                 ct.position = s.start + new Vector3(0, 0, -0.05f);
                 ct.rotation = rot;
-                ct.localScale = new Vector3(width * 0.45f, len, 1f);
-                LightVisuals.SetBeamProps(_cores[i], _mpb, c, 1.7f * level * fogBefore, len, sigma);
+                ct.localScale = new Vector3(width * look.coreW, len, 1f);
+                LightVisuals.SetBeamProps(_cores[i], _mpb, c, look.coreI * level * fogBefore * boost, len, sigma);
+                ApplyLook(_cores[i], look, true, s.color == LightColor.Yellow ? yFlicker : 0f);
+                SetPathStart(_cores[i], s.pathStart);
 
                 var ht = _halos[i].transform;
                 ht.position = s.start + new Vector3(0, 0, 0.05f);
                 ht.rotation = rot;
-                ht.localScale = new Vector3(width * 2.6f, len, 1f);
-                LightVisuals.SetBeamProps(_halos[i], _mpb, c, 0.45f * level * fogBefore, len, sigma);
+                ht.localScale = new Vector3(width * look.haloW, len, 1f);
+                LightVisuals.SetBeamProps(_halos[i], _mpb, c, look.haloI * level * fogBefore * boost, len, sigma);
+                ApplyLook(_halos[i], look, false, s.color == LightColor.Yellow ? yFlicker : 0f);
+                SetPathStart(_halos[i], s.pathStart);
 
                 if (s.endsOnSurface)
                 {
-                    anyHit = true; lastHit = s.end; lastHitNormal = s.hitNormal; lastHitColor = s.color;
+                    anyHit = true; lastHit = s.end; lastHitNormal = s.hitNormal; lastHitColor = s.color; lastHitPath = s.pathStart + len;
                     if (castSceneLight && hitLightIdx < 2)
                     {
                         if (_hitLights.Count <= hitLightIdx) _hitLights.Add(LightVisuals.AddLight(_visualRoot, LightType.Point, c, 2f, 3.5f, "HitLight" + _hitLights.Count));
@@ -361,6 +415,7 @@ namespace LumenWave
                     main.startColor = LightMath.DisplayColor(lastHitColor);
                 }
             }
+            UpdateDangerExtras(anyHit, lastHit, lastHitNormal, lastHitColor, lastHitPath, level);
         }
 
         void HideVisuals()
@@ -369,6 +424,9 @@ namespace LumenWave
             foreach (var r in _cores) if (r) r.gameObject.SetActive(false);
             foreach (var r in _halos) if (r) r.gameObject.SetActive(false);
             foreach (var l in _hitLights) if (l) l.gameObject.SetActive(false);
+            if (_floorGlow) _floorGlow.gameObject.SetActive(false);
+            if (_embers) { var em = _embers.emission; em.enabled = false; }
+            if (_warning) _warning.gameObject.SetActive(false);
             if (_sourceLight) _sourceLight.enabled = false;
         }
 

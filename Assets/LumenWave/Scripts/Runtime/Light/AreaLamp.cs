@@ -74,6 +74,14 @@ namespace LumenWave
             // Soft light cone falling from the lantern + a wide airy halo (cheap additive, purely visual).
             _shaft = LightVisuals.Shaft(transform, new Vector3(0f, -0.1f, 0.5f), 0.5f, radius * 1.5f, radius * 1.35f, c * 0.16f, "Shaft");
             _halo = LightVisuals.Glow(transform, new Vector3(0, 0, 0.4f), radius * 1.3f, c * 0.1f, "Halo");
+            // One look per effect: green heal = rising motes, blue low gravity = slow floating specks (in the zone).
+            if (color == LightColor.Green || color == LightColor.Blue)
+            {
+                var motes = LightVisuals.EffectMotes(transform, color, "ZoneMotes");
+                motes.transform.localPosition = new Vector3(0f, -radius * 0.35f, 0.2f);
+                var sh = motes.shape; sh.scale = new Vector3(radius * 1.4f, radius * 0.9f, 0.6f);
+                var em = motes.emission; em.rateOverTime = Mathf.Clamp(radius * 3f, 6f, 24f);
+            }
             _light = LightVisuals.AddLight(transform, LightType.Point, c, 3f * intensity, radius * 1.6f, "LampLight");
             _light.transform.localPosition = new Vector3(0, 0, -1.5f);
             _flicker = Random.value * 10f;

@@ -26,10 +26,16 @@ Material:
     m_Ints: []
     m_Floats:
     - _Core: 18
+    - _Dust: 0.6
     - _Flicker: 0.15
     - _FogSigma: 0.06
+    - _HotCore: 0
     - _Intensity: 1
     - _Length: 10
+    - _NearRadius: 3
+    - _PathStart: 0
+    - _Pulse: 0
+    - _Wobble: 0
     m_Colors:
     - _Color: {r: 2, g: 0.3, b: 0.2, a: 1}
   m_BuildTextureStacks: []

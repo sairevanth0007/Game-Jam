@@ -45,6 +45,7 @@ namespace LumenWave
             }
             BuildClips();
             BuildDrone();
+            if (GetComponent<DangerAudio>() == null) gameObject.AddComponent<DangerAudio>();   // danger hums, sizzle, heartbeat, light cues
             ReadSettings();
             Subscribe(true);
         }
