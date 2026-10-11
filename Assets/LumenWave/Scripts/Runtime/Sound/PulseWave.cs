@@ -35,6 +35,11 @@ namespace LumenWave
             p.Origin = origin;
             p._owner = owner;
             p.BuildVisual();
+            // Visual juice: a hot flash at the source, motes riding the wavefront, and a kick of camera shake
+            // (CameraRig.Shake respects the Screen shake setting).
+            ImpactFx.Flash(origin, new Color(0.7f, 0.9f, 1.4f), 2.6f, 0.2f);
+            ImpactFx.RingBurst(origin, new Color(0.7f, 0.92f, 1.6f), 44, Speed, MaxRadius / Speed, 0.16f);
+            CameraRig.Shake(0.22f);
             return p;
         }
 
@@ -51,7 +56,9 @@ namespace LumenWave
                 q.transform.localScale = Vector3.one * (MaxRadius * 2f + 1f);
                 _quadMat = new Material(waveMat);
                 if (_quadMat.HasProperty("_Color")) _quadMat.SetColor("_Color", _color);
-                if (_quadMat.HasProperty("_Thickness")) _quadMat.SetFloat("_Thickness", 0.035f);
+                if (_quadMat.HasProperty("_Thickness")) _quadMat.SetFloat("_Thickness", 0.02f);
+                if (_quadMat.HasProperty("_Trail")) _quadMat.SetFloat("_Trail", 0.7f);
+                if (_quadMat.HasProperty("_Wobble")) _quadMat.SetFloat("_Wobble", 0.006f);
                 var mr = q.GetComponent<MeshRenderer>();
                 mr.sharedMaterial = _quadMat;
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -85,8 +92,9 @@ namespace LumenWave
             float r = Mathf.Min(Radius, MaxRadius);
             DetectHits(r);
 
+            // Bright at birth, fading as the wave spreads (energy over a growing circumference).
             float alpha = 1f - Mathf.Clamp01(Radius / MaxRadius);
-            alpha *= alpha;
+            alpha = alpha * (0.6f + 0.4f * alpha);
             if (_quadMat != null)
             {
                 if (_quadMat.HasProperty("_Radius")) _quadMat.SetFloat("_Radius", r / (MaxRadius + 0.5f));

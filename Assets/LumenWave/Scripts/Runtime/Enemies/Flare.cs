@@ -33,6 +33,7 @@ namespace LumenWave
         Light _light;
         ParticleSystem _sparks;
         Transform _head;
+        float _hitFlash;   // visual only
         static readonly Color Col = new Color(1f, 0.12f, 0.08f);
 
         [LevelEntity("flare")]
@@ -104,8 +105,10 @@ namespace LumenWave
             if (_stun > 0f)
             {
                 _stun -= dt;
+                _hitFlash = Mathf.Max(0f, _hitFlash - dt * 4f);
                 if (_stun <= 0f) { _t = 0f; SetGlow(0.15f); }
                 else SetGlow(0.03f + 0.03f * Mathf.Sin(Time.time * 30f));
+                if (_hitFlash > 0f) EnemyUtil.SetEmission(_lensMat, Color.Lerp(Col * 0.05f, Color.white * 12f, _hitFlash * _hitFlash));
                 return;
             }
 
@@ -173,7 +176,12 @@ namespace LumenWave
             _stun = Mathf.Max(_stun, stunDuration * Mathf.Clamp(strength, 0.5f, 1.5f));
             _charging = false;
             if (_sparks) _sparks.Emit(20);
-            if (!was) GameEvents.RaiseEnemyStunned(transform.position);
+            if (!was)
+            {
+                _hitFlash = 1f;
+                ImpactFx.Sparks(_head != null ? _head.position : transform.position, new Color(1f, 0.5f, 0.3f) * 2f, 20, 6f, 0.12f, 0.6f);
+                GameEvents.RaiseEnemyStunned(transform.position);
+            }
         }
 
         public void ResetState()
@@ -268,10 +276,10 @@ namespace LumenWave
         {
             if (_dead) return;
             _dead = true;
-            var ps = EnemyUtil.Sparks(transform.parent, new Color(1f, 0.45f, 0.25f), 4f, 0.12f, 0.5f);
-            ps.transform.position = at;
-            ps.Emit(count);
-            Destroy(ps.gameObject, 1.5f);
+            // Pooled burst (no per-bolt particle system / material allocations).
+            ImpactFx.Sparks(at, new Color(1f, 0.45f, 0.25f) * 2f, count + 4, 5f, 0.12f, 0.55f);
+            ImpactFx.Flash(at, new Color(1f, 0.55f, 0.35f), 1.6f, 0.16f);
+            ImpactFx.Ring(at, new Color(1f, 0.4f, 0.25f), 0.9f, 0.25f);
             if (_owner != null) _owner.Forget(this);
             Destroy(gameObject);
         }

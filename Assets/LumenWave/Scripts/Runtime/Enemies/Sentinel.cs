@@ -27,6 +27,7 @@ namespace LumenWave
         Light _light;
         ParticleSystem _sparks;
         Color _color;
+        float _hitFlash;   // visual only: white flash when a pulse stuns it
 
         [LevelEntity("sentinel")]
         static GameObject Build(EntitySpec s, LevelContext ctx)
@@ -115,6 +116,16 @@ namespace LumenWave
                 EnemyUtil.SetEmission(_lensMat, flick ? _color * 2f : _color * 0.05f);
                 if (_halo) _halo.enabled = flick;
                 if (_light) _light.intensity = flick ? 1.2f : 0f;
+                if (_hitFlash > 0f)
+                {
+                    // Hit flash: the whole lantern blazes white for a moment, then gutters out.
+                    _hitFlash = Mathf.Max(0f, _hitFlash - dt * 4f);
+                    float f = _hitFlash * _hitFlash;
+                    EnemyUtil.SetEmission(_lensMat, Color.Lerp(_color * 0.05f, Color.white * 12f, f));
+                    EnemyUtil.SetEmission(_cageMat, Color.Lerp(_color * 0.05f, Color.white * 5f, f));
+                    if (_halo) _halo.enabled = true;
+                    if (_light) _light.intensity = 1.2f + 4f * f;
+                }
                 if (_stun <= 0f) Recover();
                 return;
             }
@@ -159,6 +170,11 @@ namespace LumenWave
             if (Beam != null) Beam.on = false;
             EnemyUtil.SetEmission(_cageMat, _color * 0.05f);
             if (_sparks) _sparks.Emit(24);
+            if (!wasStunned)
+            {
+                _hitFlash = 1f;
+                ImpactFx.Sparks(transform.position + Vector3.down * 0.3f, _color * 2f, 22, 7f, 0.13f, 0.7f);
+            }
             if (!wasStunned) GameEvents.RaiseEnemyStunned(transform.position);
         }
 

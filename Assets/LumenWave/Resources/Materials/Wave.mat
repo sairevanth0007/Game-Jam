@@ -28,6 +28,8 @@ Material:
     - _Alpha: 1
     - _Radius: 0.5
     - _Thickness: 0.04
+    - _Trail: 0.72
+    - _Wobble: 0.008
     m_Colors:
     - _Color: {r: 0.6, g: 1, b: 2, a: 1}
   m_BuildTextureStacks: []

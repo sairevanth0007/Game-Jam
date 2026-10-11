@@ -7,29 +7,32 @@ using UnityEngine.UI;
 
 namespace LumenWave.UI
 {
-    /// <summary>Colours and sizes for LumenWave's minimal UI style.</summary>
+    /// <summary>Colours and sizes for LumenWave's UI style (deep night blue, cyan light accents, warm gold highlights).</summary>
     public static class UIStyle
     {
-        public static readonly Color Panel = new Color(0.02f, 0.03f, 0.06f, 0.86f);
+        public static readonly Color Panel = new Color(0.015f, 0.022f, 0.045f, 0.9f);
         public static readonly Color PanelLine = new Color(0.45f, 0.95f, 1f, 0.55f);
         public static readonly Color Accent = new Color(0.45f, 0.95f, 1f, 1f);
         public static readonly Color AccentDim = new Color(0.45f, 0.95f, 1f, 0.25f);
-        public static readonly Color Text = new Color(0.88f, 0.93f, 1f, 1f);
-        public static readonly Color TextDim = new Color(0.6f, 0.68f, 0.8f, 1f);
-        public static readonly Color ButtonNormal = new Color(1f, 1f, 1f, 0.04f);
-        public static readonly Color ButtonSelected = new Color(0.45f, 0.95f, 1f, 0.16f);
+        public static readonly Color Gold = new Color(1f, 0.84f, 0.45f, 1f);
+        public static readonly Color Text = new Color(0.9f, 0.95f, 1f, 1f);
+        public static readonly Color TextDim = new Color(0.62f, 0.7f, 0.82f, 1f);
+        public static readonly Color ButtonNormal = new Color(0.02f, 0.035f, 0.07f, 0.6f);
+        public static readonly Color ButtonSelected = new Color(0.45f, 0.95f, 1f, 0.17f);
         public static readonly Color Health = new Color(0.95f, 0.97f, 1f, 1f);
         public static readonly Color Resonance = new Color(0.35f, 0.9f, 1f, 1f);
         public static readonly Color Danger = new Color(1f, 0.25f, 0.2f, 1f);
-        public const int ButtonFont = 30;
+        public static readonly Color KeyCap = new Color(0.03f, 0.05f, 0.09f, 0.85f);
+        public const int ButtonFont = 28;
     }
 
     /// <summary>Helpers to build uGUI hierarchies in code.</summary>
     public static class UIKit
     {
-        static Font _font;
-        static Sprite _soft, _radial, _glow;
+        static Font _font, _display;
+        static Sprite _soft, _radial, _glow, _hgrad, _vgrad, _diamond, _waveIcon, _ring;
 
+        /// <summary>Body font (built-in, widest glyph coverage: long texts, credits, symbols).</summary>
         public static Font Font
         {
             get
@@ -38,6 +41,65 @@ namespace LumenWave.UI
                 return _font;
             }
         }
+
+        /// <summary>Kenney Future (CC0): titles, headings and numbers.</summary>
+        public static Font Display
+        {
+            get
+            {
+                if (_display == null) _display = Resources.Load<Font>("Art/KenneyFonts/KenneyFuture");
+                return _display != null ? _display : Font;
+            }
+        }
+
+        /// <summary>
+        /// Font for uppercase UI labels (buttons, bar labels, chips). Kenney Future (the narrow cut's R/K glyphs read
+        /// as A/H at small sizes, so labels use the regular cut). Sentences and key caps use the body font.
+        /// </summary>
+        public static Font Narrow => Display;
+
+        static Sprite MakeSprite(int w, int h, string name, Func<float, float, float> alpha, Vector4 border = default)
+        {
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear, name = name };
+            var px = new Color32[w * h];
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                    px[y * w + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(alpha((x + 0.5f) / w, (y + 0.5f) / h)) * 255f));
+            tex.SetPixels32(px);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, border);
+        }
+
+        /// <summary>Horizontal gradient: opaque on the left, transparent on the right (smooth).</summary>
+        public static Sprite HGradient => _hgrad != null ? _hgrad : (_hgrad = MakeSprite(128, 4, "lw_hgrad", (u, v) => 1f - Mathf.SmoothStep(0f, 1f, u)));
+        /// <summary>Vertical gradient: opaque at the bottom, transparent at the top.</summary>
+        public static Sprite VGradient => _vgrad != null ? _vgrad : (_vgrad = MakeSprite(4, 128, "lw_vgrad", (u, v) => 1f - Mathf.SmoothStep(0f, 1f, v)));
+        /// <summary>Soft-edged diamond (a light shard): the health icon.</summary>
+        public static Sprite Diamond => _diamond != null ? _diamond : (_diamond = MakeSprite(64, 64, "lw_diamond", (u, v) =>
+        {
+            float d = Mathf.Abs(u - 0.5f) * 2f + Mathf.Abs(v - 0.5f) * 2f * 0.78f;
+            return Mathf.Clamp01((0.92f - d) * 14f);
+        }));
+        /// <summary>One sine period drawn as a thick soft line: the resonance icon.</summary>
+        public static Sprite WaveIcon => _waveIcon != null ? _waveIcon : (_waveIcon = MakeSprite(64, 64, "lw_wave", (u, v) =>
+        {
+            float best = 1f;
+            for (int i = 0; i <= 24; i++)
+            {
+                float x = 0.06f + 0.88f * i / 24f;
+                float y = 0.5f + 0.3f * Mathf.Sin((x - 0.06f) / 0.88f * Mathf.PI * 2f);
+                float dx = u - x, dy = v - y;
+                best = Mathf.Min(best, dx * dx + dy * dy);
+            }
+            return Mathf.Clamp01((0.075f - Mathf.Sqrt(best)) * 30f);
+        }));
+        /// <summary>Thin soft ring.</summary>
+        public static Sprite Ring => _ring != null ? _ring : (_ring = MakeSprite(128, 128, "lw_ring", (u, v) =>
+        {
+            float d = Mathf.Sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.5f) * (v - 0.5f)) * 2f;
+            float x = (d - 0.86f) / 0.06f;
+            return Mathf.Exp(-x * x);
+        }));
 
         /// <summary>Rounded soft-edged rectangle, 9-sliced.</summary>
         public static Sprite Soft
@@ -188,12 +250,22 @@ namespace LumenWave.UI
             return img;
         }
 
-        /// <summary>Dark rounded panel with a thin glowing top line.</summary>
+        /// <summary>Dark rounded panel with a soft drop shadow, a faint inner gradient and a glowing top line.</summary>
         public static RectTransform Panel(Transform parent, string name, Vector2 size)
         {
+            // Shadow first (sibling behind the panel) so the panel lifts off any background.
+            var shadow = Image(parent, name + "Shadow", new Color(0f, 0f, 0f, 0.55f), Glow);
+            Place(shadow.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, -10), size + new Vector2(120, 120));
             var img = Image(parent, name, UIStyle.Panel, Soft);
             img.raycastTarget = true;
             var rt = Place(img.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, size);
+            // The shadow follows the panel's active state.
+            var follow = rt.gameObject.AddComponent<UIFollowActive>();
+            follow.target = shadow.gameObject;
+            var sheen = Image(rt, "Sheen", new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.022f), VGradient, false);
+            sheen.rectTransform.anchorMin = new Vector2(0f, 0.55f); sheen.rectTransform.anchorMax = new Vector2(1f, 1f);
+            sheen.rectTransform.offsetMin = new Vector2(6, 0); sheen.rectTransform.offsetMax = new Vector2(-6, -4);
+            sheen.rectTransform.localScale = new Vector3(1f, -1f, 1f);   // bright at the top
             var line = Image(rt, "Line", UIStyle.PanelLine);
             line.rectTransform.anchorMin = new Vector2(0.08f, 1f); line.rectTransform.anchorMax = new Vector2(0.92f, 1f);
             line.rectTransform.pivot = new Vector2(0.5f, 1f);
@@ -220,6 +292,60 @@ namespace LumenWave.UI
             t.verticalOverflow = VerticalWrapMode.Overflow;
             t.raycastTarget = false;
             return t;
+        }
+
+        /// <summary>Big letter-spaced Kenney Future heading.</summary>
+        public static Text Heading(Transform parent, string text, int size, TextAnchor anchor = TextAnchor.MiddleCenter, Color? color = null, string name = "Title", int spacing = 1)
+        {
+            var t = Label(parent, spacing > 0 ? Spaced(text.ToUpperInvariant(), spacing) : text, size, anchor, color, name);
+            t.font = Display;
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            return t;
+        }
+
+        /// <summary>Panel title: Kenney heading + a short glowing underline.</summary>
+        public static Text PanelTitle(RectTransform panel, string text, float y = -62, int size = 40)
+        {
+            var title = Heading(panel, text, size, TextAnchor.MiddleCenter, Color.white, "Title", 1);
+            Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, y), new Vector2(Mathf.Max(400, panel.sizeDelta.x - 80), 60), new Vector2(0.5f, 0.5f));
+            GlowText(title, UIStyle.Accent, 1.5f);
+            var line = Image(panel, "TitleUnderline", new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.7f), HGradientCentered);
+            Place(line.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, y - 38), new Vector2(260, 2), new Vector2(0.5f, 0.5f));
+            return title;
+        }
+
+        static Sprite _hgradC;
+        /// <summary>Horizontal line, opaque in the middle, fading out at both ends.</summary>
+        public static Sprite HGradientCentered => _hgradC != null ? _hgradC : (_hgradC = MakeSprite(128, 4, "lw_hgradc", (u, v) => Mathf.Sin(u * Mathf.PI)));
+
+        /// <summary>A key-cap box ("Space", "J", "LMB") with a raised look, auto-sized to the text.</summary>
+        public static RectTransform KeyCap(Transform parent, string key, int fontSize, out Text label, string name = "KeyCap")
+        {
+            var box = Rect(parent, name);
+            var edge = Image(box, "Edge", new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.45f), Soft);
+            Stretch(edge.rectTransform, -2f);
+            var fill = Image(box, "Fill", UIStyle.KeyCap, Soft);
+            Stretch(fill.rectTransform);
+            var lip = Image(box, "Lip", new Color(0f, 0f, 0f, 0.35f), Soft);
+            lip.rectTransform.anchorMin = new Vector2(0f, 0f); lip.rectTransform.anchorMax = new Vector2(1f, 0.22f);
+            lip.rectTransform.offsetMin = new Vector2(1, 1); lip.rectTransform.offsetMax = new Vector2(-1, 0);
+            label = Label(box, key, fontSize, TextAnchor.MiddleCenter, Color.white, "Key");
+            label.fontStyle = FontStyle.Bold;   // body font: unambiguous K/R/M glyphs
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Stretch(label.rectTransform);
+            label.rectTransform.offsetMin = new Vector2(0, 2);
+            SizeKeyCap(box, label);
+            return box;
+        }
+
+        /// <summary>Re-fits a key cap to its text.</summary>
+        public static void SizeKeyCap(RectTransform box, Text label)
+        {
+            float h = label.fontSize * 1.55f;
+            float w = Mathf.Max(h, label.preferredWidth + label.fontSize * 0.9f);
+            box.sizeDelta = new Vector2(w, h);
+            var le = box.GetComponent<LayoutElement>();
+            if (le != null) { le.preferredWidth = w; le.minWidth = w; le.preferredHeight = h; }
         }
 
         /// <summary>Adds a soft cyan glow (two outlines) to a text.</summary>
@@ -264,11 +390,13 @@ namespace LumenWave.UI
             cb.highlightedColor = UIStyle.ButtonSelected;
             cb.selectedColor = UIStyle.ButtonSelected;
             cb.pressedColor = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.35f);
-            cb.disabledColor = new Color(1, 1, 1, 0.02f);
+            cb.disabledColor = new Color(0.02f, 0.03f, 0.05f, 0.35f);
             cb.colorMultiplier = 1f;
             cb.fadeDuration = 0.08f;
             b.colors = cb;
             var t = Label(bg.rectTransform, UIKit.Spaced(label.ToUpperInvariant()), fontSize, TextAnchor.MiddleCenter, UIStyle.TextDim);
+            t.font = Narrow;
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;
             Stretch(t.rectTransform);
             var fx = bg.gameObject.AddComponent<UISelectFx>();
             fx.label = t;
@@ -282,17 +410,20 @@ namespace LumenWave.UI
             Height(row.gameObject, 56);
             var bg = row.gameObject.AddComponent<Image>();
             bg.sprite = Soft; bg.type = UnityEngine.UI.Image.Type.Sliced; bg.color = Color.white;
-            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 20, TextAnchor.MiddleLeft, UIStyle.TextDim);
+            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 19, TextAnchor.MiddleLeft, UIStyle.TextDim);
+            t.font = Narrow;
             t.horizontalOverflow = HorizontalWrapMode.Overflow;   // never wrap mid-word ("VOLU / ME")
             t.rectTransform.anchorMin = new Vector2(0, 0); t.rectTransform.anchorMax = new Vector2(0.5f, 1);
             t.rectTransform.offsetMin = new Vector2(24, 0); t.rectTransform.offsetMax = Vector2.zero;
 
             var area = Rect(row, "Track");
-            area.anchorMin = new Vector2(0.54f, 0.5f); area.anchorMax = new Vector2(0.94f, 0.5f);
-            area.sizeDelta = new Vector2(0, 6); area.anchoredPosition = Vector2.zero;
-            var track = area.gameObject.AddComponent<Image>(); track.color = new Color(1, 1, 1, 0.12f);
+            area.anchorMin = new Vector2(0.6f, 0.5f); area.anchorMax = new Vector2(0.94f, 0.5f);
+            area.sizeDelta = new Vector2(0, 10); area.anchoredPosition = Vector2.zero;
+            var track = area.gameObject.AddComponent<Image>(); track.color = new Color(1, 1, 1, 0.1f);
+            track.sprite = Soft; track.type = UnityEngine.UI.Image.Type.Sliced; track.pixelsPerUnitMultiplier = 2.4f;
             var fillArea = Rect(area, "Fill Area"); Stretch(fillArea);
-            var fill = Image(fillArea, "Fill", UIStyle.Accent);
+            var fill = Image(fillArea, "Fill", UIStyle.Accent, Soft);
+            fill.pixelsPerUnitMultiplier = 2.4f;
             fill.rectTransform.sizeDelta = Vector2.zero;
             var handleArea = Rect(area, "Handle Area"); Stretch(handleArea);
             var handle = Image(handleArea, "Handle", Color.white, Glow, false);
@@ -320,7 +451,8 @@ namespace LumenWave.UI
             Height(row.gameObject, 56);
             var bg = row.gameObject.AddComponent<Image>();
             bg.sprite = Soft; bg.type = UnityEngine.UI.Image.Type.Sliced; bg.color = Color.white;
-            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 20, TextAnchor.MiddleLeft, UIStyle.TextDim);
+            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 19, TextAnchor.MiddleLeft, UIStyle.TextDim);
+            t.font = Narrow;
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             t.rectTransform.anchorMin = new Vector2(0, 0); t.rectTransform.anchorMax = new Vector2(0.7f, 1);
             t.rectTransform.offsetMin = new Vector2(24, 0); t.rectTransform.offsetMax = Vector2.zero;
@@ -358,20 +490,27 @@ namespace LumenWave.UI
         }
     }
 
-    /// <summary>Selection feedback: label brightens + a glowing bar appears on the left; hover selects.</summary>
+    /// <summary>Selection feedback: label brightens + a glowing bar on the left + a soft light sweep; hover selects.</summary>
     public class UISelectFx : MonoBehaviour, ISelectHandler, IDeselectHandler, IPointerEnterHandler
     {
         public Text label;
-        Image _bar;
+        Image _bar, _sweep;
         bool _selected;
         float _t;
+        Vector2 _labelMin, _labelMax;
+        bool _labelInit;
 
         void Awake()
         {
-            _bar = UIKit.Image(transform, "SelectBar", UIStyle.Accent);
-            _bar.rectTransform.anchorMin = new Vector2(0, 0.2f); _bar.rectTransform.anchorMax = new Vector2(0, 0.8f);
+            _sweep = UIKit.Image(transform, "SelectGlow", new Color(1, 1, 1, 0), UIKit.HGradient, false);
+            _sweep.rectTransform.anchorMin = new Vector2(0f, 0f); _sweep.rectTransform.anchorMax = new Vector2(0.8f, 1f);
+            _sweep.rectTransform.offsetMin = new Vector2(2, 2); _sweep.rectTransform.offsetMax = new Vector2(0, -2);
+            _sweep.transform.SetAsFirstSibling();
+            _bar = UIKit.Image(transform, "SelectBar", UIStyle.Accent, UIKit.Soft);
+            _bar.pixelsPerUnitMultiplier = 6f;
+            _bar.rectTransform.anchorMin = new Vector2(0, 0.18f); _bar.rectTransform.anchorMax = new Vector2(0, 0.82f);
             _bar.rectTransform.pivot = new Vector2(0, 0.5f);
-            _bar.rectTransform.sizeDelta = new Vector2(3, 0);
+            _bar.rectTransform.sizeDelta = new Vector2(4, 0);
             _bar.rectTransform.anchoredPosition = new Vector2(6, 0);
             _bar.color = new Color(1, 1, 1, 0);
         }
@@ -395,12 +534,129 @@ namespace LumenWave.UI
 
         void Apply()
         {
-            if (label != null) label.color = Color.Lerp(UIStyle.TextDim, Color.white, _t);
+            if (label != null)
+            {
+                if (!_labelInit) { _labelMin = label.rectTransform.offsetMin; _labelMax = label.rectTransform.offsetMax; _labelInit = true; }
+                label.color = Color.Lerp(UIStyle.TextDim, Color.white, _t);
+                // Left-aligned labels slide in a little when selected.
+                if (label.alignment == TextAnchor.MiddleLeft)
+                {
+                    var slide = new Vector2(10f * (1f - (1f - _t) * (1f - _t)), 0f);
+                    label.rectTransform.offsetMin = _labelMin + slide;
+                    label.rectTransform.offsetMax = _labelMax + slide;
+                }
+            }
             if (_bar != null)
             {
                 float pulse = 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 5f);
                 _bar.color = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, _t * pulse);
             }
+            if (_sweep != null) _sweep.color = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.2f * _t);
+        }
+
+        /// <summary>Call after changing the label's rect so the slide uses the new rest position.</summary>
+        public void ResetLabelRest() { _labelInit = false; }
+    }
+
+    /// <summary>Mirrors this object's active state onto another (e.g. a panel's drop shadow sibling).</summary>
+    public class UIFollowActive : MonoBehaviour
+    {
+        public GameObject target;
+        void OnEnable() { if (target != null) target.SetActive(true); }
+        void OnDisable() { if (target != null) target.SetActive(false); }
+    }
+
+    /// <summary>Vertical colour gradient on a Graphic's vertices, plus an optional moving highlight band (the logo).</summary>
+    public class UIGradient : BaseMeshEffect
+    {
+        public Color top = Color.white, bottom = new Color(0.45f, 0.95f, 1f, 1f);
+        public float shimmer;      // 0..1 strength of the moving highlight band
+        public float shimmerPos;   // position of the band across the rect (0..1)
+
+        public override void ModifyMesh(VertexHelper vh)
+        {
+            if (!IsActive() || vh.currentVertCount == 0) return;
+            var rect = graphic.rectTransform.rect;
+            var v = new UIVertex();
+            for (int i = 0; i < vh.currentVertCount; i++)
+            {
+                vh.PopulateUIVertex(ref v, i);
+                float ty = Mathf.InverseLerp(rect.yMin + rect.height * 0.25f, rect.yMax - rect.height * 0.25f, v.position.y);
+                float tx = Mathf.InverseLerp(rect.xMin, rect.xMax, v.position.x);
+                var c = Color.Lerp(bottom, top, ty);
+                if (shimmer > 0f)
+                {
+                    float d = Mathf.Abs(tx - shimmerPos);
+                    c = Color.Lerp(c, Color.white, shimmer * Mathf.Clamp01(1f - d * 7f));
+                }
+                Color orig = v.color;
+                c.a *= orig.a;
+                v.color = c;
+                vh.SetUIVertex(v, i);
+            }
+        }
+
+        public void Refresh() { if (graphic != null) graphic.SetVerticesDirty(); }
+    }
+
+    /// <summary>
+    /// A procedurally drawn, animated waveform line (thick strip mesh with soft edges via vertex alpha).
+    /// A few harmonics under a Gaussian envelope, scrolling over time: the logo's sound wave.
+    /// </summary>
+    public class UIWaveLine : MaskableGraphic
+    {
+        public int segments = 160;
+        public float thickness = 4f;
+        public float amplitude = 0.35f;     // fraction of half the rect height
+        public float speed = 1.6f;
+        public float glowWidth = 0f;        // extra soft fringe in px
+        public float energy = 1f;           // scales amplitude (e.g. on the beat)
+        public float phaseOffset;
+        public float envelopeWidth = 2.6f;  // larger = narrower envelope
+        CanvasRenderer _cr;
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            var r = rectTransform.rect;
+            float t = Application.isPlaying ? Time.unscaledTime * speed + phaseOffset : phaseOffset;
+            int n = Mathf.Max(8, segments);
+            float half = thickness * 0.5f;
+            Color32 col = color;
+            for (int i = 0; i <= n; i++)
+            {
+                float u = i / (float)n;
+                float x = Mathf.Lerp(r.xMin, r.xMax, u);
+                float e = (u - 0.5f) * envelopeWidth;
+                float env = Mathf.Exp(-e * e);
+                float w = Mathf.Sin(u * 22f - t * 2.2f) * 0.55f + Mathf.Sin(u * 47f + t * 3.1f) * 0.22f + Mathf.Sin(u * 9f - t) * 0.35f;
+                float y = r.center.y + w * env * amplitude * energy * r.height * 0.5f;
+                float edgeA = Mathf.Clamp01(u * 10f) * Mathf.Clamp01((1f - u) * 10f) * (0.25f + 0.75f * env);
+                var c = col; c.a = (byte)(col.a * edgeA);
+                var cg = c; cg.a = 0;
+                int b = vh.currentVertCount;
+                vh.AddVert(new Vector3(x, y + half + glowWidth), cg, Vector4.zero);
+                vh.AddVert(new Vector3(x, y + half * 0.3f), c, Vector4.zero);
+                vh.AddVert(new Vector3(x, y - half * 0.3f), c, Vector4.zero);
+                vh.AddVert(new Vector3(x, y - half - glowWidth), cg, Vector4.zero);
+                if (i > 0)
+                {
+                    int a = b - 4;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        vh.AddTriangle(a + k, b + k, a + k + 1);
+                        vh.AddTriangle(a + k + 1, b + k, b + k + 1);
+                    }
+                }
+            }
+        }
+
+        void Update()
+        {
+            // Skip the rebuild while invisible (e.g. faded-out level card).
+            if (!Application.isPlaying) return;
+            if (_cr == null && !TryGetComponent(out _cr)) return;   // torn down (tests destroy hierarchies piecemeal)
+            if (_cr.GetInheritedAlpha() > 0.01f) SetVerticesDirty();
         }
     }
 

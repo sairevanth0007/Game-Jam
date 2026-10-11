@@ -24,6 +24,24 @@ namespace LumenWave.UI
             s = s.Replace("{Pause}", LumenInput.Prompt(LumenInput.Pause));
             return s;
         }
+
+        const string KeyOpen = "<color=#8CF2FF>", KeyClose = "</color>";
+        static string Key(string k) => KeyOpen + k + KeyClose;
+
+        /// <summary>Like <see cref="Format"/>, but the live keys are highlighted (rich text) so they pop out of the sentence.</summary>
+        public static string FormatRich(string s)
+        {
+            if (string.IsNullOrEmpty(s) || s.IndexOf('{') < 0) return s;
+            LumenInput.Ensure();
+            s = s.Replace("{Move}", Key(MovePrompt));
+            s = s.Replace("{Jump}", Key(LumenInput.Prompt(LumenInput.Jump)));
+            s = s.Replace("{Dash}", Key(LumenInput.Prompt(LumenInput.Dash)));
+            s = s.Replace("{Echo}", Key(LumenInput.Prompt(LumenInput.Echo)));
+            s = s.Replace("{Shield}", Key(LumenInput.Prompt(LumenInput.Shield)));
+            s = s.Replace("{Pulse}", Key(LumenInput.Prompt(LumenInput.Pulse)));
+            s = s.Replace("{Pause}", Key(LumenInput.Prompt(LumenInput.Pause)));
+            return s;
+        }
     }
 
     /// <summary>Interactive rebinding state (menus ignore Back while a rebind listens).</summary>
@@ -72,8 +90,7 @@ namespace LumenWave.UI
         public static GameObject BuildSettings(Transform parent, MenuStack stack, out GameObject first)
         {
             var p = UIKit.Panel(parent, "SettingsPanel", new Vector2(760, 790));
-            var title = UIKit.Label(p, UIKit.Spaced("SETTINGS", 2), 40, TextAnchor.MiddleCenter, UIStyle.Text, "Title");
-            UIKit.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -60), new Vector2(700, 60), new Vector2(0.5f, 0.5f));
+            UIKit.PanelTitle(p, "Settings");
             var list = UIKit.Rect(p, "List");
             list.anchorMin = new Vector2(0, 0); list.anchorMax = new Vector2(1, 1);
             list.offsetMin = new Vector2(60, 40); list.offsetMax = new Vector2(-60, -110);
@@ -101,20 +118,20 @@ namespace LumenWave.UI
         {
             LumenInput.Ensure();
             var p = UIKit.Panel(parent, "ControlsPanel", new Vector2(1000, 760));
-            var title = UIKit.Label(p, UIKit.Spaced("CONTROLS", 2), 40, TextAnchor.MiddleCenter, UIStyle.Text, "Title");
-            UIKit.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -56), new Vector2(900, 60), new Vector2(0.5f, 0.5f));
+            UIKit.PanelTitle(p, "Controls", -52);
             var hint = UIKit.Label(p, "Select a binding and press a new key / button.  Esc cancels.  Move: A/D, arrows, left stick", 20, TextAnchor.MiddleCenter, UIStyle.TextDim);
-            UIKit.Place(hint.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -100), new Vector2(900, 30), new Vector2(0.5f, 0.5f));
+            UIKit.Place(hint.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -112), new Vector2(900, 30), new Vector2(0.5f, 0.5f));
 
             var header = UIKit.Rect(p, "Header");
-            UIKit.Place(header, new Vector2(0.5f, 1f), new Vector2(0, -145), new Vector2(880, 30), new Vector2(0.5f, 0.5f));
-            var h1 = UIKit.Label(header, "ACTION", 20, TextAnchor.MiddleLeft, UIStyle.Accent); h1.rectTransform.anchorMin = new Vector2(0, 0); h1.rectTransform.anchorMax = new Vector2(0.33f, 1); h1.rectTransform.offsetMin = new Vector2(16, 0); h1.rectTransform.offsetMax = Vector2.zero;
-            var h2 = UIKit.Label(header, "KEYBOARD / MOUSE", 20, TextAnchor.MiddleCenter, UIStyle.Accent); h2.rectTransform.anchorMin = new Vector2(0.33f, 0); h2.rectTransform.anchorMax = new Vector2(0.66f, 1); h2.rectTransform.offsetMin = h2.rectTransform.offsetMax = Vector2.zero;
-            var h3 = UIKit.Label(header, "GAMEPAD", 20, TextAnchor.MiddleCenter, UIStyle.Accent); h3.rectTransform.anchorMin = new Vector2(0.66f, 0); h3.rectTransform.anchorMax = new Vector2(1f, 1); h3.rectTransform.offsetMin = h3.rectTransform.offsetMax = Vector2.zero;
+            UIKit.Place(header, new Vector2(0.5f, 1f), new Vector2(0, -150), new Vector2(880, 30), new Vector2(0.5f, 0.5f));
+            var h1 = UIKit.Label(header, UIKit.Spaced("ACTION"), 19, TextAnchor.MiddleLeft, UIStyle.Accent); h1.rectTransform.anchorMin = new Vector2(0, 0); h1.rectTransform.anchorMax = new Vector2(0.33f, 1); h1.rectTransform.offsetMin = new Vector2(16, 0); h1.rectTransform.offsetMax = Vector2.zero;
+            var h2 = UIKit.Label(header, UIKit.Spaced("KEYBOARD / MOUSE"), 19, TextAnchor.MiddleCenter, UIStyle.Accent); h2.rectTransform.anchorMin = new Vector2(0.33f, 0); h2.rectTransform.anchorMax = new Vector2(0.66f, 1); h2.rectTransform.offsetMin = h2.rectTransform.offsetMax = Vector2.zero;
+            var h3 = UIKit.Label(header, UIKit.Spaced("GAMEPAD"), 19, TextAnchor.MiddleCenter, UIStyle.Accent); h3.rectTransform.anchorMin = new Vector2(0.66f, 0); h3.rectTransform.anchorMax = new Vector2(1f, 1); h3.rectTransform.offsetMin = h3.rectTransform.offsetMax = Vector2.zero;
 
             var list = UIKit.Rect(p, "List");
             list.anchorMin = new Vector2(0, 0); list.anchorMax = new Vector2(1, 1);
-            list.offsetMin = new Vector2(60, 40); list.offsetMax = new Vector2(-60, -170);
+            h1.font = h2.font = h3.font = UIKit.Narrow;
+            list.offsetMin = new Vector2(60, 40); list.offsetMax = new Vector2(-60, -175);
             UIKit.VList(list, 8);
 
             var refreshers = new List<Action>();
@@ -124,6 +141,7 @@ namespace LumenWave.UI
                 var row = UIKit.Rect(list, action.name);
                 var le = row.gameObject.AddComponent<LayoutElement>(); le.preferredHeight = 54; le.minHeight = 54;
                 var name = UIKit.Label(row, UIKit.Spaced(action.name.ToUpperInvariant()), 22, TextAnchor.MiddleLeft, UIStyle.Text);
+                name.font = UIKit.Narrow;
                 name.rectTransform.anchorMin = new Vector2(0, 0); name.rectTransform.anchorMax = new Vector2(0.33f, 1);
                 name.rectTransform.offsetMin = new Vector2(16, 0); name.rectTransform.offsetMax = Vector2.zero;
                 var kb = BindButton(row, action, false, 0.34f, 0.65f, refreshers);
@@ -161,28 +179,40 @@ namespace LumenWave.UI
             rt.offsetMin = rt.offsetMax = Vector2.zero;
             var le = b.GetComponent<LayoutElement>(); if (le != null) le.ignoreLayout = true;
             label = b.GetComponentInChildren<Text>();
+            label.font = UIKit.Font;            // key names need unambiguous glyphs (K vs H, Y)
+            label.fontStyle = FontStyle.Bold;
+            label.fontSize = 24;
             refresh();
             refreshers.Add(refresh);
             return b.gameObject;
         }
 
         public const string CreditsText =
-            "LUMENWAVE\n\n" +
             "A light & sound platformer made for a game jam.\n\n" +
             "Design, code, shaders, procedural audio & levels\nthe LumenWave team\n\n" +
             "Built with Unity 6 · Universal Render Pipeline · Input System\n" +
-            "All visuals and sounds are generated in code.\n\n" +
+            "All music and sound is synthesised in code.\n" +
+            "CC0 art: Quaternius, Kenney (models, fonts), ambientCG, Poly Haven.\n\n" +
             "Inspired by Limbo, Inside, Ori, Journey, Celeste, Sound Shapes\n" +
             "and by real physics: inverse-square light, Beer–Lambert fog,\nNewton's prism, reflection, standing waves and just intonation.\n\n" +
             "Full asset list and licences: see CREDITS.md";
 
         public static GameObject BuildCredits(Transform parent, MenuStack stack, out GameObject first)
         {
-            var p = UIKit.Panel(parent, "CreditsPanel", new Vector2(980, 760));
-            var t = UIKit.Label(p, CreditsText, 26, TextAnchor.UpperCenter, UIStyle.Text, "Text");
-            t.lineSpacing = 1.1f;
+            var p = UIKit.Panel(parent, "CreditsPanel", new Vector2(1040, 800));
+            var logo = UIKit.Heading(p, "LUMENWAVE", 54, TextAnchor.MiddleCenter, Color.white, "Logo", 1);
+            UIKit.Place(logo.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -70), new Vector2(980, 70), new Vector2(0.5f, 0.5f));
+            var grad = logo.gameObject.AddComponent<UIGradient>();
+            grad.top = Color.white; grad.bottom = new Color(0.55f, 0.92f, 1f);
+            UIKit.GlowText(logo, UIStyle.Accent, 1.5f);
+            var wave = UIKit.Rect(p, "Wave").gameObject.AddComponent<UIWaveLine>();
+            wave.color = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.7f);
+            wave.thickness = 3f; wave.glowWidth = 2f; wave.amplitude = 0.6f; wave.raycastTarget = false;
+            UIKit.Place(wave.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -118), new Vector2(560, 24), new Vector2(0.5f, 0.5f));
+            var t = UIKit.Label(p, CreditsText, 25, TextAnchor.UpperCenter, UIStyle.Text, "Text");
+            t.lineSpacing = 1.12f;
             t.rectTransform.anchorMin = new Vector2(0, 0); t.rectTransform.anchorMax = new Vector2(1, 1);
-            t.rectTransform.offsetMin = new Vector2(50, 110); t.rectTransform.offsetMax = new Vector2(-50, -50);
+            t.rectTransform.offsetMin = new Vector2(50, 110); t.rectTransform.offsetMax = new Vector2(-50, -150);
             var back = UIKit.Button(p, "Back", () => stack.Pop(), 60);
             UIKit.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0, 40), new Vector2(360, 60), new Vector2(0.5f, 0f));
             first = back.gameObject;

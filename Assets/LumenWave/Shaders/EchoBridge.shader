@@ -8,6 +8,7 @@ Shader "LumenWave/EchoBridge"
         [HDR] _Color("Rim glow", Color) = (0.6, 1.2, 2.4, 1)
         _Fade("Fade", Range(0, 1)) = 0
         _Frequency("Ripple frequency", Float) = 3
+        _Dir("Travel direction", Float) = 1
     }
     SubShader
     {
@@ -29,6 +30,7 @@ Shader "LumenWave/EchoBridge"
                 half4 _Color;
                 half _Fade;
                 half _Frequency;
+                half _Dir;
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
@@ -59,8 +61,15 @@ Shader "LumenWave/EchoBridge"
                 clip(n - _Fade * 1.05);
                 float dissolveEdge = 1.0 - smoothstep(0.0, 0.08, n - _Fade * 1.05);
                 float ripple = 0.5 + 0.5 * sin(i.positionWS.x * _Frequency * 6.2831 - _Time.y * 5.0);
-                float rim = pow(saturate(i.uv.y), 10.0) * (0.6 + 0.8 * ripple) + pow(saturate(1.0 - i.uv.y), 14.0) * 0.35;
-                half3 col = _BaseColor.rgb + _Color.rgb * (rim + dissolveEdge * 1.5 * step(0.001, _Fade));
+                // Wave packets travelling along the bridge, away from the singer.
+                float xs = i.positionWS.x * _Dir;
+                float packet = pow(saturate(0.5 + 0.5 * sin(xs * 1.6 - _Time.y * 9.0)), 10.0);
+                float packet2 = pow(saturate(0.5 + 0.5 * sin(xs * 0.7 - _Time.y * 5.0 + 1.3)), 6.0);
+                float rim = pow(saturate(i.uv.y), 10.0) * (0.55 + 0.7 * ripple + 1.6 * packet) + pow(saturate(1.0 - i.uv.y), 14.0) * (0.35 + 0.8 * packet2);
+                // Faint horizontal "sound lines" inside the dark body, lit as packets pass.
+                float lines = pow(saturate(0.5 + 0.5 * sin(i.uv.y * 46.0)), 24.0) * (0.06 + 0.35 * packet) * step(i.uv.y, 0.97) * step(0.03, i.uv.y);
+                float inner = pow(saturate(i.uv.y), 3.0) * 0.12;
+                half3 col = _BaseColor.rgb + _Color.rgb * (rim + lines + inner + dissolveEdge * 1.5 * step(0.001, _Fade));
                 col = MixFog(col, i.fogFactor);
                 return half4(col, 1);
             }

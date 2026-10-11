@@ -27,6 +27,7 @@ namespace LumenWave
         Material _bodyMat;
         Renderer _halo;
         ParticleSystem _dust;
+        float _hitFlash;   // visual only
         static readonly Color Calm = new Color(0.85f, 0.8f, 0.65f);
         static readonly Color Hungry = new Color(0.4f, 1f, 0.95f);
 
@@ -124,6 +125,7 @@ namespace LumenWave
             pos = EnemyUtil.FlyMove(pos, _vel * dt, radius);
             if (EnemyUtil.RepelFromShield(ref pos, ref _vel, radius) && Current == State.Hunt)
             {
+                ShieldDome.Ripple(pos);
                 Current = State.Flee; // the shield's standing wave confuses it
             }
             transform.position = pos;
@@ -145,7 +147,8 @@ namespace LumenWave
             if (_wingR) _wingR.localScale = new Vector3(0.25f + 0.75f * w, 1f, 1f);
             if (_bodyT) _bodyT.localRotation = Quaternion.Euler(0, 0, Mathf.Clamp(-_vel.x * 4f, -30f, 30f) + (Current == State.Stunned ? t * 400f : 0f));
             var c = Current == State.Hunt ? Hungry : Calm;
-            EnemyUtil.SetEmission(_bodyMat, c * (Current == State.Hunt ? 3f : 0.8f));
+            _hitFlash = Mathf.Max(0f, _hitFlash - dt * 4f);
+            EnemyUtil.SetEmission(_bodyMat, c * (Current == State.Hunt ? 3f : 0.8f) + Color.white * 10f * _hitFlash * _hitFlash);
             if (_halo) EnemyUtil.SetGlow(_halo.sharedMaterial, c * (Current == State.Hunt ? 0.8f : 0.3f));
             if (Current == State.Flutter && Random.value < dt * 2f && _dust) _dust.Emit(1);
         }
@@ -157,6 +160,8 @@ namespace LumenWave
             var away = transform.position - origin; away.z = 0f;
             _vel = (away.sqrMagnitude > 1e-4f ? away.normalized : Vector3.up) * 6f;
             if (_dust) _dust.Emit(10);
+            _hitFlash = 1f;
+            ImpactFx.Sparks(transform.position, Calm * 1.6f, 16, 5f, 0.09f, 0.8f);
             GameEvents.RaiseEnemyStunned(transform.position);
         }
 

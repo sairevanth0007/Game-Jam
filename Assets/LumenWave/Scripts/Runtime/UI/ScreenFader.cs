@@ -51,11 +51,19 @@ namespace LumenWave
             _card = card.gameObject.AddComponent<CanvasGroup>();
             _card.blocksRaycasts = false;
             _card.alpha = 0f;
-            _cardNumber = UIKit.Label(card, "", 30, TextAnchor.MiddleCenter, UIStyle.Accent, "Number");
-            UIKit.Place(_cardNumber.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 50), new Vector2(1400, 44));
-            _cardName = UIKit.Label(card, "", 64, TextAnchor.MiddleCenter, UIStyle.Text, "Name");
-            UIKit.Place(_cardName.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, -15), new Vector2(1400, 90));
+            var cardBack = UIKit.Image(card, "Back", new Color(0f, 0f, 0.01f, 0.55f), UIKit.Glow);
+            UIKit.Place(cardBack.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 10), new Vector2(1300, 300));
+            _cardNumber = UIKit.Heading(card, "", 28, TextAnchor.MiddleCenter, UIStyle.Accent, "Number", 0);
+            UIKit.Place(_cardNumber.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 62), new Vector2(1400, 44));
+            _cardName = UIKit.Heading(card, "", 70, TextAnchor.MiddleCenter, UIStyle.Text, "Name", 0);
+            UIKit.Place(_cardName.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, -6), new Vector2(1600, 100));
+            var g = _cardName.gameObject.AddComponent<UIGradient>();
+            g.top = Color.white; g.bottom = new Color(0.6f, 0.92f, 1f);
             UIKit.GlowText(_cardName, UIStyle.Accent, 2f);
+            var wave = UIKit.Rect(card, "Wave").gameObject.AddComponent<UIWaveLine>();
+            wave.color = new Color(UIStyle.Accent.r, UIStyle.Accent.g, UIStyle.Accent.b, 0.8f);
+            wave.thickness = 3f; wave.glowWidth = 3f; wave.amplitude = 0.55f; wave.raycastTarget = false;
+            UIKit.Place(wave.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, -72), new Vector2(700, 34));
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             LevelRuntime.Loaded += OnLevelLoaded;
@@ -95,7 +103,7 @@ namespace LumenWave
 
         IEnumerator Card(int n, string name)
         {
-            _cardNumber.text = UIKit.Spaced(n.ToString("00"), 2);
+            _cardNumber.text = UIKit.Spaced("LEVEL " + n.ToString("00"), 1);
             _cardName.text = UIKit.Spaced(name.ToUpperInvariant(), 1);
             yield return new WaitForSecondsRealtime(0.35f);
             for (float t = 0; t < 1f; t += Time.unscaledDeltaTime / 0.6f) { _card.alpha = t; yield return null; }

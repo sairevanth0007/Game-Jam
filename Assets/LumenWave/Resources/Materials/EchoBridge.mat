@@ -25,6 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _Dir: 1
     - _Fade: 0
     - _Frequency: 3
     m_Colors:

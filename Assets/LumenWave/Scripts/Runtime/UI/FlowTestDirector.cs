@@ -32,6 +32,9 @@ namespace LumenWave.UI
                 if (args[i] == "-lw-flowtest-verify") verify = true;
             }
             if (dir == null && !verify) return;
+            // The flow test injects keyboard events; keep devices enabled even if another window has focus
+            // (otherwise the Input System drops the queued events and the run fails for reasons unrelated to the UI).
+            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
             var go = new GameObject("FlowTestDirector");
             DontDestroyOnLoad(go);
             var d = go.AddComponent<FlowTestDirector>();

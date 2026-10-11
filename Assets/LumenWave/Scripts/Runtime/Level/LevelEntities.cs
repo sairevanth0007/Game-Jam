@@ -110,7 +110,7 @@ namespace LumenWave
             sh.shapeType = ParticleSystemShapeType.Box;
             sh.scale = new Vector3(0.8f, 0.8f, 0.3f);
             var r = go.GetComponent<ParticleSystemRenderer>();
-            r.sharedMaterial = MaterialLibrary.Get("ParticleAdditive");
+            r.sharedMaterial = EnemyUtil.GlowMaterial(Color.white);   // soft glints (spinning glass shards come from ImpactFx)
             return ps;
         }
 

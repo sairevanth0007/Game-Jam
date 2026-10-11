@@ -47,14 +47,12 @@ namespace LumenWave.UI
             _stack.handleBack = false;
             _stack.onRootBack = () => SetPaused(false);
 
-            var main = UIKit.Panel(root, "PausePanel", new Vector2(560, 520));
+            var main = UIKit.Panel(root, "PausePanel", new Vector2(600, 500));
             _main = main.gameObject;
-            var title = UIKit.Label(main, UIKit.Spaced("PAUSED", 3), 44, TextAnchor.MiddleCenter, Color.white, "Title");
-            UIKit.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -64), new Vector2(500, 60), new Vector2(0.5f, 0.5f));
-            UIKit.GlowText(title, UIStyle.Accent, 2f);
+            UIKit.PanelTitle(main, "Paused", -64, 46);
             var list = UIKit.Rect(main, "List");
             list.anchorMin = Vector2.zero; list.anchorMax = Vector2.one;
-            list.offsetMin = new Vector2(60, 50); list.offsetMax = new Vector2(-60, -120);
+            list.offsetMin = new Vector2(60, 50); list.offsetMax = new Vector2(-60, -130);
             UIKit.VList(list, 12);
 
             GameObject settingsFirst;

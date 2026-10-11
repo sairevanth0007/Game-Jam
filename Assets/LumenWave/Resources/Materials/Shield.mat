@@ -32,5 +32,9 @@ Material:
     - _Phase: 0
     m_Colors:
     - _Color: {r: 0.5, g: 1, b: 2.2, a: 1}
+    - _Hit0: {r: 0, g: 0, b: -1, a: -1}
+    - _Hit1: {r: 0, g: 0, b: -1, a: -1}
+    - _Hit2: {r: 0, g: 0, b: -1, a: -1}
+    - _Hit3: {r: 0, g: 0, b: -1, a: -1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

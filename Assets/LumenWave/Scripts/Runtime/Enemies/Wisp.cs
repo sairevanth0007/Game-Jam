@@ -30,6 +30,7 @@ namespace LumenWave
         Light _light;
         TrailRenderer _trail;
         ParticleSystem _sparks;
+        float _hitFlash;   // visual only
         static readonly Color Col = new Color(0.75f, 0.9f, 1f);
 
         [LevelEntity("wisp")]
@@ -150,6 +151,7 @@ namespace LumenWave
             {
                 _dim = 1f;
                 if (Current == State.Chase && Random.value < 0.05f && _sparks) _sparks.Emit(2);
+                ShieldDome.Ripple(pos);
             }
             transform.position = pos;
 
@@ -173,8 +175,9 @@ namespace LumenWave
             float flick = Current == State.Stunned ? (Random.value < 0.3f ? 0.6f : 0.1f) : 1f;
             float bright = Mathf.Lerp(1f, 0.25f, _dim) * flick;
             float chaseBoost = Current == State.Chase ? 1.3f : 1f;
-            EnemyUtil.SetEmission(_coreMat, Col * 5f * bright * chaseBoost);
-            if (_halo) _halo.transform.localScale = Vector3.one * (1.3f + 0.2f * Mathf.Sin(Time.time * 9f + _seed)) * Mathf.Lerp(1f, 0.6f, _dim);
+            _hitFlash = Mathf.Max(0f, _hitFlash - dt * 4f);
+            EnemyUtil.SetEmission(_coreMat, Col * 5f * bright * chaseBoost + Color.white * 14f * _hitFlash * _hitFlash);
+            if (_halo) _halo.transform.localScale = Vector3.one * (1.3f + 0.2f * Mathf.Sin(Time.time * 9f + _seed)) * Mathf.Lerp(1f, 0.6f, _dim) * (1f + 1.2f * _hitFlash);
             if (_light) _light.intensity = 2f * bright * chaseBoost;
         }
 
@@ -185,6 +188,8 @@ namespace LumenWave
             Current = State.Stunned;
             _stateTimer = 2.5f;
             if (_sparks) _sparks.Emit(16);
+            _hitFlash = 1f;
+            ImpactFx.Sparks(transform.position, Col * 2.2f, 26, 8f, 0.12f, 0.6f);
             GameEvents.RaiseEnemyStunned(transform.position);
         }
 
