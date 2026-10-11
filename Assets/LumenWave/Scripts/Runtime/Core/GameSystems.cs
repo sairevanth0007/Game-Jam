@@ -122,6 +122,25 @@ namespace LumenWave
         public static bool ScreenShake { get => PlayerPrefs.GetInt("lw.shake", 1) == 1; set => PlayerPrefs.SetInt("lw.shake", value ? 1 : 0); }
         public static bool Fullscreen { get => PlayerPrefs.GetInt("lw.fullscreen", 1) == 1; set { PlayerPrefs.SetInt("lw.fullscreen", value ? 1 : 0); Screen.fullScreen = value; } }
 
+        /// <summary>Accessibility: half light/enemy damage, half resonance costs, wider safe beat window.</summary>
+        public static bool AssistMode
+        {
+            get { if (_assist < 0) _assist = PlayerPrefs.GetInt("lw.assist", 0); return _assist == 1; }
+            set { _assist = value ? 1 : 0; PlayerPrefs.SetInt("lw.assist", _assist); }
+        }
+        static int _assist = -1;
+
+        /// <summary>Show the HUD beat indicator in levels with beat-gated light.</summary>
+        public static bool ShowBeat
+        {
+            get { if (_showBeat < 0) _showBeat = PlayerPrefs.GetInt("lw.showbeat", 1); return _showBeat == 1; }
+            set { _showBeat = value ? 1 : 0; PlayerPrefs.SetInt("lw.showbeat", _showBeat); }
+        }
+        static int _showBeat = -1;
+
+        public const float AssistDamageScale = 0.5f;
+        public const float AssistCostScale = 0.5f;
+
         public static void Apply()
         {
             AudioListener.volume = MasterVolume;

@@ -353,12 +353,37 @@ namespace LumenWave
             for (int n = 1; n <= 6; n++)
             {
                 var s = gameObject.AddComponent<AudioSource>();
-                s.clip = Synth.ToClip("finale" + n, Synth.RenderLoop(baseF * n, 2f, Synth.Voice, 0.8f));
+                s.clip = FinaleClip(n);
                 s.loop = true; s.spatialBlend = 0f; s.volume = 0f; s.playOnAwake = false;
                 s.Play();
                 _finale.Add(s);
             }
             PlayNote(baseF * 2f, 1.2f, 0.8f);
+        }
+
+        static readonly AudioClip[] _finaleClips = new AudioClip[7];
+
+        /// <summary>Finale voice n (harmonic n of the root). Rendering 6 loops takes ~80 ms, so levels with an
+        /// ending pre-render them at load time (see <see cref="PrepareFinale"/>) to avoid a hitch.</summary>
+        static AudioClip FinaleClip(int n)
+        {
+            if (_finaleClips[n] == null)
+                _finaleClips[n] = Synth.ToClip("finale" + n, Synth.RenderLoop(Harmony.Root * n, 2f, Synth.Voice, 0.8f));
+            return _finaleClips[n];
+        }
+
+        public static void PrepareFinale()
+        {
+            for (int n = 1; n <= 6; n++) FinaleClip(n);
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+        static void InstallFinalePrep()
+        {
+            LevelRuntime.Loaded += rt =>
+            {
+                if (rt != null && rt.Data != null && rt.Data.entities.Exists(e => e.type == "ending")) PrepareFinale();
+            };
         }
 
         void StopFinale()

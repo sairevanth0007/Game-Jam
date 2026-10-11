@@ -37,7 +37,7 @@ namespace LumenWave
             Mood mood = Mood.Blue;
             if (kind == "level")
             {
-                try { mood = Mood.Get(LevelDatabase.Load(level).Get("mood", "blue")); } catch { }
+                try { mood = Mood.Get((SceneBootstrap.BootingData ?? LevelDatabase.Load(level)).Get("mood", "blue")); } catch { }
             }
             else if (kind == "end") mood = Mood.Get("dawn");
             var rig = Create(kind, mood);

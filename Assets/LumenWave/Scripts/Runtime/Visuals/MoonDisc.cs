@@ -36,6 +36,8 @@ namespace LumenWave
             c.a = 1f;
             mat.SetColor("_Color", c);
             if (mat.HasProperty("_Falloff")) mat.SetFloat("_Falloff", falloff);
+            // Draw before every other transparent so scene fixtures/glows always sit in front of the moon.
+            mat.renderQueue = 2900;
             q.GetComponent<MeshRenderer>().sharedMaterial = mat;
             Backdrop.Shadowless(q);
         }

@@ -65,6 +65,8 @@ namespace LumenWave
             {
                 t += Time.unscaledDeltaTime;
                 if (t > 1f) frameTimes.Add(Time.unscaledDeltaTime);
+                if (t > 1f && Time.unscaledDeltaTime > 0.04f)
+                    Debug.Log($"[LumenWave] Hitch t={t:F2}s dt={Time.unscaledDeltaTime * 1000f:F0}ms x={rt.Player.transform.position.x:F1} last={bot?.LastAction}");
                 var p = rt.Player.transform.position;
                 maxX = Mathf.Max(maxX, p.x);
                 if (t >= nextShot) { Shot(t); nextShot += shotInterval; }

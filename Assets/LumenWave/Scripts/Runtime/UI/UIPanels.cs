@@ -71,7 +71,7 @@ namespace LumenWave.UI
     {
         public static GameObject BuildSettings(Transform parent, MenuStack stack, out GameObject first)
         {
-            var p = UIKit.Panel(parent, "SettingsPanel", new Vector2(760, 660));
+            var p = UIKit.Panel(parent, "SettingsPanel", new Vector2(760, 790));
             var title = UIKit.Label(p, UIKit.Spaced("SETTINGS", 2), 40, TextAnchor.MiddleCenter, UIStyle.Text, "Title");
             UIKit.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -60), new Vector2(700, 60), new Vector2(0.5f, 0.5f));
             var list = UIKit.Rect(p, "List");
@@ -84,6 +84,8 @@ namespace LumenWave.UI
             UIKit.Slider(list, "Effects volume", Settings.SfxVolume, v => Settings.SfxVolume = v);
             UIKit.Toggle(list, "Screen shake", Settings.ScreenShake, v => Settings.ScreenShake = v);
             UIKit.Toggle(list, "Fullscreen", Settings.Fullscreen, v => Settings.Fullscreen = v);
+            UIKit.Toggle(list, "Assist mode", Settings.AssistMode, v => Settings.AssistMode = v);
+            UIKit.Toggle(list, "Show beat", Settings.ShowBeat, v => Settings.ShowBeat = v);
             GameObject controlsFirst = null;
             GameObject controls = null;
             UIKit.Button(list, "Controls", () => stack.Push(controls, controlsFirst), 56, 26);

@@ -71,6 +71,10 @@ namespace LumenWave.UI
         float _messageUntil;
         string _rawMessage;
         Text _banner, _bannerSub;
+        RectTransform _beatRoot;
+        Image _beatRing, _beatDot;
+        float _beatScan;
+        bool _levelHasBeat;
         CanvasGroup _bannerGroup;
         float _bannerUntil;
         Image _deathVignette;
@@ -164,6 +168,17 @@ namespace LumenWave.UI
             LegendText = UIKit.Label(gameplay, "", 20, TextAnchor.LowerLeft, UIStyle.TextDim, "Legend");
             UIKit.Place(LegendText.rectTransform, new Vector2(0f, 0f), new Vector2(56, 40), new Vector2(1200, 30), new Vector2(0f, 0f));
 
+            // Beat indicator (bottom-right): helps time yellow beat lasers. Only in levels with beat-gated light.
+            _beatRoot = UIKit.Rect(gameplay, "Beat");
+            UIKit.Place(_beatRoot, new Vector2(1f, 0f), new Vector2(-96, 72), new Vector2(120, 90), new Vector2(0.5f, 0.5f));
+            _beatRing = UIKit.Image(_beatRoot, "Halo", new Color(1f, 0.85f, 0.3f, 0.25f), UIKit.Glow, false);
+            UIKit.Place(_beatRing.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 12), new Vector2(76, 76), new Vector2(0.5f, 0.5f));
+            _beatDot = UIKit.Image(_beatRoot, "Dot", new Color(1f, 0.85f, 0.3f, 0.9f), UIKit.Glow, false);
+            UIKit.Place(_beatDot.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 12), new Vector2(28, 28), new Vector2(0.5f, 0.5f));
+            var beatLabel = UIKit.Label(_beatRoot, UIKit.Spaced("BEAT"), 16, TextAnchor.MiddleCenter, UIStyle.TextDim, "Label");
+            UIKit.Place(beatLabel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0, 8), new Vector2(120, 22), new Vector2(0.5f, 0.5f));
+            _beatRoot.gameObject.SetActive(false);
+
             // Centre banner (level complete / checkpoint)
             var banner = UIKit.Rect(root, "Banner");
             UIKit.Place(banner, new Vector2(0.5f, 0.5f), new Vector2(0, 120), new Vector2(1400, 200), new Vector2(0.5f, 0.5f));
@@ -237,6 +252,32 @@ namespace LumenWave.UI
             _whiteout.color = new Color(1f, 0.97f, 0.92f, w);
         }
 
+        void TickBeat(float dt)
+        {
+            _beatScan -= dt;
+            if (_beatScan <= 0f)
+            {
+                _beatScan = 1f;
+                _levelHasBeat = false;
+                foreach (var b in FindObjectsByType<LightBeam>(FindObjectsSortMode.None))
+                    if (b.beatGated && b.on) { _levelHasBeat = true; break; }
+            }
+            var clock = BeatClock.Instance;
+            bool show = Settings.ShowBeat && _levelHasBeat && clock != null && !Cinematic;
+            if (_beatRoot.gameObject.activeSelf != show) _beatRoot.gameObject.SetActive(show);
+            if (!show) return;
+            float ph = clock.Phase;
+            bool hot = clock.IsHot;
+            // Swells in the last quarter of the beat (telegraph), flashes while hot.
+            float pre = Mathf.Clamp01((ph - 0.75f) / 0.25f);
+            float k = hot ? 1f - ph / Mathf.Max(0.01f, clock.HotWindow) * 0.5f : pre * 0.6f;
+            var gold = new Color(1f, 0.85f, 0.3f);
+            _beatDot.color = new Color(gold.r, gold.g, gold.b, hot ? 1f : 0.35f + 0.4f * pre);
+            _beatDot.rectTransform.localScale = Vector3.one * (0.8f + 0.9f * k);
+            _beatRing.color = new Color(gold.r, gold.g, gold.b, hot ? 0.55f : 0.15f + 0.25f * pre);
+            _beatRing.rectTransform.localScale = Vector3.one * (hot ? 1.3f : 0.9f + 0.3f * pre);
+        }
+
         void RefreshLegend()
         {
             LumenInput.Ensure();
@@ -273,6 +314,8 @@ namespace LumenWave.UI
 
             _legendRefresh -= dt;
             if (_legendRefresh <= 0f) { _legendRefresh = 0.5f; RefreshLegend(); if (_rawMessage != null) MessageText.text = PromptFormatter.Format(_rawMessage); }
+
+            TickBeat(dt);
 
             // Message fade
             float targetA = Time.unscaledTime < _messageUntil ? 1f : 0f;

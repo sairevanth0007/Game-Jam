@@ -206,7 +206,7 @@ namespace LumenWave.UI
                 try { name = LevelDatabase.Load(i).Name; } catch { name = LevelDatabase.NameOf(i); }
                 int n = i;
                 bool open = i <= unlocked;
-                var b = UIKit.Button(list, $"{i:00}  {name}", () => { GameSession.NewRun(); GameSession.CurrentLevel = n; SceneFlow.LoadLevel(n); }, 52, 24);
+                var b = UIKit.Button(list, $"{i:00}  {name}", () => { GameSession.NewRun(); GameSession.CurrentLevel = n; ScreenFader.FadeThen(() => SceneFlow.LoadLevel(n)); }, 52, 24);
                 b.interactable = open;
                 if (!open) b.GetComponentInChildren<Text>().text = UIKit.Spaced($"{i:00}  ????");
                 if (first == null) first = b.gameObject;
@@ -220,7 +220,7 @@ namespace LumenWave.UI
         void Play()
         {
             GameSession.NewRun();
-            SceneFlow.LoadLevel(1);
+            ScreenFader.FadeThen(() => SceneFlow.LoadLevel(1), 0.5f);
         }
 
         void Quit()
@@ -305,7 +305,7 @@ namespace LumenWave.UI
             UIKit.VList(buttons, 12);
             GameObject creditsFirst;
             var credits = UIPanels.BuildCredits(root, _stack, out creditsFirst);
-            var title = UIKit.Button(buttons, "Title", SceneFlow.LoadTitle, 62);
+            var title = UIKit.Button(buttons, "Title", () => ScreenFader.FadeThen(SceneFlow.LoadTitle), 62);
             UIKit.Button(buttons, "Credits", () => _stack.Push(credits, creditsFirst), 62);
             _stack.Push(main.gameObject, title.gameObject);
         }

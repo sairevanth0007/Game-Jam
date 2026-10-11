@@ -62,7 +62,7 @@ namespace LumenWave.UI
             ResumeButton = UIKit.Button(list, "Resume", () => SetPaused(false), 62, 28, "Resume");
             UIKit.Button(list, "Restart checkpoint", RestartCheckpoint, 62, 26);
             UIKit.Button(list, "Settings", () => _stack.Push(settings, settingsFirst), 62, 26);
-            UIKit.Button(list, "Quit to title", () => { SetPaused(false); SceneFlow.LoadTitle(); }, 62, 26);
+            UIKit.Button(list, "Quit to title", () => { SetPaused(false); ScreenFader.FadeThen(SceneFlow.LoadTitle); }, 62, 26);
 
             _root.SetActive(false);
         }

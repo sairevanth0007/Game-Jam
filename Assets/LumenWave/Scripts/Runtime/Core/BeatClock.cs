@@ -26,7 +26,9 @@ namespace LumenWave
         /// <summary>0..1 position within the current beat.</summary>
         public float Phase => (float)(Time / SecondsPerBeat - Math.Floor(Time / SecondsPerBeat));
         /// <summary>True during the first part of each beat (yellow lights fire).</summary>
-        public bool IsHot => Phase < hotWindow;
+        public bool IsHot => Phase < HotWindow;
+        /// <summary>Hot fraction of the beat; Assist mode shortens it so the safe window is wider.</summary>
+        public float HotWindow => Settings.AssistMode ? hotWindow * 0.6f : hotWindow;
 
         /// <summary>Static helpers that work even if no clock exists (tests).</summary>
         public static bool Hot => Instance != null ? Instance.IsHot : false;

@@ -116,7 +116,7 @@ namespace LumenWave
         IEnumerator AdvanceRoutine()
         {
             yield return new WaitForSeconds(advanceDelay);
-            SceneFlow.NextLevel();
+            ScreenFader.FadeThen(SceneFlow.NextLevel, 0.6f);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

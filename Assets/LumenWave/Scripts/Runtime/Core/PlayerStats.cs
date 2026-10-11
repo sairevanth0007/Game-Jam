@@ -22,6 +22,7 @@ namespace LumenWave
         public void Damage(float amount, LightColor source = LightColor.None)
         {
             if (IsDead || amount <= 0f || godMode || Time.time < _invulUntil) return;
+            if (Settings.AssistMode) amount *= Settings.AssistDamageScale;
             current = Mathf.Max(0f, current - amount);
             // Throttle the event for continuous (per-frame) damage so listeners aren't spammed.
             _damageEventAccum += amount;
@@ -72,11 +73,14 @@ namespace LumenWave
 
         public float Normalized => max > 0 ? current / max : 0f;
 
-        public bool Has(float amount) => infinite || current >= amount;
+        static float Cost(float amount) => Settings.AssistMode ? amount * Settings.AssistCostScale : amount;
+
+        public bool Has(float amount) => infinite || current >= Cost(amount);
 
         public bool TrySpend(float amount)
         {
             if (infinite) return true;
+            amount = Cost(amount);
             if (current < amount) return false;
             current -= amount;
             return true;
@@ -86,6 +90,7 @@ namespace LumenWave
         public bool Drain(float amount)
         {
             if (infinite) return true;
+            amount = Cost(amount);
             current = Mathf.Max(0f, current - amount);
             return current > 0f;
         }
