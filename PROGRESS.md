@@ -15,7 +15,7 @@
 
 ## Milestones
 M0 setup · M1 Umbra · M2 light system · M3 sound powers + audio · M4 enemies, levels, HUD, menus, bot · M5 polish · M6 verified Windows build + MALink. **All done.**
-Release candidates pushed: RC1 02:45, RC2 03:39, RC3 about 04:45 (Sun 11 Oct 2026).
+Release candidates pushed: RC1 02:45, RC2 03:39, RC3 04:45, RC4 about 05:15 (Sun 11 Oct 2026; bug-hunt fixes).
 
 ## Final status
 
@@ -40,7 +40,7 @@ Release candidates pushed: RC1 02:45, RC2 03:39, RC3 about 04:45 (Sun 11 Oct 202
 - **MALink:** a hand-written OSC encoder sending grandMA3 `Go+ Exec N` commands per event. Off by default and safe offline, with an F9 overlay. See docs/MALINK.md.
 
 ### What is verified
-- **Tests:** 38 EditMode + 74 PlayMode, all passing. They cover light math, rules, mixing, reflection, prism, Harmony, level parsing, input bindings and rebinding persistence, OSC encoding, and a real UDP listener receiving MALink packets.
+- **Tests:** 38 EditMode + 77 PlayMode, all passing. They cover light math, rules, mixing, reflection, prism, Harmony, level parsing, input bindings and rebinding persistence, OSC encoding, and a real UDP listener receiving MALink packets.
 - **Gameplay tests:** player feel; red damages; shield blocks; green heals; blue gravity; beat gating; echo bridge is walkable; pulse arrives at finite speed; enemies; flare bolts absorbed; checkpoints; finale; UI. A bot finishes **all 10 levels with 0 deaths at 1× and 2.5×**.
 - **Real Windows build:**
   - Autoplay finishes levels at a locked 60 fps (p95 16.7 ms at 1600x900).

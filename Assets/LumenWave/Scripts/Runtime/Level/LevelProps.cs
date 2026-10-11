@@ -343,7 +343,8 @@ namespace LumenWave
 
         static void OnLevelStarted(int level)
         {
-            if (level == 1 && GameSession.TotalTime < 0.5f) ResetRun();
+            // A fresh run (Play or Level select both call GameSession.NewRun) starts with TotalTime ≈ 0.
+            if (GameSession.TotalTime < 0.5f) ResetRun();
         }
 
         public static void ResetLevel() { CollectedInLevel = 0; InLevel = 0; }

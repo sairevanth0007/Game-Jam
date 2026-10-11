@@ -92,7 +92,7 @@ namespace LumenWave
 
         void Update()
         {
-            if (GameSession.Paused) return;
+            if (GameSession.Paused) { AudioDirector.Instance?.StopSustain("shield"); return; }
             bool dead = _health != null && _health.IsDead;
             var cmd = dead ? default : ReadCommands();
 
@@ -156,6 +156,8 @@ namespace LumenWave
         void OnDisable()
         {
             if (Shield != null) Shield.SetActive(false);
+            // The hum lives on the persistent AudioDirector: stop it or it keeps playing after a scene change.
+            AudioDirector.Instance?.StopSustainNow("shield");
         }
 
         /// <summary>Parent for spawned power objects so respawn resets them.</summary>

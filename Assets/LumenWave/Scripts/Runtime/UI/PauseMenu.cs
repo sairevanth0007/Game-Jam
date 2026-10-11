@@ -104,7 +104,8 @@ namespace LumenWave.UI
             if (!IsPaused)
             {
                 var rt = LevelRuntime.Current;
-                bool canPause = rt == null || !rt.Completed;
+                // No pausing once the level is done or during the finale cinematic (its HUD runs on unscaled time).
+                bool canPause = (rt == null || !rt.Completed) && !FinaleTrigger.Started;
                 if (pausePressed && canPause) SetPaused(true);
                 return;
             }

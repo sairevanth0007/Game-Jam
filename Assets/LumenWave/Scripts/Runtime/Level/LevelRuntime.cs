@@ -79,16 +79,25 @@ namespace LumenWave
             GameEvents.RaiseCheckpoint(index);
         }
 
-        void OnPlayerDied() { StartCoroutine(RespawnRoutine()); }
+        Coroutine _respawnRoutine;
+
+        void OnPlayerDied()
+        {
+            if (_respawnRoutine != null) StopCoroutine(_respawnRoutine);
+            _respawnRoutine = StartCoroutine(RespawnRoutine());
+        }
 
         IEnumerator RespawnRoutine()
         {
             yield return new WaitForSeconds(respawnDelay);
+            _respawnRoutine = null;
             Respawn();
         }
 
         public void Respawn()
         {
+            // "Restart checkpoint" while dead: don't let the pending automatic respawn teleport us again later.
+            if (_respawnRoutine != null) { StopCoroutine(_respawnRoutine); _respawnRoutine = null; }
             if (Player == null) return;
             foreach (var r in GetComponentsInChildren<MonoBehaviour>(true))
                 if (r is IResettable rs) rs.ResetState();

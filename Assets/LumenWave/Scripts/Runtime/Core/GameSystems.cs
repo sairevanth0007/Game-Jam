@@ -120,7 +120,7 @@ namespace LumenWave
         public static float MusicVolume { get => PlayerPrefs.GetFloat("lw.vol.music", 0.7f); set => PlayerPrefs.SetFloat("lw.vol.music", value); }
         public static float SfxVolume { get => PlayerPrefs.GetFloat("lw.vol.sfx", 0.8f); set => PlayerPrefs.SetFloat("lw.vol.sfx", value); }
         public static bool ScreenShake { get => PlayerPrefs.GetInt("lw.shake", 1) == 1; set => PlayerPrefs.SetInt("lw.shake", value ? 1 : 0); }
-        public static bool Fullscreen { get => PlayerPrefs.GetInt("lw.fullscreen", 1) == 1; set { PlayerPrefs.SetInt("lw.fullscreen", value ? 1 : 0); Screen.fullScreen = value; } }
+        public static bool Fullscreen { get => Screen.fullScreen; set { PlayerPrefs.SetInt("lw.fullscreen", value ? 1 : 0); Screen.fullScreen = value; } }
 
         /// <summary>Accessibility: half light/enemy damage, half resonance costs, wider safe beat window.</summary>
         public static bool AssistMode

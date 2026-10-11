@@ -19,7 +19,7 @@ namespace LumenWave
         CanvasGroup _black;
         CanvasGroup _card;
         Text _cardNumber, _cardName;
-        Coroutine _fade, _cardRoutine;
+        Coroutine _fade, _cardRoutine, _dip;
         static bool _captureRun;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
@@ -108,27 +108,35 @@ namespace LumenWave
         void OnDied()
         {
             if (_captureRun || GameSession.BotMode) return;
-            StartCoroutine(DeathDip());
+            if (_dip != null) StopCoroutine(_dip);
+            _dip = StartCoroutine(DeathDip());
         }
 
         IEnumerator DeathDip()
         {
             yield return new WaitForSeconds(0.55f);
+            if (_fadeHasAction) yield break;
             StartFade(0.85f, 0.4f, null);
             // Safety: never stay dark if the respawn event doesn't come.
             yield return new WaitForSecondsRealtime(2.5f);
-            if (_black.alpha > 0.5f) StartFade(0f, 0.4f, null);
+            if (_black.alpha > 0.5f && !_fadeHasAction) StartFade(0f, 0.4f, null);
+            _dip = null;
         }
 
         void OnRespawned()
         {
-            if (_captureRun || _black.alpha <= 0.01f) return;
+            if (_dip != null) { StopCoroutine(_dip); _dip = null; }
+            if (_captureRun || _fadeHasAction) return;   // never cancel a scene-change fade
+            if (_black.alpha <= 0.01f && _fade == null) return;
             StartFade(0f, 0.45f, null);
         }
+
+        bool _fadeHasAction;
 
         void StartFade(float target, float seconds, Action then)
         {
             if (_fade != null) StopCoroutine(_fade);
+            _fadeHasAction = then != null;
             _fade = StartCoroutine(Fade(target, seconds, then));
         }
 
@@ -142,6 +150,7 @@ namespace LumenWave
             }
             _black.alpha = target;
             _fade = null;
+            _fadeHasAction = false;
             then?.Invoke();
         }
 

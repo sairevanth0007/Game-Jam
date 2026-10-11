@@ -38,3 +38,13 @@
 - Flare enemy: mounted lantern firing bolts the shield absorbs (this was in the brief). Its housing was invisible against the night sky, so it got an emissive trim.
 - End screen shows secrets x/total and best time; level select shows per-level bests.
 - RC2 (03:39) and RC3 pushed with verified builds.
+
+**04:50–05:15 · Bug hunt (RC4).** Fixed 6 confirmed player-facing bugs, each with regression tests:
+- Dying during a level-change fade soft-locked the transition.
+- Early respawn left the death fade dark.
+- "Restart checkpoint" while dead caused a double teleport.
+- The shield hum kept playing after pause or quit.
+- The secret count carried over from level-select runs.
+- The fullscreen toggle showed the wrong state.
+
+Pause is now blocked during the finale. Tests 38 + 77 pass; flow test 0 fails; autoplay at 60 fps.

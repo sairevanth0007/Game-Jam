@@ -276,6 +276,12 @@ namespace LumenWave
             }
         }
 
+        /// <summary>Stops a sustained tone immediately (owner destroyed / scene change).</summary>
+        public void StopSustainNow(string key)
+        {
+            if (_sustains.TryGetValue(key, out var s) && s != null) { s.volume = 0f; s.Stop(); }
+        }
+
         public bool IsSustaining(string key) => _sustains.TryGetValue(key, out var s) && s != null && s.isPlaying;
 
         public static bool HasClip(string name) => Instance != null && Instance._clips.ContainsKey(name);

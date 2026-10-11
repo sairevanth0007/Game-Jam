@@ -38,6 +38,7 @@ namespace LumenWave
         public static void Hit(GameObject player, float damage, Vector3 from, float knockback, LightColor color = LightColor.White)
         {
             var hp = player.GetComponent<PlayerHealth>();
+            if (hp != null && hp.IsDead) return;   // don't fling the body around while the respawn is pending
             if (hp != null) hp.Damage(damage, color);
             var body = player.GetComponent<IPlayerBody>();
             if (body != null && knockback > 0f)
