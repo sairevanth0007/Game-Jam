@@ -1,12 +1,12 @@
 # Runs the bot on the built player for each level and prints the fps + completion lines.
-# Usage: powershell -File scripts/autoplay.ps1 [-Name visual] [-Levels 1,2,3] [-Seconds 90]
-param([string]$Name = 'Windows', [int[]]$Levels = @(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), [int]$Seconds = 120)
+# Usage: powershell -File scripts/autoplay.ps1 [-Name visual] [-Levels "1,2,3"] [-Seconds 90]
+param([string]$Name = 'Windows', [string]$Levels = '1,2,3,4,5,6,7,8,9,10', [int]$Seconds = 120)
 . (Join-Path $PSScriptRoot 'common.ps1')
 
 $exe = Join-Path $LW_Root "Builds\$Name\LumenWave.exe"
 if (-not (Test-Path $exe)) { Write-Host "No build at $exe"; exit 1 }
 $fails = 0
-foreach ($l in $Levels) {
+foreach ($l in ($Levels -split '[,; ]+' | Where-Object { $_ } | ForEach-Object { [int]$_ })) {
     $dir = Join-Path $env:TEMP ("lw_autoplay_{0}_L{1}_{2}" -f $Name, $l, (Get-Date -Format 'HHmmss'))
     New-Item -ItemType Directory -Force $dir | Out-Null
     $log = Join-Path $LW_Logs "autoplay-$Name-L$l.log"

@@ -47,3 +47,18 @@ Use any one of these:
 
 ## Verified
 - EditMode tests (`Tests/EditMode/MALinkTests.cs`) check the OSC encoding byte by byte (4-byte padding, big-endian int32) and the decode round-trip. They also start a **real UDP listener** on localhost and assert it receives `/gma3/cmd ,s "Go+ Exec 42"`, and confirm that sending to an unreachable host never throws.
+
+## Lightkeeper mode: OSC lamp control (input)
+Lightkeeper mode (title screen → LIGHTKEEPER) can take its four lamps from OSC, e.g. TouchOSC, a grandMA3 or any OSC app. It is off by default.
+- **Enable**: `LumenWave.exe -lk-osc 9000` (UDP port to listen on), or set the PlayerPrefs int `lw.lk.oscport` to a value above 0.
+- **Messages** (N = 1..4). Plain messages and simple `#bundle`s are accepted:
+  | Address | Argument | Effect |
+  |---|---|---|
+  | `/lamp/N/x` | float | lamp position on the rail (world metres, clamped to the arena) |
+  | `/lamp/N/angle` | float (deg) | beam aim. 0 = straight down, positive tilts toward the door (+x), range −75…+75 |
+  | `/lamp/N/on` | int or float (0/1) | on/off. The same rules as the keyboard apply: max 2 lit, energy needed |
+  | `/lamp/N/color` | int 0..4 or string | red, green, blue, yellow, white |
+  | `/lamp/N/select` | none | selects the lamp for the keyboard |
+- Packets are received on a background thread and applied on the main thread (`Lightkeeper/LightkeeperOsc.cs`, decoder `Osc.TryDecode`).
+- **Mirror out**: when MALink is enabled (`-malink ip:port:prefix`), every lamp change is also sent to the MALink ip:port with the same addresses (≤10 Hz per lamp). On/off additionally sends `Go+ Exec 23N` / `Off Exec 23N`, so executors 231–234 can follow the lamps on a real rig.
+- Verified by the PlayMode test `LightkeeperTests.OscMessage_MovesLamp`, which sends real UDP packets to the listener.

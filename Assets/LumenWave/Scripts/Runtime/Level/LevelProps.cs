@@ -139,19 +139,26 @@ namespace LumenWave
         public Vector2 size = new Vector2(1.6f, 2.6f);
         Light _light;
         Transform _veil;
-        float _t;
+        float _t, _nextSealedHint;
 
         public void Init(Light l, Transform veil) { _light = l; _veil = veil; }
 
         void Update()
         {
             _t += Time.deltaTime;
-            bool locked = FinaleTrigger.Present && !FinaleTrigger.Started;
+            // Sealed until the finale starts (level 10) or until every melody shard is gathered.
+            bool sealedByShards = !MelodyShards.DoorOpen;
+            bool locked = (FinaleTrigger.Present && !FinaleTrigger.Started) || sealedByShards;
             if (_light != null) _light.intensity = locked ? 0.3f : 3.2f + Mathf.Sin(_t * 2.6f) * 0.8f;
             if (_veil != null) _veil.localScale = new Vector3(1.2f, 2.2f + Mathf.Sin(_t * 1.7f) * 0.05f, locked ? 0.01f : 0.05f);
-            if (locked || LevelRuntime.Current == null || LevelRuntime.Current.Completed) return;
-            if (PlayerQuery.Overlaps((Vector2)transform.position + Vector2.up * size.y * 0.5f, size))
-                LevelRuntime.Current.Complete();
+            if (LevelRuntime.Current == null || LevelRuntime.Current.Completed) return;
+            bool touching = PlayerQuery.Overlaps((Vector2)transform.position + Vector2.up * size.y * 0.5f, size);
+            if (touching && sealedByShards && Time.time > _nextSealedHint)
+            {
+                _nextSealedHint = Time.time + 3f;
+                GameEvents.RaiseMessage("The door is sealed. Gather the melody shards " + MelodyShards.Collected + "/" + MelodyShards.InLevel + ".");
+            }
+            if (!locked && touching) LevelRuntime.Current.Complete();
         }
     }
 

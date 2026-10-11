@@ -1,0 +1,28 @@
+name: Lightkeeper Arena
+intro: Lightkeeper: hold Umbra back for 90 seconds.
+fog: 0.035
+mood: violet
+theme: canyon
+drone: 2
+---
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                    ##                                      ##
+## P                           C      ##                 C    #######      E  ##
+########################     #####################     #########################
+########################     #####################     #########################
+########################     #####################     #########################
+---
+beam 14 9.5 color=red dir=-90 range=16 intensity=8 width=0.9 fixture=0
+beam 32 9.5 color=red dir=-90 range=16 intensity=8 width=0.9 fixture=0
+beam 48 9.5 color=red dir=-90 range=16 intensity=8 width=0.9 fixture=0
+beam 66 9.5 color=red dir=-90 range=16 intensity=8 width=0.9 fixture=0

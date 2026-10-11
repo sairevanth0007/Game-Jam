@@ -146,6 +146,8 @@ namespace LumenWave.UI
         public TMP_Text MessageText { get; private set; }
         public TMP_Text LevelText { get; private set; }
         public TMP_Text TimerText { get; private set; }
+        public TMP_Text ShardsText { get; private set; }
+        int _lastShards = -1, _lastShardTotal = -1;
         /// <summary>Plain-text version of the key hints (the visible hints are key-cap boxes).</summary>
         public TMP_Text LegendText { get; private set; }
 
@@ -277,6 +279,12 @@ namespace LumenWave.UI
             UIKit.Place(TimerText.rectTransform, new Vector2(1f, 1f), new Vector2(-60, -138), new Vector2(400, 40), new Vector2(1f, 1f));
             TimerText.font = UIKit.Font;   // the serif's ornamented 0 reads poorly in numbers
             UIKit.Shadowed(TimerText);
+
+            // Melody shards x/N (hidden in levels without shards).
+            ShardsText = UIKit.Heading(gameplay, "", 24, TextAnchor.UpperRight, MelodyShards.ShardColor, "Shards", 0);
+            ShardsText.font = UIKit.Font;
+            UIKit.Place(ShardsText.rectTransform, new Vector2(1f, 1f), new Vector2(-60, -184), new Vector2(400, 32), new Vector2(1f, 1f));
+            UIKit.Shadowed(ShardsText);
 
             // Message banner (lower middle, over the dark ground so it never hides lights or enemies).
             _messageRoot = UIKit.Rect(root, "Message");
@@ -556,6 +564,11 @@ namespace LumenWave.UI
             // Only rebuild the timer string when the shown value changes (no per-frame garbage when paused).
             float lt = Mathf.Floor(GameSession.LevelTime * 100f);
             if (lt != _lastTimer) { _lastTimer = lt; TimerText.text = UIKit.FormatTime(GameSession.LevelTime); }
+            if (ShardsText != null && (MelodyShards.Collected != _lastShards || MelodyShards.InLevel != _lastShardTotal))
+            {
+                _lastShards = MelodyShards.Collected; _lastShardTotal = MelodyShards.InLevel;
+                ShardsText.text = _lastShardTotal > 0 ? "SHARDS  " + _lastShards + " / " + _lastShardTotal : "";
+            }
             if (string.IsNullOrEmpty(LevelText.text)) RefreshLevelName();
 
             _legendRefresh -= dt;

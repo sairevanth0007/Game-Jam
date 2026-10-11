@@ -23,6 +23,22 @@ Release candidates pushed: RC1 02:45, RC2 03:39, RC3 04:45, RC4 about 05:15 (Sun
 - Verify: `scripts/test.ps1`, `scripts/build.ps1 -Name visual`, `scripts/autoplay.ps1 -Name visual`, `scripts/screenshot.ps1 -Name visual`. Compare images with `tools/before_after.py`.
 - The "Final status" section below describes RC4, before the overhaul. The hero, camera and UI described there were replaced as above.
 
+## Melody shards + Lightkeeper mode (branch `lumenwave-visual`)
+- **Melody shards:** one shard rests on each checkpoint lantern. The HUD shows "SHARDS x/N", each shard plays the next note of the level melody, and the exit stays sealed until all are gathered, then the full melody plays. The optional `shardskip:` header excludes off-route checkpoints (level 5). The finale level has no shards. Secret orbs stay optional. Code: `Level/MelodyShards.cs`, plus `ExitPortal` and `Hud`.
+- **Lightkeeper mode** (title → LIGHTKEEPER, arena `Resources/Levels/lightkeeper_arena.txt`):
+  - A reactive bot (`Lightkeeper/ReactiveBot.cs`) plays Umbra: it waits at beams, shields against red when it has resonance, and uses Echo over gaps.
+  - The human runs 4 lamps (1–4 select, A/D or mouse move, Q/E aim, W on/off, R colour) under an energy limit (max 2 lit).
+  - The Lightkeeper wins after 90 s or 3 bot deaths; there is a big result screen with Retry/Title.
+  - OSC input is off by default (`-lk-osc <port>`; `/lamp/N/x|angle|on|color`), and lamp states mirror out via MALink when it's on. See docs/MALINK.md.
+  - Screenshot: `docs/images/lightkeeper_arena.jpg`.
+- **Verified (Sun 11 Oct 2026, ~15:35):**
+  - Tests: 38 EditMode + 81 PlayMode, all pass, including the 3 Lightkeeper tests (idle lights → the bot reaches the door; a static lethal beam blocks it; OSC moves a lamp).
+  - Built player: the bot completes levels 1–9 with all shards and 0 deaths. Zip rebuilt.
+- **Known issues:**
+  - In the arena screenshot the HUD's level label reads "LEVEL 01".
+  - The two lit lamps' beams weren't visible in that frame. Lamp layout and energy were retuned after that screenshot and haven't been re-captured.
+  - Nobody has played Lightkeeper by hand yet.
+
 ## Final status
 
 ### What works

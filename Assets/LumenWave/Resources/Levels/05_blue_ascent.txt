@@ -3,6 +3,7 @@ intro: Blue light makes you light as a song.
 fog: 0.035
 mood: ice
 theme: ice
+shardskip: 104.5 153.5
 drone: 5
 ---
 ##                                                                                                                                                                                                  ##

@@ -231,7 +231,7 @@ namespace LumenWave.UI
 
             // ---- Main menu (left column, left-aligned labels).
             var main = UIKit.Rect(root, "MainMenu");
-            UIKit.Place(main, new Vector2(0f, 1f), new Vector2(logoX - 6f, -470f), new Vector2(470, 400), new Vector2(0f, 1f));
+            UIKit.Place(main, new Vector2(0f, 1f), new Vector2(logoX - 6f, -470f), new Vector2(470, 470), new Vector2(0f, 1f));
             UIKit.VList(main, 10, null, TextAnchor.UpperLeft);
             _main = main.gameObject;
 
@@ -242,6 +242,7 @@ namespace LumenWave.UI
 
             PlayButton = UIKit.Button(main, "Play", Play, 70, 34, "Play");
             UIKit.Button(main, "Select level", () => Stack.Push(levels, levelsFirst), 60, 26);
+            UIKit.Button(main, "Lightkeeper", () => ScreenFader.FadeThen(LightkeeperMode.Start), 60, 26);   // Lightkeeper mode (Lightkeeper/LightkeeperMode.cs)
             UIKit.Button(main, "Settings", () => Stack.Push(settings, settingsFirst), 60, 26);
             UIKit.Button(main, "Credits", () => Stack.Push(credits, creditsFirst), 60, 26);
             UIKit.Button(main, "Quit", Quit, 60, 26);
