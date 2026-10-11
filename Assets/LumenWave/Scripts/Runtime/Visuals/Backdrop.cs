@@ -29,7 +29,8 @@ namespace LumenWave
             skyMat.SetColor("_TopColor", mood.skyTop);
             skyMat.SetColor("_HorizonColor", mood.skyHorizon);
             skyMat.SetColor("_BottomColor", mood.skyBottom);
-            skyMat.SetColor("_MoonColor", mood.moon);
+            // The moon itself is a camera-anchored MoonDisc (fixed screen spot, clear of the HUD).
+            skyMat.SetColor("_MoonColor", Color.black);
             skyMat.SetVector("_MoonPos", new Vector4(0.6f + (float)rng.NextDouble() * 0.08f, 0.645f, 0, 0));
             skyMat.SetFloat("_MoonSize", 0.016f);
             skyMat.SetFloat("_Aspect", sky.transform.localScale.x / sky.transform.localScale.y);

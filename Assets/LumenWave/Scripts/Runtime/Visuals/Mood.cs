@@ -22,10 +22,11 @@ namespace LumenWave
                     m.layer = new Color(0.02f, 0.05f, 0.05f); m.moon = new Color(0.9f, 1.4f, 1.1f); m.dust = new Color(0.6f, 1f, 0.7f);
                     break;
                 case "red":
-                    m.fog = new Color(0.07f, 0.025f, 0.03f); m.skyHorizon = new Color(0.2f, 0.05f, 0.05f);
-                    m.skyTop = new Color(0.02f, 0.005f, 0.01f); m.edge = new Color(1.0f, 0.35f, 0.25f);
-                    m.layer = new Color(0.06f, 0.02f, 0.025f); m.moon = new Color(1.6f, 0.6f, 0.45f); m.dust = new Color(1f, 0.55f, 0.45f);
-                    m.moonlight = new Color(0.8f, 0.55f, 0.55f);
+                    // Dusky crimson-grey rather than saturated red, so red hazards still pop against it.
+                    m.fog = new Color(0.05f, 0.032f, 0.038f); m.skyHorizon = new Color(0.13f, 0.065f, 0.075f);
+                    m.skyTop = new Color(0.018f, 0.008f, 0.014f); m.edge = new Color(0.9f, 0.55f, 0.5f);
+                    m.layer = new Color(0.045f, 0.025f, 0.03f); m.moon = new Color(1.5f, 0.95f, 0.85f); m.dust = new Color(0.9f, 0.7f, 0.65f);
+                    m.moonlight = new Color(0.75f, 0.62f, 0.62f);
                     break;
                 case "gold":
                     m.fog = new Color(0.07f, 0.055f, 0.03f); m.skyHorizon = new Color(0.2f, 0.14f, 0.05f);

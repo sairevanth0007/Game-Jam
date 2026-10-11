@@ -88,6 +88,7 @@ namespace LumenWave
             if (FindAnyObjectByType<AudioListener>() == null) camGo.AddComponent<AudioListener>();
             Camera = cam;
             CameraRig = camGo.AddComponent<CameraRig>();
+            MoonDisc.Create(cam, mood);
 
             // Moonlight: cool, dim, from upper-left behind the camera so platform tops catch it.
             var lgo = new GameObject("Moonlight");

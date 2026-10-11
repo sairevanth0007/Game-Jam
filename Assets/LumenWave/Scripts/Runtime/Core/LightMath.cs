@@ -100,7 +100,7 @@ namespace LumenWave
         {
             switch (c)
             {
-                case LightColor.Red: return new Color(1f, 0.16f, 0.12f);
+                case LightColor.Red: return new Color(1f, 0.05f, 0.07f);   // saturated so ACES tonemapping keeps it red, not orange
                 case LightColor.Green: return new Color(0.25f, 1f, 0.45f);
                 case LightColor.Blue: return new Color(0.25f, 0.55f, 1f);
                 case LightColor.Yellow: return new Color(1f, 0.85f, 0.2f);

@@ -307,7 +307,7 @@ namespace LumenWave
                 ct.position = s.start + new Vector3(0, 0, -0.05f);
                 ct.rotation = rot;
                 ct.localScale = new Vector3(width * 0.45f, len, 1f);
-                LightVisuals.SetBeamProps(_cores[i], _mpb, c, 2.2f * level * fogBefore, len, sigma);
+                LightVisuals.SetBeamProps(_cores[i], _mpb, c, 1.7f * level * fogBefore, len, sigma);
 
                 var ht = _halos[i].transform;
                 ht.position = s.start + new Vector3(0, 0, 0.05f);
