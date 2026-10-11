@@ -282,12 +282,13 @@ namespace LumenWave.UI
             Height(row.gameObject, 56);
             var bg = row.gameObject.AddComponent<Image>();
             bg.sprite = Soft; bg.type = UnityEngine.UI.Image.Type.Sliced; bg.color = Color.white;
-            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 24, TextAnchor.MiddleLeft, UIStyle.TextDim);
-            t.rectTransform.anchorMin = new Vector2(0, 0); t.rectTransform.anchorMax = new Vector2(0.45f, 1);
+            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 20, TextAnchor.MiddleLeft, UIStyle.TextDim);
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;   // never wrap mid-word ("VOLU / ME")
+            t.rectTransform.anchorMin = new Vector2(0, 0); t.rectTransform.anchorMax = new Vector2(0.5f, 1);
             t.rectTransform.offsetMin = new Vector2(24, 0); t.rectTransform.offsetMax = Vector2.zero;
 
             var area = Rect(row, "Track");
-            area.anchorMin = new Vector2(0.48f, 0.5f); area.anchorMax = new Vector2(0.94f, 0.5f);
+            area.anchorMin = new Vector2(0.54f, 0.5f); area.anchorMax = new Vector2(0.94f, 0.5f);
             area.sizeDelta = new Vector2(0, 6); area.anchoredPosition = Vector2.zero;
             var track = area.gameObject.AddComponent<Image>(); track.color = new Color(1, 1, 1, 0.12f);
             var fillArea = Rect(area, "Fill Area"); Stretch(fillArea);
@@ -319,7 +320,8 @@ namespace LumenWave.UI
             Height(row.gameObject, 56);
             var bg = row.gameObject.AddComponent<Image>();
             bg.sprite = Soft; bg.type = UnityEngine.UI.Image.Type.Sliced; bg.color = Color.white;
-            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 24, TextAnchor.MiddleLeft, UIStyle.TextDim);
+            var t = Label(row, UIKit.Spaced(label.ToUpperInvariant()), 20, TextAnchor.MiddleLeft, UIStyle.TextDim);
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;
             t.rectTransform.anchorMin = new Vector2(0, 0); t.rectTransform.anchorMax = new Vector2(0.7f, 1);
             t.rectTransform.offsetMin = new Vector2(24, 0); t.rectTransform.offsetMax = Vector2.zero;
             var box = Image(row, "Box", new Color(1, 1, 1, 0.15f), Soft);

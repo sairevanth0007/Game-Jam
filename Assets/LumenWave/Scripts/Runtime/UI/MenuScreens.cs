@@ -120,6 +120,7 @@ namespace LumenWave.UI
         public Button PlayButton { get; private set; }
         Text _logo;
         Image _logoHalo;
+        GameObject _tagline, _titleLine;
         GameObject _main;
 
         void Awake()
@@ -158,7 +159,9 @@ namespace LumenWave.UI
             glow.effectDistance = new Vector2(1.5f, 1.5f);
             var tag = UIKit.Label(root, UIKit.Spaced("a song of shadow and light"), 28, TextAnchor.MiddleCenter, UIStyle.TextDim, "Tagline");
             UIKit.Place(tag.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -330), new Vector2(1200, 40), new Vector2(0.5f, 0.5f));
+            _tagline = tag.gameObject;
             var line = UIKit.Image(root, "TitleLine", UIStyle.PanelLine);
+            _titleLine = line.gameObject;
             UIKit.Place(line.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -300), new Vector2(560, 2), new Vector2(0.5f, 0.5f));
 
             // Main menu
@@ -231,6 +234,15 @@ namespace LumenWave.UI
         void Update()
         {
             float t = Time.unscaledTime;
+            // Sub-panels (settings, credits, level select) are centred over the logo: hide the logo while open.
+            bool showLogo = Stack == null || Stack.Depth <= 1;
+            if (_logo != null && _logo.gameObject.activeSelf != showLogo)
+            {
+                _logo.gameObject.SetActive(showLogo);
+                if (_logoHalo != null) _logoHalo.gameObject.SetActive(showLogo);
+                if (_tagline != null) _tagline.SetActive(showLogo);
+                if (_titleLine != null) _titleLine.SetActive(showLogo);
+            }
             if (_logoHalo != null)
             {
                 float a = 0.16f + 0.08f * Mathf.Sin(t * 2.1f);

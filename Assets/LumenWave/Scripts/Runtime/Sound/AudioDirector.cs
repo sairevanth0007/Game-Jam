@@ -182,10 +182,16 @@ namespace LumenWave
 
         // ---------------------------------------------------------------- update
 
+        /// <summary>
+        /// Overall make-up gain. Measured in the real build (-lw-record-audio): mean RMS was ≈ −25 dBFS with peaks
+        /// ≤ 0.37, i.e. too quiet with lots of headroom; ×1.5 lands around −21 dBFS with peaks ≈ 0.55 (no clipping).
+        /// </summary>
+        const float MixGain = 1.5f;
+
         void ReadSettings()
         {
-            _music = Settings.MusicVolume;
-            _sfx = Settings.SfxVolume;
+            _music = Settings.MusicVolume * MixGain;
+            _sfx = Settings.SfxVolume * MixGain;
         }
 
         void Update()

@@ -129,9 +129,9 @@ namespace LumenWave.UI
                 if (first == null) first = kb;
             }
             var buttons = UIKit.Rect(list, "Buttons");
-            var ble = buttons.gameObject.AddComponent<LayoutElement>(); ble.preferredHeight = 56;
+            var ble = buttons.gameObject.AddComponent<LayoutElement>(); ble.preferredHeight = 56; ble.minHeight = 56; ble.flexibleHeight = 0f;
             var hl = buttons.gameObject.AddComponent<HorizontalLayoutGroup>();
-            hl.spacing = 16; hl.childControlWidth = true; hl.childControlHeight = true; hl.childForceExpandWidth = true;
+            hl.spacing = 16; hl.childControlWidth = true; hl.childControlHeight = true; hl.childForceExpandWidth = true; hl.childForceExpandHeight = false;
             UIKit.Button(buttons, "Reset defaults", () => { LumenInput.ResetOverrides(); foreach (var r in refreshers) r(); }, 56, 24);
             UIKit.Button(buttons, "Back", () => stack.Pop(), 56, 24);
             p.gameObject.SetActive(false);
