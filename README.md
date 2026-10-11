@@ -27,6 +27,12 @@ Built with Unity 6000.2.9f1 · URP (Universal Renderer, Forward+) · Input Syste
 | Pause | Esc | Start |
 | MALink overlay (grandMA3 OSC, off by default) | F9 | — |
 
+## Sound powers (each costs Resonance and plays a just-intonation note)
+| Echo Path | Resonance Shield | Pulse |
+|---|---|---|
+| ![Echo Path](docs/images/echo_bridge.png) | ![Shield](docs/images/shield.png) | ![Pulse](docs/images/pulse.png) |
+| A sound wave freezes into a walkable shadow bridge. Its ripple wavelength is λ = v/f of the note. | Hold to raise a standing-wave dome with Chladni patterns. It blocks red light, wisps and moths. | A finite-speed wavefront that shatters crystals, stuns sentinels, reveals hidden platforms and rotates mirrors and prisms. |
+
 ## Rules of light
 - **Red** burns over time, and intense beams kill. Block it with the **Shield**.
 - **Green** heals you and refills **Resonance**. Darkness also refills it.
