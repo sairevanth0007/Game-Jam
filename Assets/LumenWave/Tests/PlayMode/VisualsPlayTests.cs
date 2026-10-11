@@ -28,12 +28,12 @@ namespace LumenWave.Tests
             Assert.IsTrue(SceneRig.Instance.HasBloom, "Bloom");
             Assert.IsNotNull(GameObject.Find("Backdrop"), "Backdrop");
             Assert.IsTrue(RenderSettings.fog, "Fog");
-            Assert.IsNotNull(rt.transform.Find("Level_" + rt.Data.id + "/Geometry/EdgeGlow") ?? FindEdge(rt.transform), "Edge glow strips");
+            Assert.IsNotNull(FindEdge(rt.transform), "Top caps (readable walkable lips)");
         }
 
         static Transform FindEdge(Transform t)
         {
-            foreach (Transform c in t.GetComponentsInChildren<Transform>()) if (c.name == "EdgeGlow") return c;
+            foreach (Transform c in t.GetComponentsInChildren<Transform>()) if (c.name == "TopCap") return c;
             return null;
         }
 

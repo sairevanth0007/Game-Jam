@@ -1,7 +1,8 @@
 name: Blue Ascent
 intro: Blue light makes you light as a song.
 fog: 0.035
-mood: green
+mood: ice
+theme: ice
 drone: 5
 ---
 ##                                                                                                                                                                                                  ##

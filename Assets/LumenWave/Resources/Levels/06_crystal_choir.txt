@@ -1,7 +1,8 @@
 name: Crystal Choir
 intro: Crystals hold the light. A Pulse can break their song.
 fog: 0.04
-mood: blue
+mood: green
+theme: garden
 drone: 6
 ---
 ##                                                                                                                                                         ##

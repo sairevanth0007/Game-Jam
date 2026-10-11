@@ -3,18 +3,22 @@ using UnityEngine;
 namespace LumenWave
 {
     /// <summary>
-    /// Smooth side-scrolling follow camera: look-ahead in the facing/velocity direction, vertical dead zone,
+    /// Smooth side-scrolling follow camera: close framing (Umbra is ~15 % of the screen height), a slight
+    /// downward pitch for depth, look-ahead biased forward so hazards ahead stay visible, vertical dead zone,
     /// downward peek while falling, clamped to level bounds, plus trauma-based screen shake.
     /// </summary>
     public class CameraRig : MonoBehaviour
     {
-        public const float DefaultDistance = 20f;
+        public const float DefaultDistance = 21f;
+        public const float FieldOfView = 30f;
+        /// <summary>Downward pitch in degrees (small: the playfield stays side-on, platform tops just show).</summary>
+        public const float Pitch = 3f;
         public static CameraRig Instance { get; private set; }
 
         public float distance = DefaultDistance;
-        public float lookAhead = 2.6f;
+        public float lookAhead = 3.4f;
         public float velocityLead = 0.22f;
-        public float verticalBias = 3.0f;   // ground sits ~25–30% from the bottom of the screen
+        public float verticalBias = 3.4f;   // with the pitch, the ground sits ~28% from the bottom of the screen
         public float deadZoneUp = 1.4f;
         public float deadZoneDown = 0.6f;
         public float smoothTimeX = 0.28f;
@@ -100,9 +104,12 @@ namespace LumenWave
             float halfH = dist * Mathf.Tan(_cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
             float halfW = halfH * _cam.aspect;
             var b = Bounds;
+            // The pitch lowers the view centre on the play plane; clamp that centre, not the camera height.
+            float pitchDrop = dist * Mathf.Tan(Pitch * Mathf.Deg2Rad);
+            pos.y -= pitchDrop;
             pos.x = b.width > halfW * 2f ? Mathf.Clamp(pos.x, b.xMin + halfW, b.xMax - halfW) : b.center.x;
             float minY = b.yMin + halfH, maxY = Mathf.Max(minY, b.yMax - halfH);
-            pos.y = Mathf.Clamp(pos.y, minY, maxY);
+            pos.y = Mathf.Clamp(pos.y, minY, maxY) + pitchDrop;
             return pos;
         }
 
@@ -114,7 +121,7 @@ namespace LumenWave
             {
                 int facing = _body != null ? _body.Facing : 1;
                 float vx = _body != null ? _body.Velocity.x : 0f;
-                float desiredLook = facing * lookAhead + Mathf.Clamp(vx * velocityLead, -2.5f, 2.5f);
+                float desiredLook = facing * lookAhead + Mathf.Clamp(vx * velocityLead, -2.2f, 2.2f);
                 _lookX = Mathf.Lerp(_lookX, desiredLook, 1f - Mathf.Exp(-2.2f * dt));
 
                 float ty = Target.position.y;
@@ -135,7 +142,7 @@ namespace LumenWave
             float t = Time.unscaledTime * 22f;
             var off = new Vector3(Mathf.PerlinNoise(_seed, t) - 0.5f, Mathf.PerlinNoise(_seed + 7f, t) - 0.5f, 0f) * 2f * maxShakeOffset * s;
             float ang = (Mathf.PerlinNoise(_seed + 13f, t) - 0.5f) * 2f * maxShakeAngle * s;
-            transform.SetPositionAndRotation(_base + off, Quaternion.Euler(0f, 0f, ang));
+            transform.SetPositionAndRotation(_base + off, Quaternion.Euler(Pitch, 0f, ang));
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

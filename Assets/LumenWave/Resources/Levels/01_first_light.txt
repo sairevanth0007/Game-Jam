@@ -2,6 +2,7 @@ name: First Light
 intro: Umbra wakes in the dark. Only shadows are safe.
 fog: 0.03
 mood: blue
+theme: forest
 drone: 1
 ---
 ##                                                                                                                                                                                                                                      ##

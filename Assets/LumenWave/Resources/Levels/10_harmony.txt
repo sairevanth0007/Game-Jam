@@ -2,6 +2,7 @@ name: Harmony
 intro: Sing, Umbra. Let every light become music.
 fog: 0.03
 mood: dawn
+theme: dawn
 drone: 10
 ---
 ##                                                                            ##

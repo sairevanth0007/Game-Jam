@@ -16,7 +16,7 @@ namespace LumenWave
         public bool on = true;
 
         Light _light;
-        MeshRenderer _glow, _zone, _core;
+        MeshRenderer _glow, _zone, _core, _shaft, _halo;
         MaterialPropertyBlock _mpb;
         float _flicker;
 
@@ -48,6 +48,9 @@ namespace LumenWave
             _glow = LightVisuals.Glow(transform, new Vector3(0, 0, -0.3f), 2.2f, c * 1.5f, "Glow");
             // Faint disc showing the zone of effect — readability over realism.
             _zone = LightVisuals.Glow(transform, new Vector3(0, 0, 0.6f), radius * 2.2f, c * 0.22f, "Zone");
+            // Soft light cone falling from the lantern + a wide airy halo (cheap additive, purely visual).
+            _shaft = LightVisuals.Shaft(transform, new Vector3(0f, -0.1f, 0.5f), 0.5f, radius * 1.5f, radius * 1.35f, c * 0.16f, "Shaft");
+            _halo = LightVisuals.Glow(transform, new Vector3(0, 0, 0.4f), radius * 1.3f, c * 0.1f, "Halo");
             _light = LightVisuals.AddLight(transform, LightType.Point, c, 3f * intensity, radius * 1.6f, "LampLight");
             _light.transform.localPosition = new Vector3(0, 0, -1.5f);
             _flicker = Random.value * 10f;
@@ -63,6 +66,8 @@ namespace LumenWave
             _light.intensity = 3f * intensity * level * wobble;
             if (_glow) LightVisuals.SetGlowColor(_glow, _mpb, c * 1.5f * Mathf.Max(0.1f, level) * wobble);
             if (_zone) LightVisuals.SetGlowColor(_zone, _mpb, c * 0.22f * level);
+            if (_shaft) LightVisuals.SetGlowColor(_shaft, _mpb, c * 0.16f * level * wobble);
+            if (_halo) LightVisuals.SetGlowColor(_halo, _mpb, c * 0.1f * level * wobble);
         }
 
         float Level()

@@ -17,6 +17,7 @@ namespace LumenWave
         public Light Moonlight { get; private set; }
         public Volume Volume { get; private set; }
         public Mood Mood { get; private set; }
+        public Theme Theme { get; private set; }
         public string Kind { get; private set; }
         public bool HasBloom => Volume != null && Volume.sharedProfile != null && Volume.sharedProfile.Has<Bloom>();
 
@@ -35,30 +36,35 @@ namespace LumenWave
         static void OnBooting(string kind, int level)
         {
             Mood mood = Mood.Blue;
+            Theme theme = Theme.Get("forest");
             if (kind == "level")
             {
-                try { mood = Mood.Get((SceneBootstrap.BootingData ?? LevelDatabase.Load(level)).Get("mood", "blue")); } catch { }
+                try
+                {
+                    var data = SceneBootstrap.BootingData ?? LevelDatabase.Load(level);
+                    mood = Mood.Get(data.Get("mood", "blue"));
+                    theme = Theme.For(data);
+                }
+                catch { }
             }
-            else if (kind == "end") mood = Mood.Get("dawn");
-            var rig = Create(kind, mood);
+            else if (kind == "end") { mood = Mood.Get("dawn"); theme = Theme.Get("dawn"); }
+            var rig = Create(kind, mood, theme);
             if (kind != "level")
             {
-                // Menu scenes: a static, slowly drifting vista behind the UI.
-                Backdrop.Build(rig.transform, 48, 14, mood, kind == "end" ? 77 : 31, null, true);
-                rig.CameraRig.SetBounds(new Rect(0f, -1.5f, 48f, 20f));
-                rig.Camera.transform.position = new Vector3(24f, 5f, -CameraRig.DefaultDistance);
-                rig.gameObject.AddComponent<MenuCameraDrift>();
+                // Menu scenes: a live, slowly drifting vista behind the UI (silhouettes on the right, open sky left).
+                MenuVista.Build(rig, kind == "end" ? 77 : 31);
             }
         }
 
         /// <summary>Creates (or replaces) the rig for the current scene.</summary>
-        public static SceneRig Create(string kind, Mood mood)
+        public static SceneRig Create(string kind, Mood mood, Theme theme = null)
         {
             if (Instance != null) Destroy(Instance.gameObject);
             var go = new GameObject("SceneRig");
             var rig = go.AddComponent<SceneRig>();
             Instance = rig;
             rig.Kind = kind;
+            rig.Theme = theme ?? Theme.Get(Theme.Default(kind == "end" ? "dawn" : "blue"));
             rig.Build(mood);
             return rig;
         }
@@ -74,7 +80,7 @@ namespace LumenWave
             camGo.transform.SetParent(transform, false);
             camGo.transform.position = new Vector3(0f, 4f, -CameraRig.DefaultDistance);
             var cam = camGo.AddComponent<Camera>();
-            cam.fieldOfView = 35f;
+            cam.fieldOfView = CameraRig.FieldOfView;
             cam.nearClipPlane = 0.3f;
             cam.farClipPlane = 260f;
             cam.allowHDR = true;
@@ -88,7 +94,9 @@ namespace LumenWave
             if (FindAnyObjectByType<AudioListener>() == null) camGo.AddComponent<AudioListener>();
             Camera = cam;
             CameraRig = camGo.AddComponent<CameraRig>();
-            MoonDisc.Create(cam, mood);
+            MoonDisc.Create(cam, mood, Theme.godRays);
+            // Direction towards the moon (upper left, behind the scene) for scenery rim light.
+            Shader.SetGlobalVector("_LW_MoonDir", new Vector4(-0.35f, 0.5f, 1f, 0f));
 
             // Moonlight: cool, dim, from upper-left behind the camera so platform tops catch it.
             var lgo = new GameObject("Moonlight");
@@ -97,14 +105,18 @@ namespace LumenWave
             var l = lgo.AddComponent<Light>();
             l.type = LightType.Directional;
             l.color = mood.moonlight;
-            l.intensity = 0.42f;
+            l.intensity = 0.7f;
             l.shadows = LightShadows.Soft;
             l.shadowStrength = 0.85f;
             Moonlight = l;
 
             // Fog + ambient
             RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Exponential;
+            // Linear distance fog that starts just behind the playfield: the play plane stays crisp,
+            // scenery fades with distance (on top of the per-layer atmosphere in LumenWave/Prop).
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogStartDistance = CameraRig.DefaultDistance + 5f;
+            RenderSettings.fogEndDistance = CameraRig.DefaultDistance + 150f;
             RenderSettings.fogDensity = mood.fogDensity;
             RenderSettings.fogColor = mood.fog;
             RenderSettings.ambientMode = AmbientMode.Flat;
@@ -130,16 +142,17 @@ namespace LumenWave
             var p = ScriptableObject.CreateInstance<VolumeProfile>();
             p.name = "LumenWavePostFX";
             var bloom = p.Add<Bloom>(true);
-            bloom.threshold.Override(0.85f);
-            bloom.intensity.Override(1.35f);
-            bloom.scatter.Override(0.72f);
+            // Coloured lights glow, but a high-ish threshold keeps them from washing out (red stays red).
+            bloom.threshold.Override(0.95f);
+            bloom.intensity.Override(1.25f);
+            bloom.scatter.Override(0.68f);
             bloom.highQualityFiltering.Override(true);
             var tone = p.Add<Tonemapping>(true);
             tone.mode.Override(TonemappingMode.ACES);
             var ca = p.Add<ColorAdjustments>(true);
-            ca.postExposure.Override(0.55f);
-            ca.contrast.Override(18f);
-            ca.saturation.Override(8f);
+            ca.postExposure.Override(mood.exposure);
+            ca.contrast.Override(mood.contrast);
+            ca.saturation.Override(mood.saturation);
             ca.colorFilter.Override(Color.Lerp(Color.white, mood.edge, 0.05f));
             var vig = p.Add<Vignette>(true);
             vig.intensity.Override(0.38f);
@@ -156,17 +169,24 @@ namespace LumenWave
             // Per-mood split toning: shadows lean toward the fog hue, highlights toward the mood's edge light.
             var split = p.Add<SplitToning>(true);
             var sh = mood.fog; float shMax = Mathf.Max(0.001f, sh.maxColorComponent);
-            split.shadows.Override(Color.Lerp(Color.gray, new Color(sh.r / shMax, sh.g / shMax, sh.b / shMax), 0.55f));
+            split.shadows.Override(Color.Lerp(Color.gray, new Color(sh.r / shMax, sh.g / shMax, sh.b / shMax), 0.3f));
             var hi = mood.edge; float hiMax = Mathf.Max(0.001f, hi.maxColorComponent);
             split.highlights.Override(Color.Lerp(Color.gray, new Color(hi.r / hiMax, hi.g / hiMax, hi.b / hiMax), 0.12f));   // subtle: light colours are gameplay rules
             split.balance.Override(-15f);
+            // Subtle depth of field: only the far scenery (well behind the playfield) goes soft.
+            var dof = p.Add<DepthOfField>(true);
+            dof.mode.Override(DepthOfFieldMode.Gaussian);
+            dof.gaussianStart.Override(CameraRig.DefaultDistance + 24f);
+            dof.gaussianEnd.Override(CameraRig.DefaultDistance + 90f);
+            dof.gaussianMaxRadius.Override(1.1f);
+            dof.highQualitySampling.Override(false);
             return p;
         }
 
         static void OnPostBuild(LevelContext ctx)
         {
             var mood = Instance != null ? Instance.Mood : Mood.Get(ctx.data.Get("mood", "blue"));
-            Backdrop.Build(ctx.root, ctx.data.Width, ctx.data.Height, mood, ctx.levelNumber * 7919 + ctx.data.Width, ctx.data);
+            Backdrop.Build(ctx.root, ctx.data.Width, ctx.data.Height, mood, ctx.levelNumber * 7919 + ctx.data.Width, ctx.data, false, Theme.For(ctx.data));
         }
 
         static void OnLevelLoaded(LevelRuntime rt)

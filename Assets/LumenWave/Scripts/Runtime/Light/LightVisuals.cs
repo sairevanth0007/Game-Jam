@@ -149,6 +149,27 @@ namespace LumenWave
             return r;
         }
 
+        /// <summary>
+        /// Downward soft light cone (additive LumenWave/LightShaft): source at <paramref name="localPos"/>,
+        /// widening from <paramref name="w0"/> to <paramref name="w1"/> over <paramref name="length"/>.
+        /// Colour is set like a glow (<see cref="SetGlowColor"/>).
+        /// </summary>
+        public static MeshRenderer Shaft(Transform parent, Vector3 localPos, float w0, float w1, float length, Color color, string name = "Shaft")
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = new Vector3(1f, length, 1f);
+            go.AddComponent<MeshFilter>().sharedMesh = MoonDisc.Shaft(w0, w1);
+            var r = go.AddComponent<MeshRenderer>();
+            var m = Resources.Load<Material>("Materials/LightShaft");
+            r.sharedMaterial = m != null ? m : GlowMaterial;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            SetGlowColor(r, new MaterialPropertyBlock(), color);
+            return r;
+        }
+
         /// <summary>A primitive without collider (visual only).</summary>
         public static GameObject Part(PrimitiveType type, Transform parent, Vector3 localPos, Vector3 scale, Material mat, string name)
         {

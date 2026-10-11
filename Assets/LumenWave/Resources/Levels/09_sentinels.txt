@@ -2,6 +2,7 @@ name: Sentinels
 intro: The lamp-wardens sweep the dark. Stun them with a Pulse.
 fog: 0.045
 mood: red
+theme: fortress
 drone: 9
 ---
 ##                                                                                                                                                                                      ##

@@ -22,17 +22,26 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _PanoTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _Aspect: 1
     - _Horizon: 0.38
     - _MoonSize: 0.035
+    - _PanoLift: 0.1
+    - _PanoOffset: 0
+    - _PanoZoom: 0.7
+    - _StarAmount: 1
     m_Colors:
     - _BottomColor: {r: 0.02, g: 0.03, b: 0.059999965, a: 1}
     - _HorizonColor: {r: 0.059999965, g: 0.089999996, b: 0.15999997, a: 1}
     - _MoonColor: {r: 1.2, g: 1.3, b: 1.6, a: 1}
     - _MoonPos: {r: 0.7, g: 0.72, b: 0, a: 0}
+    - _PanoTint: {r: 0, g: 0, b: 0, a: 1}
     - _TopColor: {r: 0.01, g: 0.015, b: 0.035, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

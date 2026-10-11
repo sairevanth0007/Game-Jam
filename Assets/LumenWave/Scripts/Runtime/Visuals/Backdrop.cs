@@ -4,199 +4,72 @@ using UnityEngine;
 namespace LumenWave
 {
     /// <summary>
-    /// Procedural parallax background: sky with moon, several depth planes of silhouetted mountains, hills,
-    /// dead trees and ruins (true 3D depth, so the perspective camera produces real parallax), distant glows,
-    /// and floating dust motes. Layers further away are lighter / more fogged (atmospheric perspective).
+    /// Builds the environment around a level or menu scene (see <see cref="Scenery"/> for the layers):
+    /// sky panorama, mountain ridge, far / mid / near 3D scenery fading into fog, mist sheets, distant glows,
+    /// themed extras (gears, crystals), playfield dressing, soft foreground silhouettes and ambient motes.
     /// </summary>
     public static class Backdrop
     {
-        struct Layer { public float z, baseY, amp, freq; public float brightness; public bool trees, ruins; }
-
-        public static GameObject Build(Transform parent, int width, int height, Mood mood, int seed, LevelData data, bool menu = false)
+        public static GameObject Build(Transform parent, int width, int height, Mood mood, int seed, LevelData data, bool menu = false, Theme theme = null, float? ground = null, float camDist = CameraRig.DefaultDistance)
         {
+            theme = theme ?? Theme.For(data);
             var root = new GameObject("Backdrop").transform;
             root.SetParent(parent, false);
             var rng = new System.Random(seed);
+            float groundY = ground ?? (data != null ? GroundLevel(data) : 0f);
 
-            // Sky: a huge quad far behind everything.
-            var sky = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            RemoveCollider(sky);
-            sky.name = "Sky";
-            sky.transform.SetParent(root, false);
-            sky.transform.position = new Vector3(width * 0.5f, height * 0.5f + 8f, 150f);
-            sky.transform.localScale = new Vector3(width * 3f + 420f, 260f, 1f);
-            var skyMat = MaterialLibrary.Create("Sky");
-            skyMat.SetColor("_TopColor", mood.skyTop);
-            skyMat.SetColor("_HorizonColor", mood.skyHorizon);
-            skyMat.SetColor("_BottomColor", mood.skyBottom);
-            // The moon itself is a camera-anchored MoonDisc (fixed screen spot, clear of the HUD).
-            skyMat.SetColor("_MoonColor", Color.black);
-            skyMat.SetVector("_MoonPos", new Vector4(0.6f + (float)rng.NextDouble() * 0.08f, 0.645f, 0, 0));
-            skyMat.SetFloat("_MoonSize", 0.016f);
-            skyMat.SetFloat("_Aspect", sky.transform.localScale.x / sky.transform.localScale.y);
-            skyMat.SetFloat("_Horizon", 0.44f);
-            sky.GetComponent<MeshRenderer>().sharedMaterial = skyMat;
-            Shadowless(sky);
-
-            var layers = new[]
-            {
-                new Layer { z = 70f, baseY = 4f, amp = 16f, freq = 0.018f, brightness = 1.25f },
-                new Layer { z = 38f, baseY = 1f, amp = 10f, freq = 0.035f, brightness = 0.95f },
-                new Layer { z = 18f, baseY = -1f, amp = 4.5f, freq = 0.06f, brightness = 0.7f, trees = true, ruins = true },
-                new Layer { z = 7f, baseY = -2.5f, amp = 2.2f, freq = 0.11f, brightness = 0.45f, trees = true },
-            };
-            var mat = MaterialLibrary.Get("Silhouette");
-            foreach (var L in layers)
-            {
-                float margin = 14f + 0.65f * L.z;
-                float x0 = -margin, x1 = width + margin;
-                float bottom = -12f - L.z * 0.5f;
-                var mb = new MeshBuilder();
-                var col = mood.layer * L.brightness;
-                col.a = 1f;
-                float phase = (float)rng.NextDouble() * 100f;
-                // Ridge line from layered noise.
-                int steps = Mathf.CeilToInt((x1 - x0) / 0.8f);
-                float prevX = x0, prevY = Ridge(x0, L, phase);
-                for (int i = 1; i <= steps; i++)
-                {
-                    float x = Mathf.Lerp(x0, x1, i / (float)steps);
-                    float y = Ridge(x, L, phase);
-                    mb.Quad(new Vector3(prevX, bottom), new Vector3(x, bottom), new Vector3(x, y), new Vector3(prevX, prevY), col);
-                    prevX = x; prevY = y;
-                }
-                if (L.trees)
-                {
-                    int count = Mathf.CeilToInt((x1 - x0) / (L.z < 10f ? 7f : 4.5f));
-                    for (int i = 0; i < count; i++)
-                    {
-                        float x = Mathf.Lerp(x0, x1, (float)rng.NextDouble());
-                        float y = Ridge(x, L, phase) - 0.3f;
-                        float h = (L.z < 10f ? 4f : 6f) * (0.6f + (float)rng.NextDouble() * 0.8f);
-                        Tree(mb, new Vector2(x, y), h, rng, col);
-                    }
-                }
-                if (L.ruins)
-                {
-                    int count = Mathf.Max(1, Mathf.CeilToInt((x1 - x0) / 26f));
-                    for (int i = 0; i < count; i++)
-                    {
-                        float x = Mathf.Lerp(x0, x1, (float)rng.NextDouble());
-                        Ruin(mb, new Vector2(x, Ridge(x, L, phase) - 0.5f), rng, col);
-                    }
-                }
-                var go = mb.ToGameObject("Layer_z" + L.z, mat);
-                go.transform.SetParent(root, false);
-                go.transform.position = new Vector3(0f, 0f, L.z);
-            }
-
-            // Distant glows (lamps in the fog) tinted by the mood.
-            int glows = Mathf.Max(2, width / 18);
-            for (int i = 0; i < glows; i++)
-            {
-                var g = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                RemoveCollider(g);
-                g.name = "DistantGlow";
-                g.transform.SetParent(root, false);
-                float z = 25f + (float)rng.NextDouble() * 40f;
-                g.transform.position = new Vector3((float)rng.NextDouble() * width, height * 0.3f + (float)rng.NextDouble() * 10f, z);
-                float s = 6f + (float)rng.NextDouble() * 10f;
-                g.transform.localScale = new Vector3(s, s, 1f);
-                var gc = mood.edge * 0.22f; gc.a = 1f;
-                var m = MaterialLibrary.Tinted("Glow", gc);
-                g.GetComponent<MeshRenderer>().sharedMaterial = m;
-                Shadowless(g);
-            }
-
-            Dust(root, width, height, mood);
+            Scenery.Sky(root, width, height, groundY, mood, theme, rng);
+            System.Func<float, float> floorAt = data != null ? FloorProfile(data, groundY) : null;
+            Scenery.Layers(root, 0f, width, groundY, mood, theme, rng, floorAt);
+            Scenery.Mist(root, 0f, width, groundY, mood, theme);
+            Scenery.DistantGlows(root, width, height, mood, rng);
+            if (theme.gears) Extras.Gears(root, 0f, width, groundY, mood, rng);
+            if (theme.crystals) Extras.Crystals(root, 0f, width, groundY, mood, theme, rng);
+            if (data != null) Scenery.Dressing(root, data, mood, theme, rng);
+            var cam = SceneRig.Instance != null ? SceneRig.Instance.Camera : Camera.main;
+            Foreground.Build(root, 0f, width, mood, theme, seed + 17, cam, camDist);
+            Scenery.Motes(root, mood, theme, menu);
             return root.gameObject;
         }
 
-        static float Ridge(float x, Layer L, float phase)
+        /// <summary>
+        /// Smoothed local floor height along x: the lowest walkable surface per column (gaps inherit their
+        /// neighbours), averaged over a wide window so background terrain follows the level's big shapes.
+        /// </summary>
+        public static System.Func<float, float> FloorProfile(LevelData d, float fallback)
         {
-            float n = Mathf.PerlinNoise(x * L.freq + phase, phase * 0.37f) * 0.75f
-                    + Mathf.PerlinNoise(x * L.freq * 3.1f + phase, 11.3f) * 0.25f;
-            return L.baseY + n * L.amp;
-        }
-
-        static void Tree(MeshBuilder mb, Vector2 p, float h, System.Random rng, Color c)
-        {
-            float w = h * 0.06f;
-            float lean = ((float)rng.NextDouble() - 0.5f) * h * 0.15f;
-            var top = new Vector2(p.x + lean, p.y + h);
-            mb.Quad(new Vector3(p.x - w, p.y), new Vector3(p.x + w, p.y), new Vector3(top.x + w * 0.25f, top.y), new Vector3(top.x - w * 0.25f, top.y), c);
-            int branches = 3 + rng.Next(4);
-            for (int i = 0; i < branches; i++)
-            {
-                float t = 0.35f + (float)rng.NextDouble() * 0.6f;
-                var b0 = Vector2.Lerp(p, top, t);
-                float dir = rng.Next(2) == 0 ? -1f : 1f;
-                float len = h * (0.18f + (float)rng.NextDouble() * 0.25f) * (1.1f - t);
-                var b1 = b0 + new Vector2(dir * len, len * (0.4f + (float)rng.NextDouble() * 0.6f));
-                float bw = w * 0.5f * (1.2f - t);
-                mb.Tri(new Vector3(b0.x, b0.y - bw), new Vector3(b0.x, b0.y + bw), new Vector3(b1.x, b1.y), c);
-            }
-        }
-
-        static void Ruin(MeshBuilder mb, Vector2 p, System.Random rng, Color c)
-        {
-            int pillars = 2 + rng.Next(3);
-            float spacing = 2.2f + (float)rng.NextDouble();
-            float ph = 4f + (float)rng.NextDouble() * 4f;
-            for (int i = 0; i < pillars; i++)
-            {
-                float x = p.x + i * spacing;
-                float h = ph * (rng.Next(3) == 0 ? 0.5f + (float)rng.NextDouble() * 0.4f : 1f);
-                mb.Quad(new Vector3(x - 0.35f, p.y), new Vector3(x + 0.35f, p.y), new Vector3(x + 0.35f, p.y + h), new Vector3(x - 0.35f, p.y + h), c);
-                if (h >= ph && i < pillars - 1 && rng.Next(2) == 0)
+            int w = d.Width;
+            var raw = new float[w];
+            var has = new bool[w];
+            for (int x = 0; x < w; x++)
+                for (int y = 0; y < d.Height - 1; y++)
                 {
-                    // Lintel / arch slab between two full pillars.
-                    mb.Quad(new Vector3(x - 0.5f, p.y + ph), new Vector3(x + spacing + 0.5f, p.y + ph),
-                            new Vector3(x + spacing + 0.5f, p.y + ph + 0.6f), new Vector3(x - 0.5f, p.y + ph + 0.6f), c);
+                    if (y + 1 >= d.Height - 1) break;   // full-height walls are not a floor
+                    if (LevelData.IsSolid(d.Tile(x, y)) && !LevelData.IsSolid(d.Tile(x, y + 1))) { raw[x] = y + 1; has[x] = true; break; }
                 }
+            float last = fallback;
+            for (int x = 0; x < w; x++) { if (has[x]) last = raw[x]; else raw[x] = last; }
+            var sm = new float[w];
+            const int win = 10;
+            for (int x = 0; x < w; x++)
+            {
+                float sum = 0f; int n = 0;
+                for (int k = -win; k <= win; k++) { int i = Mathf.Clamp(x + k, 0, w - 1); sum += raw[i]; n++; }
+                sm[x] = sum / n;
             }
+            return x => w == 0 ? fallback : sm[Mathf.Clamp(Mathf.RoundToInt(x), 0, w - 1)];
         }
 
-        static void Dust(Transform root, int width, int height, Mood mood)
+        /// <summary>Typical floor height of a level: median of the lowest walkable surface per column.</summary>
+        public static float GroundLevel(LevelData d)
         {
-            var go = new GameObject("DustMotes");
-            go.transform.SetParent(root, false);
-            go.transform.position = new Vector3(width * 0.5f, height * 0.5f + 2f, 1.5f);
-            var ps = go.AddComponent<ParticleSystem>();
-            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            var main = ps.main;
-            main.loop = true;
-            main.prewarm = true;
-            main.duration = 10f;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(7f, 12f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.25f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.13f);
-            var dc = mood.dust; dc.a = 0.55f;
-            var dc2 = mood.dust * 0.6f; dc2.a = 0.25f;
-            main.startColor = new ParticleSystem.MinMaxGradient(dc2, dc);
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 600;
-            var em = ps.emission;
-            em.rateOverTime = Mathf.Clamp(width * height * 0.06f, 20f, 120f);
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(width + 20f, height + 10f, 10f);
-            var noise = ps.noise;
-            noise.enabled = true;
-            noise.strength = 0.25f;
-            noise.frequency = 0.25f;
-            noise.scrollSpeed = 0.1f;
-            var col = ps.colorOverLifetime;
-            col.enabled = true;
-            var grad = new Gradient();
-            grad.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-                         new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.25f), new GradientAlphaKey(1f, 0.7f), new GradientAlphaKey(0f, 1f) });
-            col.color = grad;
-            var r = go.GetComponent<ParticleSystemRenderer>();
-            r.sharedMaterial = MaterialLibrary.Get("GlowParticle");
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            r.receiveShadows = false;
-            ps.Play();
+            var tops = new List<float>();
+            for (int x = 0; x < d.Width; x++)
+                for (int y = 0; y < d.Height - 1; y++)
+                    if (LevelData.IsSolid(d.Tile(x, y)) && !LevelData.IsSolid(d.Tile(x, y + 1))) { tops.Add(y + 1); break; }
+            if (tops.Count == 0) return 0f;
+            tops.Sort();
+            return tops[tops.Count / 2];
         }
 
         public static void RemoveCollider(GameObject go)
@@ -268,6 +141,75 @@ namespace LumenWave
         }
     }
 
+    /// <summary>
+    /// Title / end screen background: a rocky outcrop on the right (bevelled rock + cap, scenery on top)
+    /// overlooking a misty valley of layered silhouettes under the moon; the left / centre stays open and calm
+    /// for the logo and menu. The camera drifts slowly.
+    /// </summary>
+    public static class MenuVista
+    {
+        public const float Width = 64f, CamX = 24f, CamY = 4.5f, CamDist = 30f;
+
+        public static void Build(SceneRig rig, int seed)
+        {
+            var root = rig.transform;
+            var theme = rig.Theme;
+            var mood = rig.Mood;
+            Backdrop.Build(root, (int)Width, 16, mood, seed, null, true, theme, -4f, CamDist);
+            // Outcrop: a deep rock shelf from x = 30 to the right edge, with a raised step.
+            var rng = new System.Random(seed);
+            var vis = new GameObject("Outcrop").transform;
+            vis.SetParent(root, false);
+            var body = PlatformVisual.BodyMaterial(theme, mood);
+            var capMat = PlatformVisual.CapMaterial(theme, mood);
+            void Shelf(float xa, float xb, float top, float bottom, bool openL)
+            {
+                int cols = Mathf.CeilToInt(xb - xa) + 2;
+                var surf = new float[cols];
+                for (int i = 0; i < cols; i++) surf[i] = top;
+                var size = new Vector3(xb - xa, top - bottom, 4f);
+                PlatformVisual.Body(vis, new Vector3((xa + xb) * 0.5f, (top + bottom) * 0.5f, 0f), size, false, surf, Mathf.FloorToInt(xa), body);
+                var mb = new MeshBuilderN();
+                PlatformVisual.Cap(mb, xa, xb, top, 4f, openL, false, theme.capKind, false, rng);
+                var go = new GameObject("TopCap");
+                go.transform.SetParent(vis, false);
+                go.AddComponent<MeshFilter>().sharedMesh = mb.ToMesh("MenuCap");
+                var r = go.AddComponent<MeshRenderer>();
+                r.sharedMaterial = capMat;
+            }
+            Shelf(25.5f, Width + 6f, 0.6f, -12f, true);
+            Shelf(31.5f, Width + 6f, 2.2f, 0.6f, true);
+            // Scenery on the outcrop: a big tree, rocks and grass.
+            var propMat = Scenery.PropMaterial(mood, theme.topPropTint * 0.8f, 0.05f, 0.6f, -100f, 0f, 0.6f);
+            string tree = theme.name == "dawn" ? "KenneyNature/tree_pineRoundA" : "KenneyNature/tree_oak_dark";
+            PropLibrary.Spawn(tree, vis, new Vector3(36f, 2.15f, 1.6f), 7f, 30f, propMat);
+            PropLibrary.Spawn("KenneyNature/rock_largeA", vis, new Vector3(27.5f, 0.55f, 1.0f), 1.2f, 70f, propMat);
+            PropLibrary.Spawn("KenneyNature/stump_oldTall", vis, new Vector3(29.6f, 0.55f, 1.3f), 1.0f, 10f, propMat);
+            for (int i = 0; i < 16; i++)
+            {
+                float x = 26f + (float)rng.NextDouble() * 16f;
+                float top = x > 31.5f ? 2.2f : 0.6f;
+                string g = theme.topProps[rng.Next(theme.topProps.Length)];
+                PropLibrary.Spawn(g, vis, new Vector3(x, top - 0.03f, 0.3f + (float)rng.NextDouble() * 1.5f), 0.35f + (float)rng.NextDouble() * 0.4f, (float)rng.NextDouble() * 360f, propMat);
+            }
+            // A lantern glow on the shelf: a warm point of light in the cold scene.
+            var lantern = new GameObject("MenuLantern").transform;
+            lantern.SetParent(vis, false);
+            lantern.localPosition = new Vector3(32.6f, 3.4f, -0.4f);
+            var lc = theme.name == "dawn" ? new Color(1f, 0.75f, 0.45f) : new Color(1f, 0.7f, 0.4f);
+            LightVisuals.Glow(lantern, Vector3.zero, 2.6f, lc * 1.4f, "LanternGlow");
+            LightVisuals.Glow(lantern, new Vector3(0, 0, 0.2f), 9f, lc * 0.2f, "LanternHalo");
+            var l = LightVisuals.AddLight(lantern, LightType.Point, lc, 3f, 9f, "LanternLight");
+            l.transform.localPosition = new Vector3(0f, 0f, -1f);
+            rig.CameraRig.SetBounds(new Rect(-20f, -10f, Width + 40f, 40f));
+            rig.CameraRig.enabled = false;
+            rig.Camera.transform.SetPositionAndRotation(new Vector3(CamX, CamY, -CamDist), Quaternion.Euler(CameraRig.Pitch, 0f, 0f));
+            var moon = rig.Camera.GetComponentInChildren<MoonDisc>();
+            if (moon != null) moon.viewport = new Vector2(0.74f, 0.74f);
+            rig.gameObject.AddComponent<MenuCameraDrift>();
+        }
+    }
+
     /// <summary>Slow cinematic drift for title/end backgrounds.</summary>
     public class MenuCameraDrift : MonoBehaviour
     {
@@ -290,7 +232,7 @@ namespace LumenWave
         {
             if (_cam == null) return;
             float t = Time.unscaledTime;
-            _cam.position = _start + new Vector3(Mathf.Sin(t * 0.05f) * 6f, Mathf.Sin(t * 0.08f) * 0.6f, 0f);
+            _cam.position = _start + new Vector3(Mathf.Sin(t * 0.05f) * 2.5f, Mathf.Sin(t * 0.08f) * 0.4f, 0f);
         }
     }
 }

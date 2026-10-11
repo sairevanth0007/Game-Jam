@@ -2,6 +2,7 @@ name: Echo Canyon
 intro: A canyon of frozen sound. Some paths only answer a Pulse.
 fog: 0.035
 mood: violet
+theme: canyon
 drone: 3
 ---
 ##                                                                                                                                                                                      ##

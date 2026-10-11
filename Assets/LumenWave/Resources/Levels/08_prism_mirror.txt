@@ -1,7 +1,8 @@
 name: Prism and Mirror
 intro: Light obeys laws. Bend it, split it, mix it.
 fog: 0.035
-mood: violet
+mood: prism
+theme: prism
 drone: 8
 ---
 #####################################################################################################################################################################
