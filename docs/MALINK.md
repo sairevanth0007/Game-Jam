@@ -62,3 +62,13 @@ Lightkeeper mode (title screen → LIGHTKEEPER) can take its four lamps from OSC
 - Packets are received on a background thread and applied on the main thread (`Lightkeeper/LightkeeperOsc.cs`, decoder `Osc.TryDecode`).
 - **Mirror out**: when MALink is enabled (`-malink ip:port:prefix`), every lamp change is also sent to the MALink ip:port with the same addresses (≤10 Hz per lamp). On/off additionally sends `Go+ Exec 23N` / `Off Exec 23N`, so executors 231–234 can follow the lamps on a real rig.
 - Verified by the PlayMode test `LightkeeperTests.OscMessage_MovesLamp`, which sends real UDP packets to the listener.
+
+### Test Lightkeeper OSC without a console (no MA software, no installs)
+1. Start the game with the OSC listener on port 8000: `Builds\release\LumenWave.exe -lk-osc 8000`, then choose **LIGHTKEEPER** on the title screen.
+2. In a second PowerShell window, in the repo folder, send:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File tools/osc-test.ps1 -Address /lamp/1/on    -Value 1      # lamp 1 on
+   powershell -ExecutionPolicy Bypass -File tools/osc-test.ps1 -Address /lamp/1/x     -Value 30.5   # move lamp 1 to x = 30.5
+   powershell -ExecutionPolicy Bypass -File tools/osc-test.ps1 -Address /lamp/1/color -Value 2      # colour index: 0 red, 1 green, 2 blue, 3 yellow, 4 white
+   ```
+   Optional `-Port 9000 -HostName 192.168.1.20`. Integers are sent as OSC int32, decimals as float32. `/lamp/N/angle <deg>` (0 = straight down) works the same way.

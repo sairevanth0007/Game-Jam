@@ -563,6 +563,8 @@ namespace LumenWave.UI
             TickCinematic(dt);
             // Only rebuild the timer string when the shown value changes (no per-frame garbage when paused).
             float lt = Mathf.Floor(GameSession.LevelTime * 100f);
+            // Lightkeeper arena: its own HUD (countdown, deaths, energy, lamp cards) replaces the campaign HUD.
+            if (_gameplayGroup != null && LightkeeperMode.Active) _gameplayGroup.alpha = 0f;
             if (lt != _lastTimer) { _lastTimer = lt; TimerText.text = UIKit.FormatTime(GameSession.LevelTime); }
             if (ShardsText != null && (MelodyShards.Collected != _lastShards || MelodyShards.InLevel != _lastShardTotal))
             {

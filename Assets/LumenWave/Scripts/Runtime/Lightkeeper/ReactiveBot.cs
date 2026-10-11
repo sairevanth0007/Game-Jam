@@ -50,8 +50,14 @@ namespace LumenWave
 
         static int GroundMask => Layers.Mask(Layers.Ground, Layers.Bridge, Layers.Crystal);
 
+        /// <summary>Walking pace (fraction of max run speed) on the ground: a steady, readable walk.</summary>
+        public float pace = 0.35f;
+        /// <summary>While true (3-2-1 countdown, round over) Umbra stands still.</summary>
+        public bool Hold;
+
         public PlayerCommands Poll()
         {
+            if (Hold) return _cached = default;
             if (_lastFrame == Time.frameCount) return _cached;
             _lastFrame = Time.frameCount;
             if (_player == null) return _cached = default;
@@ -108,7 +114,7 @@ namespace LumenWave
 
             _cached = new PlayerCommands
             {
-                moveX = move,
+                moveX = move * (grounded && State != "dash-through" ? pace : 1f),
                 jumpPressed = _jump,
                 jumpHeld = _jump || now < _jumpHoldUntil,
                 dashPressed = _dash,

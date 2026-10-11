@@ -34,7 +34,8 @@ Release candidates pushed: RC1 02:45, RC2 03:39, RC3 04:45, RC4 about 05:15 (Sun
 - **Verified (Sun 11 Oct 2026, ~15:35):**
   - Tests: 38 EditMode + 81 PlayMode, all pass, including the 3 Lightkeeper tests (idle lights → the bot reaches the door; a static lethal beam blocks it; OSC moves a lamp).
   - Built player: the bot completes levels 1–9 with all shards and 0 deaths. Zip rebuilt.
-- **Known issues:**
+- **Lightkeeper fix (15:45):** dedicated action map with the player map off; InputTestFixture keyboard test; 3-2-1 countdown; 170-tile arena (undisturbed bot about 63 s); arena-only HUD; `tools/osc-test.ps1`. Release build is in `Builds/release`. Screenshot: `docs/images/lightkeeper_arena.jpg`.
+- **Known issues (superseded by the fix above):**
   - In the arena screenshot the HUD's level label reads "LEVEL 01".
   - The two lit lamps' beams weren't visible in that frame. Lamp layout and energy were retuned after that screenshot and haven't been re-captured.
   - Nobody has played Lightkeeper by hand yet.

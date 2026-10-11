@@ -109,7 +109,8 @@ namespace LumenWave
                 _lampText[i].text = $"<b>{i + 1}</b>  <color=#{hex}>{l.beam.color.ToString().ToUpperInvariant()}</color>  {(l.On ? "ON" : "<color=#7f8aa0>off</color>")}\n<size=18>AIM {Mathf.RoundToInt(l.angle + 90f)}</size>";
                 _lampBg[i].color = sel ? new Color(0.45f, 0.95f, 1f, 0.28f) : new Color(0.02f, 0.035f, 0.07f, 0.75f);
             }
-            _flash.text = Time.unscaledTime < _c.FlashUntil ? _c.Flash : "";
+            if (_c.CountdownLeft > 0f) { _flash.fontSize = 140; _flash.text = Mathf.CeilToInt(_c.CountdownLeft).ToString(); }
+            else { _flash.fontSize = 44; _flash.text = Time.unscaledTime < _c.FlashUntil ? _c.Flash : ""; }
         }
 
         Transform _hudLegend;

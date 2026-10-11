@@ -51,6 +51,9 @@ namespace LumenWave
         public event Action<int> LampChanged;
         public event Action<bool> Finished;
 
+        /// <summary>3-2-1 before the bot starts (the round clock starts after it). Lamps can be set up meanwhile.</summary>
+        public float CountdownLeft { get; private set; } = 3f;
+
         LevelRuntime _rt;
         IPlayerBody _body;
         Transform _marker;
@@ -66,6 +69,8 @@ namespace LumenWave
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            LightkeeperInput.Map.Disable();
+            LumenInput.SetGameplayEnabled(true);
             GameEvents.PlayerDied -= OnDied;
             GameEvents.LevelCompleted -= OnCompleted;
             Bot?.Dispose();
@@ -98,11 +103,15 @@ namespace LumenWave
             if (_rt.Player != null)
             {
                 _body = _rt.Player.GetComponent<IPlayerBody>();
-                Bot = new ReactiveBot(_rt.Player.transform, exitX);
+                Bot = new ReactiveBot(_rt.Player.transform, exitX) { Hold = true };
                 if (_body != null) _body.Commands = Bot;
             }
             GameEvents.PlayerDied += OnDied;
             GameEvents.LevelCompleted += OnCompleted;
+            // The bot drives Umbra: switch the player's gameplay map off and the Lightkeeper map on,
+            // so A/D, W, Q/E, R and 1–4 only ever reach the lamps.
+            LumenInput.SetGameplayEnabled(false);
+            LightkeeperInput.Map.Enable();
             for (int i = 0; i < Lamps.Count; i++) Refresh(i);
             LightkeeperUI.Build(this);
             int oscPort = LightkeeperOsc.ConfiguredPort();
@@ -184,6 +193,17 @@ namespace LumenWave
             }
 
             if (Over) return;
+            if (CountdownLeft > 0f)
+            {
+                int before = Mathf.CeilToInt(CountdownLeft);
+                CountdownLeft = Mathf.Max(0f, CountdownLeft - dt);
+                int after = Mathf.CeilToInt(CountdownLeft);
+                if (after != before) Beep(after > 0 ? 1f : 2f, 0.18f);
+                if (CountdownLeft <= 0f) { if (Bot != null) Bot.Hold = false; Say("GO"); }
+                return;
+            }
+            // Lightkeeper keys keep working even if a menu re-enabled the player map.
+            if (LumenInput.Move != null && LumenInput.Move.enabled) LumenInput.SetGameplayEnabled(false);
             TimeLeft = Mathf.Max(0f, TimeLeft - dt);
             if (_rt != null && _rt.Completed) Finish(false);
             else if (BotDeaths >= LightkeeperMode.DeathsToWin || TimeLeft <= 0f) Finish(true);
@@ -191,36 +211,62 @@ namespace LumenWave
 
         void HandleInput(float dt)
         {
-            var kb = Keyboard.current;
-            if (kb != null)
+            var m = LightkeeperInput.Map;
+            if (!m.enabled) m.Enable();
+            for (int i = 0; i < 4; i++)
+                if (LightkeeperInput.Select[i].WasPressedThisFrame()) { Select(i); Say("LAMP " + (i + 1)); Beep(1.5f + i * 0.25f, 0.08f); }
+            if (Valid(Selected))
             {
-                if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame) Select(0);
-                if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame) Select(1);
-                if (kb.digit3Key.wasPressedThisFrame || kb.numpad3Key.wasPressedThisFrame) Select(2);
-                if (kb.digit4Key.wasPressedThisFrame || kb.numpad4Key.wasPressedThisFrame) Select(3);
-                float mx = (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f);
-                if (mx != 0f && Valid(Selected)) SetLampX(Selected, Lamps[Selected].X + mx * moveSpeed * dt);
-                float rot = (kb.eKey.isPressed ? 1f : 0f) - (kb.qKey.isPressed ? 1f : 0f);
-                if (rot != 0f && Valid(Selected)) SetLampAngle(Selected, Lamps[Selected].angle + rot * rotateSpeed * dt);
-                if (kb.wKey.wasPressedThisFrame || kb.upArrowKey.wasPressedThisFrame) { if (Valid(Selected)) SetLampOn(Selected, !Lamps[Selected].On); }
-                if (kb.rKey.wasPressedThisFrame) CycleColor(Selected);
+                float mx = LightkeeperInput.Move.ReadValue<float>();
+                if (Mathf.Abs(mx) > 0.1f) SetLampX(Selected, Lamps[Selected].X + mx * moveSpeed * dt);
+                float rot = LightkeeperInput.Rotate.ReadValue<float>();
+                if (Mathf.Abs(rot) > 0.1f) SetLampAngle(Selected, Lamps[Selected].angle + rot * rotateSpeed * dt);
+                if (LightkeeperInput.Toggle.WasPressedThisFrame())
+                {
+                    bool want = !Lamps[Selected].On;
+                    if (SetLampOn(Selected, want)) { Say((want ? "LAMP " + (Selected + 1) + " ON" : "LAMP " + (Selected + 1) + " OFF")); Beep(want ? 2f : 1f, 0.12f); }
+                    else Beep(0.5f, 0.2f);
+                }
+                if (LightkeeperInput.Colour.WasPressedThisFrame())
+                {
+                    CycleColor(Selected);
+                    Say(Lamps[Selected].beam.color.ToString().ToUpperInvariant());
+                    Beep(1.25f, 0.1f);
+                }
             }
             var mouse = Mouse.current;
-            if (mouse != null && Valid(Selected))
+            if (mouse == null) return;
+            var cam = Camera.main;
+            if (cam != null && (mouse.leftButton.wasPressedThisFrame || mouse.leftButton.isPressed))
             {
-                if (mouse.leftButton.isPressed)
+                var ray = cam.ScreenPointToRay(mouse.position.ReadValue());
+                var plane = new Plane(Vector3.forward, Vector3.zero);
+                if (plane.Raycast(ray, out float d))
                 {
-                    var cam = Camera.main;
-                    if (cam != null)
+                    var wp = ray.GetPoint(d);
+                    if (mouse.leftButton.wasPressedThisFrame)
                     {
-                        var ray = cam.ScreenPointToRay(mouse.position.ReadValue());
-                        var plane = new Plane(Vector3.forward, Vector3.zero);
-                        if (plane.Raycast(ray, out float d)) SetLampX(Selected, ray.GetPoint(d).x);
+                        // Click near a lamp selects it; clicking elsewhere drags the selected one.
+                        int best = -1; float bestD = 2.5f;
+                        for (int i = 0; i < Lamps.Count; i++)
+                        {
+                            var lp = Lamps[i].beam.transform.position;
+                            float dd = Vector2.Distance(wp, lp);
+                            if (dd < bestD) { bestD = dd; best = i; }
+                        }
+                        if (best >= 0 && best != Selected) { Select(best); Say("LAMP " + (best + 1)); Beep(1.5f + best * 0.25f, 0.08f); }
                     }
+                    if (Valid(Selected)) SetLampX(Selected, wp.x);
                 }
-                float wheel = mouse.scroll.ReadValue().y;
-                if (Mathf.Abs(wheel) > 0.01f) SetLampAngle(Selected, Lamps[Selected].angle + Mathf.Sign(wheel) * 6f);
             }
+            float wheel = mouse.scroll.ReadValue().y;
+            if (Mathf.Abs(wheel) > 0.01f && Valid(Selected)) SetLampAngle(Selected, Lamps[Selected].angle + Mathf.Sign(wheel) * 6f);
+        }
+
+        /// <summary>Short UI blip (relative pitch on the tonic) so every key press is audible.</summary>
+        static void Beep(float ratio, float held)
+        {
+            if (AudioDirector.Instance != null) AudioDirector.Instance.PlayNote(Harmony.Degree(0) * 2f * ratio, held, 0.6f);
         }
 
         void OnDied()

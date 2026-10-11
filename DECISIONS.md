@@ -153,3 +153,11 @@ Format: time (Sun 11 Oct 2026) — decision — why.
 - The lamps are the arena's four `beam` entities (sweep off, intensity 8: lethal straight down, only burn when strongly angled, because of inverse-square). The energy budget is 4/s per lit lamp (max 100), refills at 10/s when all lamps are dark, and at most 2 can be lit. This makes the Lightkeeper time the beams instead of blanketing the path.
 - OSC lamp input is opt-in (`-lk-osc <port>`) and reuses `MA.Osc.TryDecode`. It mirrors out through MALink only when MALink is enabled.
 - 15:10 — Level 5's two upper checkpoints (x 104.5 and 153.5) are off the bot's verified route, so their shards were unreachable on it. A new optional level header, `shardskip: <x> …`, excludes them. Level 5 has 3 shards; every other level uses all of its checkpoints.
+- 15:45 — **Lightkeeper fix.**
+  - **Input:** the lamps use a dedicated code-built "Lightkeeper" action map (`LightkeeperInput`). During a round the player's gameplay map is disabled, apart from Pause, so A/D, W, Q/E, R and 1–4 reach only the lamps.
+  - **Feedback:** every key gives an instant on-screen word plus a pitched blip. A mouse click near a lamp selects it.
+  - **Proof:** an InputTestFixture test presses 1, W, D, Q and R on a virtual keyboard and checks lamp 1 is selected, on, moved, rotated and recoloured (manifest `testables` + asmdef reference `Unity.InputSystem.TestFramework`).
+  - **Fair match:** 3-2-1 countdown, after which the 90 s clock starts. The arena is 170 tiles with five gaps and four steps, and the bot walks at 0.35 of max speed, so an undisturbed run takes about 63 s (measured 62.6 s).
+  - **HUD and beams:** the campaign HUD is hidden in the arena. Beams take the lamp's colour, and the selected lamp has a gold marker.
+  - **OSC test:** `tools/osc-test.ps1` sends single OSC messages with plain .NET UdpClient.
+  - **Build:** made into `Builds/release`, because the copy in `Builds/visual` was open (the game was running).

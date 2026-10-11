@@ -37,7 +37,7 @@ namespace LumenWave.Tests
             yield return Boot((r, k) => { rt = r; c = k; });
             Time.timeScale = 2.5f;
             float t = 0f;
-            while (!rt.Completed && t < 80f) { t += Time.deltaTime; yield return null; }
+            while (!rt.Completed && t < 110f) { t += Time.deltaTime; yield return null; }
             Time.timeScale = 1f;
             var p = rt.Player.transform.position;
             Debug.Log($"[LumenWave] LK bot lamps off: completed={rt.Completed} t={t:F1} deaths={c.BotDeaths} pos=({p.x:F1},{p.y:F1}) state={c.Bot.State}");
