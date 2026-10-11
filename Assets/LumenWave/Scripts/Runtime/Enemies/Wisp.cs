@@ -31,6 +31,8 @@ namespace LumenWave
         TrailRenderer _trail;
         ParticleSystem _sparks;
         float _hitFlash;   // visual only
+        Renderer _inner, _corona;
+        ParticleSystem _motes;
         static readonly Color Col = new Color(0.75f, 0.9f, 1f);
 
         [LevelEntity("wisp")]
@@ -62,9 +64,14 @@ namespace LumenWave
         {
             _home = transform.position;
             _seed = Random.value * 10f;
-            _coreMat = EnemyUtil.Emissive(Col, Col * 5f);
-            EnemyUtil.Part(PrimitiveType.Sphere, transform, Vector3.zero, Vector3.one * 0.32f, _coreMat, "Core");
-            _halo = EnemyUtil.Halo(transform, new Vector3(0, 0, -0.2f), 1.5f, Col * 0.9f);
+            _coreMat = EnemyUtil.Emissive(Col, Col * 3f);
+            // Soft glowing core: small hot sphere, a white-hot inner glow, a flickering corona and a wide halo.
+            EnemyUtil.Part(PrimitiveType.Sphere, transform, Vector3.zero, Vector3.one * 0.22f, _coreMat, "Core");
+            _inner = EnemyUtil.Halo(transform, new Vector3(0, 0, -0.16f), 0.55f, new Color(0.8f, 1.0f, 1.4f));
+            _corona = EnemyUtil.Halo(transform, new Vector3(0, 0, -0.18f), 0.95f, Col * 0.6f);
+            _halo = EnemyUtil.Halo(transform, new Vector3(0, 0, -0.2f), 1.5f, Col * 0.4f);
+            // Trailing motes shed as it moves (and a few while hovering).
+            _motes = EnemyUtil.MoteTrail(transform, new Color(0.7f, 0.9f, 1.4f), 9f, 6f, 0.13f, 0.7f);
             _light = EnemyUtil.PointLight(transform, new Vector3(0, 0, -0.5f), Col, 3.5f, 2f);
 
             _trail = gameObject.AddComponent<TrailRenderer>();
@@ -176,9 +183,14 @@ namespace LumenWave
             float bright = Mathf.Lerp(1f, 0.25f, _dim) * flick;
             float chaseBoost = Current == State.Chase ? 1.3f : 1f;
             _hitFlash = Mathf.Max(0f, _hitFlash - dt * 4f);
-            EnemyUtil.SetEmission(_coreMat, Col * 5f * bright * chaseBoost + Color.white * 14f * _hitFlash * _hitFlash);
+            EnemyUtil.SetEmission(_coreMat, Col * 3f * bright * chaseBoost + Color.white * 14f * _hitFlash * _hitFlash);
             if (_halo) _halo.transform.localScale = Vector3.one * (1.3f + 0.2f * Mathf.Sin(Time.time * 9f + _seed)) * Mathf.Lerp(1f, 0.6f, _dim) * (1f + 1.2f * _hitFlash);
             if (_light) _light.intensity = 2f * bright * chaseBoost;
+            // Flickering corona (two detuned sines + noise) and a breathing inner glow.
+            float fl = 0.75f + 0.15f * Mathf.Sin(Time.time * 23f + _seed) + 0.1f * Mathf.Sin(Time.time * 37f + _seed * 2f) + 0.12f * (Mathf.PerlinNoise(Time.time * 6f, _seed) - 0.5f);
+            if (_corona) _corona.transform.localScale = Vector3.one * 0.95f * fl * Mathf.Lerp(1f, 0.6f, _dim) * chaseBoost;
+            if (_inner) _inner.transform.localScale = Vector3.one * (0.5f + 0.06f * Mathf.Sin(Time.time * 5f + _seed)) * bright * (1f + 0.8f * _hitFlash);
+            if (_motes) { var em = _motes.emission; em.enabled = Current != State.Stunned || Random.value < 0.3f; }
         }
 
         public void OnPulse(Vector3 origin, float strength)

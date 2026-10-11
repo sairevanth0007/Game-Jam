@@ -24,7 +24,7 @@ namespace LumenWave
         Vector3 _home, _vel, _target;
         float _timer, _seed;
         Transform _wingL, _wingR, _bodyT;
-        Material _bodyMat;
+        Material _bodyMat, _patternMat;
         Renderer _halo;
         ParticleSystem _dust;
         float _hitFlash;   // visual only
@@ -61,13 +61,40 @@ namespace LumenWave
             _seed = Random.value * 20f;
             _bodyT = new GameObject("Body").transform;
             _bodyT.SetParent(transform, false);
-            _bodyMat = EnemyUtil.Emissive(new Color(0.1f, 0.1f, 0.1f), Calm * 0.8f);
-            var wingMat = EnemyUtil.GlowMaterial(Calm * 0.55f);
-            EnemyUtil.Part(PrimitiveType.Capsule, _bodyT, Vector3.zero, new Vector3(0.12f, 0.18f, 0.12f), _bodyMat, "Thorax");
+            _bodyT.localScale = Vector3.one * 1.3f;
+            // Dark moth: silhouette body (thorax, abdomen, head, antennae) and two pairs of black wings, each
+            // with a faint emissive eye-spot pattern that brightens when it hunts. Wings hinge on the body axis.
+            var dark = EnemyUtil.Silhouette(new Color(0.55f, 0.85f, 1.1f) * 1.8f);
+            _bodyMat = EnemyUtil.Emissive(new Color(0.02f, 0.02f, 0.025f), Calm * 0.25f);
+            _patternMat = EnemyUtil.GlowMaterial(Calm * 0.3f);
+            EnemyUtil.Part(PrimitiveType.Capsule, _bodyT, new Vector3(0, 0.02f, 0), new Vector3(0.1f, 0.12f, 0.1f), dark, "Thorax");
+            EnemyUtil.Part(PrimitiveType.Capsule, _bodyT, new Vector3(0, -0.13f, 0.01f), new Vector3(0.085f, 0.13f, 0.085f), _bodyMat, "Abdomen");
+            EnemyUtil.Part(PrimitiveType.Sphere, _bodyT, new Vector3(0, 0.14f, 0), Vector3.one * 0.085f, dark, "Head");
+            EnemyUtil.Part(PrimitiveType.Cube, _bodyT, new Vector3(-0.05f, 0.24f, -0.01f), new Vector3(0.012f, 0.16f, 0.012f), dark, "AntennaL").transform.localRotation = Quaternion.Euler(0, 0, 28);
+            EnemyUtil.Part(PrimitiveType.Cube, _bodyT, new Vector3(0.05f, 0.24f, -0.01f), new Vector3(0.012f, 0.16f, 0.012f), dark, "AntennaR").transform.localRotation = Quaternion.Euler(0, 0, -28);
+
+            var fore = EnemyUtil.CachedMesh("MothFore", () => EnemyUtil.Polygon(new[]
+            {
+                new Vector2(0.0f, 0.04f), new Vector2(0.08f, 0.12f), new Vector2(0.22f, 0.2f), new Vector2(0.38f, 0.24f),
+                new Vector2(0.46f, 0.18f), new Vector2(0.42f, 0.06f), new Vector2(0.28f, -0.01f), new Vector2(0.1f, -0.03f),
+            }, "MothFore"));
+            var hind = EnemyUtil.CachedMesh("MothHind", () => EnemyUtil.Polygon(new[]
+            {
+                new Vector2(0.0f, -0.02f), new Vector2(0.14f, -0.02f), new Vector2(0.28f, -0.07f), new Vector2(0.33f, -0.17f),
+                new Vector2(0.26f, -0.27f), new Vector2(0.13f, -0.26f), new Vector2(0.03f, -0.14f),
+            }, "MothHind"));
             _wingL = new GameObject("WingL").transform; _wingL.SetParent(_bodyT, false);
             _wingR = new GameObject("WingR").transform; _wingR.SetParent(_bodyT, false);
-            EnemyUtil.Part(PrimitiveType.Quad, _wingL, new Vector3(-0.22f, 0.05f, 0), new Vector3(0.42f, 0.32f, 1f), wingMat, "Wing");
-            EnemyUtil.Part(PrimitiveType.Quad, _wingR, new Vector3(0.22f, 0.05f, 0), new Vector3(0.42f, 0.32f, 1f), wingMat, "Wing");
+            foreach (var (hinge, side) in new[] { (_wingL, -1f), (_wingR, 1f) })
+            {
+                var sc = new Vector3(side, 1f, 1f);
+                EnemyUtil.MeshPart(fore, hinge, new Vector3(side * 0.03f, 0.02f, 0f), Quaternion.identity, sc, dark, "ForeWing");
+                EnemyUtil.MeshPart(hind, hinge, new Vector3(side * 0.03f, 0.0f, 0.005f), Quaternion.identity, sc, dark, "HindWing");
+                // Emissive patterns: an eye-spot on each forewing and a smaller one on each hindwing.
+                EnemyUtil.Part(PrimitiveType.Quad, hinge, new Vector3(side * 0.3f, 0.13f, -0.012f), new Vector3(0.17f, 0.12f, 1f), _patternMat, "SpotFore");
+                EnemyUtil.Part(PrimitiveType.Quad, hinge, new Vector3(side * 0.2f, -0.15f, -0.012f), new Vector3(0.11f, 0.1f, 1f), _patternMat, "SpotHind");
+                EnemyUtil.Part(PrimitiveType.Quad, hinge, new Vector3(side * 0.12f, 0.06f, -0.011f), new Vector3(0.22f, 0.035f, 1f), _patternMat, "Vein");
+            }
             _halo = EnemyUtil.Halo(_bodyT, new Vector3(0, 0, -0.15f), 0.9f, Calm * 0.35f);
             _dust = EnemyUtil.Sparks(transform, Calm, 1.5f, 0.07f, 0.3f);
         }
@@ -143,13 +170,17 @@ namespace LumenWave
             // Wing flap + colour.
             float flap = Current == State.Hunt ? 34f : 16f;
             float w = Mathf.Abs(Mathf.Sin(t * flap));
-            if (_wingL) _wingL.localScale = new Vector3(0.25f + 0.75f * w, 1f, 1f);
-            if (_wingR) _wingR.localScale = new Vector3(0.25f + 0.75f * w, 1f, 1f);
+            // Wings rotate about the body axis (Y): open (facing camera) → nearly edge-on, like a real flap.
+            float open = 72f * w * w;   // mostly spread toward the camera, quick snaps closed
+            if (_wingL) _wingL.localRotation = Quaternion.Euler(0f, -open, 0f);
+            if (_wingR) _wingR.localRotation = Quaternion.Euler(0f, open, 0f);
             if (_bodyT) _bodyT.localRotation = Quaternion.Euler(0, 0, Mathf.Clamp(-_vel.x * 4f, -30f, 30f) + (Current == State.Stunned ? t * 400f : 0f));
             var c = Current == State.Hunt ? Hungry : Calm;
             _hitFlash = Mathf.Max(0f, _hitFlash - dt * 4f);
-            EnemyUtil.SetEmission(_bodyMat, c * (Current == State.Hunt ? 3f : 0.8f) + Color.white * 10f * _hitFlash * _hitFlash);
+            EnemyUtil.SetEmission(_bodyMat, c * (Current == State.Hunt ? 2f : 0.3f) + Color.white * 10f * _hitFlash * _hitFlash);
             if (_halo) EnemyUtil.SetGlow(_halo.sharedMaterial, c * (Current == State.Hunt ? 0.8f : 0.3f));
+            float patt = Current == State.Hunt ? 1.0f + 0.3f * Mathf.Sin(t * 20f) : 0.55f + 0.1f * Mathf.Sin(t * 2f);
+            EnemyUtil.SetGlow(_patternMat, c * patt + Color.white * 3f * _hitFlash * _hitFlash);
             if (Current == State.Flutter && Random.value < dt * 2f && _dust) _dust.Emit(1);
         }
 

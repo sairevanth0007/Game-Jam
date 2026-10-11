@@ -211,7 +211,172 @@ namespace LumenWave
             return true;
         }
 
+        // ---------------------------------------------------------------------------------------------
+        // Silhouette look (Limbo / Ori): black bodies with a thin tinted Schlick rim (LumenWave/Umbra) and
+        // procedural meshes (lathe for robes/hoods/bells, flat double-sided polygons for wings).
+        // ---------------------------------------------------------------------------------------------
+        static readonly System.Collections.Generic.Dictionary<Color, Material> _silhouettes = new System.Collections.Generic.Dictionary<Color, Material>();
+
+        /// <summary>Shared black silhouette material with a rim tinted <paramref name="rim"/> (HDR).</summary>
+        public static Material Silhouette(Color rim)
+        {
+            if (_silhouettes.TryGetValue(rim, out var m) && m != null) return m;
+            m = MaterialLibrary.Create("Umbra");
+            m.name = "EnemySilhouette";
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(0.006f, 0.006f, 0.009f));
+            if (m.HasProperty("_RimColor")) m.SetColor("_RimColor", rim);
+            if (m.HasProperty("_RimPower")) m.SetFloat("_RimPower", 3.2f);
+            if (m.HasProperty("_RimF0")) m.SetFloat("_RimF0", 0f);
+            if (m.HasProperty("_RimStrength")) m.SetFloat("_RimStrength", 0.55f);
+            if (m.HasProperty("_KeyAmbient")) m.SetFloat("_KeyAmbient", 0.25f);
+            if (m.HasProperty("_Ambient")) m.SetColor("_Ambient", new Color(0.008f, 0.009f, 0.014f));
+            if (m.HasProperty("_FogAmount")) m.SetFloat("_FogAmount", 0.45f);
+            _silhouettes[rim] = m;
+            return m;
+        }
+
+        /// <summary>A mesh used only as a visual.</summary>
+        public static GameObject MeshPart(Mesh mesh, Transform parent, Vector3 localPos, Quaternion localRot, Vector3 scale, Material mat, string name)
+        {
+            var go = new GameObject(name);
+            go.layer = Layers.Enemy;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localRotation = localRot;
+            go.transform.localScale = scale;
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            return go;
+        }
+
+        static readonly System.Collections.Generic.Dictionary<string, Mesh> _meshCache = new System.Collections.Generic.Dictionary<string, Mesh>();
+
+        /// <summary>Cached procedural mesh (built once per key; enemies share their meshes).</summary>
+        public static Mesh CachedMesh(string key, System.Func<Mesh> build)
+        {
+            if (_meshCache.TryGetValue(key, out var m) && m != null) return m;
+            m = build();
+            _meshCache[key] = m;
+            return m;
+        }
+
+        /// <summary>
+        /// Surface of revolution around Y. <paramref name="profile"/> = (radius, y) from top to bottom.
+        /// <paramref name="ragged"/> adds a deterministic wavy/tattered offset that grows toward the bottom
+        /// (cloth hems), <paramref name="seed"/> varies it.
+        /// </summary>
+        public static Mesh Lathe(Vector2[] profile, int segments, float ragged = 0f, int seed = 0, string name = "Lathe")
+        {
+            int rings = profile.Length;
+            var v = new Vector3[rings * (segments + 1)];
+            var uv = new Vector2[v.Length];
+            for (int r = 0; r < rings; r++)
+            {
+                float k = rings > 1 ? r / (float)(rings - 1) : 0f;
+                for (int i = 0; i <= segments; i++)
+                {
+                    float a = i / (float)segments * Mathf.PI * 2f;
+                    float rad = profile[r].x;
+                    float y = profile[r].y;
+                    if (ragged > 0f)
+                    {
+                        float w = Mathf.Sin(a * 5f + seed) * 0.5f + Mathf.Sin(a * 11f + seed * 1.7f) * 0.3f + Mathf.Sin(a * 3f + seed * 0.3f) * 0.2f;
+                        rad *= 1f + ragged * 0.35f * w * k;
+                        y += ragged * 0.12f * w * k * k;
+                    }
+                    v[r * (segments + 1) + i] = new Vector3(Mathf.Cos(a) * rad, y, Mathf.Sin(a) * rad);
+                    uv[r * (segments + 1) + i] = new Vector2(i / (float)segments, k);
+                }
+            }
+            var tris = new System.Collections.Generic.List<int>();
+            for (int r = 0; r < rings - 1; r++)
+                for (int i = 0; i < segments; i++)
+                {
+                    int a0 = r * (segments + 1) + i, a1 = a0 + 1, b0 = a0 + segments + 1, b1 = b0 + 1;
+                    tris.Add(a0); tris.Add(a1); tris.Add(b0);
+                    tris.Add(a1); tris.Add(b1); tris.Add(b0);
+                }
+            var m = new Mesh { name = name, vertices = v, uv = uv };
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        /// <summary>Flat double-sided polygon (fan from the first point) in the XY plane, UVs over its bounds.</summary>
+        public static Mesh Polygon(Vector2[] pts, string name = "Polygon")
+        {
+            int n = pts.Length;
+            var v = new Vector3[n * 2];
+            var nrm = new Vector3[n * 2];
+            var uv = new Vector2[n * 2];
+            Vector2 min = pts[0], max = pts[0];
+            foreach (var p in pts) { min = Vector2.Min(min, p); max = Vector2.Max(max, p); }
+            var size = Vector2.Max(max - min, new Vector2(1e-4f, 1e-4f));
+            for (int i = 0; i < n; i++)
+            {
+                v[i] = v[i + n] = pts[i];
+                nrm[i] = Vector3.back; nrm[i + n] = Vector3.forward;
+                uv[i] = uv[i + n] = new Vector2((pts[i].x - min.x) / size.x, (pts[i].y - min.y) / size.y);
+            }
+            // Front faces (normal −Z, toward the camera) need clockwise winding seen from −Z.
+            bool ccw = Vector3.Cross(pts[1] - pts[0], pts[2] - pts[0]).z > 0f;
+            var tris = new System.Collections.Generic.List<int>();
+            for (int i = 1; i < n - 1; i++)
+            {
+                if (ccw) { tris.Add(0); tris.Add(i + 1); tris.Add(i); tris.Add(n); tris.Add(n + i); tris.Add(n + i + 1); }
+                else { tris.Add(0); tris.Add(i); tris.Add(i + 1); tris.Add(n); tris.Add(n + i + 1); tris.Add(n + i); }
+            }
+            var m = new Mesh { name = name, vertices = v, normals = nrm, uv = uv };
+            m.SetTriangles(tris, 0);
+            m.RecalculateBounds();
+            return m;
+        }
+
+        /// <summary>Continuous world-space trail of soft motes (wisps, embers).</summary>
+        public static ParticleSystem MoteTrail(Transform parent, Color color, float rateOverDistance, float rateOverTime, float size, float life)
+        {
+            var go = new GameObject("Motes");
+            go.layer = Layers.Enemy;
+            go.transform.SetParent(parent, false);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.loop = true;
+            main.playOnAwake = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(life * 0.6f, life);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.35f);
+            main.startSize = new ParticleSystem.MinMaxCurve(size * 0.5f, size);
+            main.startColor = color;
+            main.gravityModifier = -0.05f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 80;
+            var em = ps.emission;
+            em.rateOverTime = rateOverTime;
+            em.rateOverDistance = rateOverDistance;
+            var sh = ps.shape;
+            sh.shapeType = ParticleSystemShapeType.Sphere;
+            sh.radius = 0.12f;
+            var col = ps.colorOverLifetime;
+            col.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                      new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0f, 1f) });
+            col.color = g;
+            var sz = ps.sizeOverLifetime;
+            sz.enabled = true;
+            sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0.2f));
+            var r = go.GetComponent<ParticleSystemRenderer>();
+            r.sharedMaterial = GlowMaterial(Color.white);
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            ps.Play();
+            return ps;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() { PlayerOverride = null; _cached = null; }
+        static void ResetStatics() { PlayerOverride = null; _cached = null; _silhouettes.Clear(); _meshCache.Clear(); }
     }
 }

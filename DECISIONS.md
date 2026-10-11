@@ -87,3 +87,11 @@ Format: time (Sun 11 Oct 2026) — decision — why.
   - Only the `mood:`/`theme:` header lines changed (05 green→ice, 06 blue→green, 08 violet→prism).
 - 09:50 — Performance: the Kenney meshes import non-readable, so static batching isn't possible. They rely on the SRP batcher (few shared materials, no shadows, no probes). Particles are capped (at most 320) and follow the camera. Autoplay on L1, L4 and L7 stays at 60 fps (p95 16.7 ms).
 - 09:50 — The ambientCG `_Color` textures had imported as Sprites without mipmaps. I fixed their .meta files (Default type, mipmaps on) and added the rule to `ArtImport` for future imports.
+- 09:55 — Enemy look (hero worker): Limbo/Ori-style silhouettes. Visuals only; behaviour, colliders, timings, public API and the UI worker's hit-flash/ImpactFx hooks are unchanged.
+  - `EnemyUtil` gained `Silhouette(rim)` (shared black LumenWave/Umbra material with a tinted rim), cached procedural meshes (`Lathe` for robes, hoods and bells; `Polygon` for double-sided wings) and `MoteTrail`.
+  - **Sentinel:** a hooded lantern-warden. Ragged lathe robe on a swaying pivot, peaked hood with two ember eyes, sleeves reaching down to the hanging red lantern. The lens stays at the beam origin.
+  - **Wisp:** a small hot core with an inner glow, a flickering corona, a halo and a world-space mote trail. Toned down so bloom doesn't blow it out.
+  - **Echo Moth:** silhouette body with antennae and two pairs of wings that hinge on the body axis (real 3D flap). Faint eye-spot patterns flare cyan when it hunts. Visuals ×1.3 for readability.
+  - **Flare:** a horned black bell creature with glowing trim rings, vents and a snout-lantern head.
+  - We built them procedurally rather than from the Kenney pieces: one consistent rim look, no extra assets.
+  - `-lw-enemyposes <dir>` (HeroPoseDirector) captures close-ups of all four enemies calm, hunting and stunned.

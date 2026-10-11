@@ -21,7 +21,7 @@ namespace LumenWave
 
         Vector3 _home;
         float _t, _stun, _initialPhase;
-        Transform _body;
+        Transform _body, _robe;
         Material _lensMat, _cageMat;
         Renderer _halo;
         Light _light;
@@ -64,26 +64,48 @@ namespace LumenWave
             _body = new GameObject("Body").transform;
             _body.SetParent(transform, false);
 
-            var dark = MaterialLibrary.Tinted("Lit", new Color(0.05f, 0.05f, 0.07f));
+            // Hooded lantern-warden: a black robed figure (procedural lathe meshes, tinted Schlick rim) that
+            // holds its red lantern out below it. The lantern lens stays where the beam starts.
+            var dark = EnemyUtil.Silhouette(new Color(1.0f, 0.42f, 0.36f) * 1.3f);
             _cageMat = EnemyUtil.Emissive(new Color(0.08f, 0.07f, 0.07f), _color * 0.6f);
             _lensMat = EnemyUtil.Emissive(_color, _color * 6f);
 
-            // Lantern: dark cap, glowing cage, dark base, hanging hook, glowing lens at the bottom.
-            EnemyUtil.Part(PrimitiveType.Cylinder, _body, new Vector3(0, 0.42f, 0), new Vector3(0.75f, 0.08f, 0.75f), dark, "Cap");
-            EnemyUtil.Part(PrimitiveType.Sphere, _body, new Vector3(0, 0.56f, 0), new Vector3(0.22f, 0.22f, 0.22f), dark, "Knob");
-            EnemyUtil.Part(PrimitiveType.Cylinder, _body, new Vector3(0, 0.1f, 0), new Vector3(0.55f, 0.28f, 0.55f), _cageMat, "Cage");
+            var hood = EnemyUtil.CachedMesh("SentinelHood", () => EnemyUtil.Lathe(new[]
+            {
+                new Vector2(0.0f, 1.16f), new Vector2(0.07f, 1.12f), new Vector2(0.15f, 1.03f), new Vector2(0.22f, 0.9f),
+                new Vector2(0.25f, 0.76f), new Vector2(0.24f, 0.66f), new Vector2(0.3f, 0.6f),
+            }, 18, 0.25f, 3, "SentinelHood"));
+            var robe = EnemyUtil.CachedMesh("SentinelRobe", () => EnemyUtil.Lathe(new[]
+            {
+                new Vector2(0.17f, 0f), new Vector2(0.3f, -0.1f), new Vector2(0.34f, -0.28f), new Vector2(0.37f, -0.48f),
+                new Vector2(0.42f, -0.64f), new Vector2(0.47f, -0.72f), new Vector2(0.4f, -0.74f),
+            }, 22, 0.9f, 7, "SentinelRobe"));
+
+            // Robe hangs from the shoulders on its own pivot so the hem can sway.
+            _robe = new GameObject("Robe").transform;
+            _robe.SetParent(_body, false);
+            _robe.localPosition = new Vector3(0f, 0.66f, 0f);
+            EnemyUtil.MeshPart(robe, _robe, Vector3.zero, Quaternion.identity, Vector3.one, dark, "RobeMesh");
+            EnemyUtil.MeshPart(hood, _body, Vector3.zero, Quaternion.Euler(0f, 0f, 6f), Vector3.one, dark, "Hood");
+            // Eyes in the hood's shadow: two red embers.
+            EnemyUtil.Halo(_body, new Vector3(-0.07f, 0.8f, -0.27f), 0.16f, _color * 2.2f);
+            EnemyUtil.Halo(_body, new Vector3(0.07f, 0.8f, -0.27f), 0.16f, _color * 2.2f);
+            // Sleeves reaching down to the lantern ring.
+            EnemyUtil.Part(PrimitiveType.Capsule, _body, new Vector3(-0.17f, 0.22f, -0.16f), new Vector3(0.11f, 0.27f, 0.11f), dark, "SleeveL").transform.localRotation = Quaternion.Euler(0, 0, -24);
+            EnemyUtil.Part(PrimitiveType.Capsule, _body, new Vector3(0.17f, 0.22f, -0.16f), new Vector3(0.11f, 0.27f, 0.11f), dark, "SleeveR").transform.localRotation = Quaternion.Euler(0, 0, 24);
+
+            // Lantern: ring + chain, dark cap, glowing cage with bars, glowing lens at the bottom.
+            EnemyUtil.Part(PrimitiveType.Cylinder, _body, new Vector3(0, -0.04f, -0.08f), new Vector3(0.025f, 0.09f, 0.025f), dark, "Chain");
+            EnemyUtil.Part(PrimitiveType.Cylinder, _body, new Vector3(0, -0.14f, 0), new Vector3(0.36f, 0.04f, 0.36f), dark, "Cap");
+            EnemyUtil.Part(PrimitiveType.Cylinder, _body, new Vector3(0, -0.24f, 0), new Vector3(0.28f, 0.08f, 0.28f), _cageMat, "Cage");
             for (int i = 0; i < 4; i++)
             {
                 float a = i * Mathf.PI * 0.5f + Mathf.PI * 0.25f;
-                EnemyUtil.Part(PrimitiveType.Cube, _body, new Vector3(Mathf.Cos(a) * 0.3f, 0.1f, Mathf.Sin(a) * 0.3f), new Vector3(0.05f, 0.62f, 0.05f), dark, "Bar");
+                EnemyUtil.Part(PrimitiveType.Cube, _body, new Vector3(Mathf.Cos(a) * 0.15f, -0.24f, Mathf.Sin(a) * 0.15f), new Vector3(0.03f, 0.2f, 0.03f), dark, "Bar");
             }
-            EnemyUtil.Part(PrimitiveType.Cylinder, _body, new Vector3(0, -0.24f, 0), new Vector3(0.65f, 0.07f, 0.65f), dark, "Base");
-            var lens = EnemyUtil.Part(PrimitiveType.Sphere, _body, new Vector3(0, -0.38f, 0), new Vector3(0.3f, 0.3f, 0.3f), _lensMat, "Lens");
-            // Little fins so it reads as something that floats.
-            EnemyUtil.Part(PrimitiveType.Cube, _body, new Vector3(-0.45f, 0.15f, 0), new Vector3(0.35f, 0.05f, 0.12f), dark, "FinL").transform.localRotation = Quaternion.Euler(0, 0, 20);
-            EnemyUtil.Part(PrimitiveType.Cube, _body, new Vector3(0.45f, 0.15f, 0), new Vector3(0.35f, 0.05f, 0.12f), dark, "FinR").transform.localRotation = Quaternion.Euler(0, 0, -20);
+            var lens = EnemyUtil.Part(PrimitiveType.Sphere, _body, new Vector3(0, -0.38f, 0), new Vector3(0.24f, 0.24f, 0.24f), _lensMat, "Lens");
 
-            _halo = EnemyUtil.Halo(_body, new Vector3(0, -0.38f, -0.3f), 1.6f, _color * 0.8f);
+            _halo = EnemyUtil.Halo(_body, new Vector3(0, -0.38f, -0.3f), 1.6f, _color * 0.55f);
             _light = EnemyUtil.PointLight(_body, new Vector3(0, -0.5f, -0.4f), _color, 4f, 2.5f);
 
             var beamGo = new GameObject("Beam");
@@ -146,6 +168,9 @@ namespace LumenWave
 
             float pulse = 0.8f + 0.2f * Mathf.Sin(Time.time * 6f);
             EnemyUtil.SetEmission(_lensMat, _color * 6f * pulse);
+            // Idle cloth sway: the robe hem lags the body a little.
+            if (_robe) _robe.localRotation = Quaternion.Euler(Mathf.Sin(_t * 1.1f + phase) * 3f, 0f, Mathf.Sin(_t * 1.3f + 0.7f) * 5f);
+            if (_halo) _halo.transform.localScale = Vector3.one * 1.6f * (0.92f + 0.08f * pulse);
         }
 
         void Recover()

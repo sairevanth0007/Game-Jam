@@ -67,19 +67,41 @@ namespace LumenWave
 
         void BuildVisuals()
         {
-            var dark = MaterialLibrary.Tinted("Lit", new Color(0.03f, 0.03f, 0.04f));
-            EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(0, 0, 0.1f), new Vector3(0.9f, 0.9f, 0.6f), dark, "Mount");
-            // Glowing trim on the mount's front face so the lantern reads against a dark sky.
-            var trim = EnemyUtil.Emissive(new Color(0.35f, 0.08f, 0.05f), Col * 1.4f);
-            EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(0, 0.45f, -0.22f), new Vector3(0.96f, 0.06f, 0.04f), trim, "TrimTop");
-            EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(0, -0.45f, -0.22f), new Vector3(0.96f, 0.06f, 0.04f), trim, "TrimBottom");
-            EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(0.45f, 0, -0.22f), new Vector3(0.06f, 0.96f, 0.04f), trim, "TrimRight");
-            EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(-0.45f, 0, -0.22f), new Vector3(0.06f, 0.96f, 0.04f), trim, "TrimLeft");
+            // Lantern creature: a hunched black bell (lathe, red-tinted Schlick rim) with two horns, glowing
+            // trim rings and vents, and a snout-lantern head that turns to aim. The lens stays at the muzzle.
+            var dark = EnemyUtil.Silhouette(new Color(1.1f, 0.45f, 0.3f) * 1.2f);
+            var trim = EnemyUtil.Emissive(new Color(0.35f, 0.08f, 0.05f), Col * 1.6f);
+            var bell = EnemyUtil.CachedMesh("FlareBell", () => EnemyUtil.Lathe(new[]
+            {
+                new Vector2(0.0f, 0.5f), new Vector2(0.18f, 0.47f), new Vector2(0.33f, 0.36f), new Vector2(0.42f, 0.16f),
+                new Vector2(0.45f, -0.08f), new Vector2(0.42f, -0.3f), new Vector2(0.47f, -0.42f), new Vector2(0.36f, -0.47f), new Vector2(0.0f, -0.47f),
+            }, 20, 0f, 0, "FlareBell"));
+            var ring = EnemyUtil.CachedMesh("FlareRing", () => EnemyUtil.Lathe(new[]
+            {
+                new Vector2(0.43f, 0.03f), new Vector2(0.465f, 0f), new Vector2(0.43f, -0.03f),
+            }, 24, 0f, 0, "FlareRing"));
+            var horn = EnemyUtil.CachedMesh("FlareHorn", () => EnemyUtil.Lathe(new[]
+            {
+                new Vector2(0.0f, 0.32f), new Vector2(0.03f, 0.22f), new Vector2(0.06f, 0.08f), new Vector2(0.075f, 0f),
+            }, 10, 0f, 0, "FlareHorn"));
+            EnemyUtil.MeshPart(bell, transform, new Vector3(0, 0, 0.1f), Quaternion.identity, Vector3.one, dark, "Mount");
+            EnemyUtil.MeshPart(ring, transform, new Vector3(0, 0.12f, 0.1f), Quaternion.identity, new Vector3(0.93f, 1f, 0.93f), trim, "TrimTop");
+            EnemyUtil.MeshPart(ring, transform, new Vector3(0, -0.4f, 0.1f), Quaternion.identity, new Vector3(1.04f, 1f, 1.04f), trim, "TrimBottom");
+            EnemyUtil.MeshPart(horn, transform, new Vector3(-0.2f, 0.38f, 0.1f), Quaternion.Euler(0, 0, 32f), Vector3.one, dark, "HornL");
+            EnemyUtil.MeshPart(horn, transform, new Vector3(0.2f, 0.38f, 0.1f), Quaternion.Euler(0, 0, -32f), Vector3.one, dark, "HornR");
+            // Vents: three glowing slits on the front face.
+            for (int v = -1; v <= 1; v++)
+                EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(v * 0.13f, -0.2f, -0.33f), new Vector3(0.04f, 0.14f, 0.03f), trim, "Vent");
             EnemyUtil.Halo(transform, new Vector3(0, 0, 0.5f), 2.2f, Col * 0.18f);
             _head = new GameObject("Head").transform;
             _head.SetParent(transform, false);
-            EnemyUtil.Part(PrimitiveType.Cylinder, _head, new Vector3(0.35f, 0, 0), new Vector3(0.45f, 0.3f, 0.45f), dark, "Barrel")
-                .transform.localRotation = Quaternion.Euler(0, 0, 90f);
+            var snout = EnemyUtil.CachedMesh("FlareSnout", () => EnemyUtil.Lathe(new[]
+            {
+                new Vector2(0.22f, 0.0f), new Vector2(0.24f, -0.12f), new Vector2(0.2f, -0.3f), new Vector2(0.17f, -0.44f), new Vector2(0.2f, -0.5f), new Vector2(0.16f, -0.52f),
+            }, 16, 0f, 0, "FlareSnout"));
+            // Lathe axis is −Y; rotate so the snout points along +X (the head's aim axis).
+            EnemyUtil.MeshPart(snout, _head, new Vector3(0.12f, 0, -0.02f), Quaternion.Euler(0, 0, 90f), Vector3.one, dark, "Barrel");
+            EnemyUtil.MeshPart(ring, _head, new Vector3(0.6f, 0, -0.02f), Quaternion.Euler(0, 0, 90f), new Vector3(0.45f, 1.2f, 0.45f), trim, "MuzzleRing");
             _lensMat = EnemyUtil.Emissive(Col, Col * 0.6f);
             EnemyUtil.Part(PrimitiveType.Sphere, _head, new Vector3(0.62f, 0, -0.05f), Vector3.one * 0.32f, _lensMat, "Lens");
             _halo = EnemyUtil.Halo(_head, new Vector3(0.62f, 0, -0.3f), 0.9f, Col * 0.5f);
