@@ -76,3 +76,6 @@ beam 191.5 12.9 color=red dir=-90 range=11 intensity=6 width=0.9 sweep=15 speed=
 beam 194 12.9 color=red dir=-90 range=11 intensity=6 width=0.9 sweep=15 speed=1.2
 beam 196.5 12.9 color=red dir=-90 range=11 intensity=6 width=0.9 sweep=15 speed=1.2
 bot 188.4 3 t=2.2 do=shield
+tutorial 102 3 text=Light_bolts!_Hold_{Shield}_to_absorb_them. radius=3
+flare 113.5 11.5 range=10 period=2.4 speed=6 damage=20
+bot 103 3 do=shield t=2.8

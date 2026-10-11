@@ -73,3 +73,8 @@ bot 160.5 18 t=2.2 do=shield
 bot 161.7 18 t=0.45 do=jump
 orb 168.5 24
 bot 165.7 20 t=0.45 do=jump
+tutorial 110 14 text=A_flare_lantern._{Shield}_absorbs_its_bolts,_{Pulse}_silences_it. radius=3
+flare 123.5 18.5 range=9 period=2.2 speed=6.5 damage=20
+bot 114 14 do=shield t=2.0
+lamp 128.5 18 color=green radius=4 intensity=1.2
+bot 128 14 do=wait t=1.2

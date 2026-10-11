@@ -124,6 +124,20 @@ namespace LumenWave
             yield return Shot("shield");
             _cmd.shieldHeld = false;
 
+            // 2b. Flare lantern: bolts in flight, then absorbed by the shield.
+            yield return Boot(Level("red", 40, 12, "player 8.5 2\nflare 17.5 5 range=14 period=1.1 speed=6"));
+            yield return new WaitForSeconds(1.35f);
+            yield return Shot("flare_bolt");
+            _cmd.shieldHeld = true;
+            float ft = 0f; bool absorbed = false;
+            System.Action<Vector3> onAbs = _ => absorbed = true;
+            FlareBolt.Absorbed += onAbs;
+            while (!absorbed && ft < 4f) { ft += Time.deltaTime; yield return null; }
+            FlareBolt.Absorbed -= onAbs;
+            yield return new WaitForSeconds(0.05f);
+            yield return Shot("flare_absorb");
+            _cmd.shieldHeld = false;
+
             // 3. Pulse: expanding ring stuns a sentinel and shatters a crystal.
             yield return Boot(Level("blue", 40, 12, "player 10.5 2\ncrystal 15.5 2\ncrystal 15.5 3\nsentinel 18 8 range=8 sweep=40 speed=0.6"));
             _cmd.pulse = true;

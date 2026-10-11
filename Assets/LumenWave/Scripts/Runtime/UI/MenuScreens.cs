@@ -189,7 +189,7 @@ namespace LumenWave.UI
 
         GameObject BuildLevelSelect(RectTransform root, out GameObject first)
         {
-            var p = UIKit.Panel(root, "LevelSelect", new Vector2(760, 760));
+            var p = UIKit.Panel(root, "LevelSelect", new Vector2(900, 860));
             var title = UIKit.Label(p, UIKit.Spaced("SELECT LEVEL", 2), 40, TextAnchor.MiddleCenter, UIStyle.Text, "Title");
             UIKit.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0, -56), new Vector2(700, 60), new Vector2(0.5f, 0.5f));
             var list = UIKit.Rect(p, "List");
@@ -206,12 +206,19 @@ namespace LumenWave.UI
                 try { name = LevelDatabase.Load(i).Name; } catch { name = LevelDatabase.NameOf(i); }
                 int n = i;
                 bool open = i <= unlocked;
-                var b = UIKit.Button(list, $"{i:00}  {name}", () => { GameSession.NewRun(); GameSession.CurrentLevel = n; ScreenFader.FadeThen(() => SceneFlow.LoadLevel(n)); }, 52, 24);
+                // Records (best time, secrets found) appended unspaced so the line stays compact.
+                string details = "";
+                float best = RunStats.BestLevel(i);
+                int total = RunStats.SecretsIn(i);
+                if (best > 0f) details += $"     {UIKit.FormatTime(best)}";
+                if (total > 0 && (best > 0f || RunStats.SecretsFound(i) > 0)) details += $"     {RunStats.SecretsFound(i)}/{total} shards";
+                var b = UIKit.Button(list, $"{i:00}  {name}", () => { GameSession.NewRun(); GameSession.CurrentLevel = n; ScreenFader.FadeThen(() => SceneFlow.LoadLevel(n)); }, 46, 22);
+                if (open && details.Length > 0) { var lt = b.GetComponentInChildren<Text>(); lt.text += details; }
                 b.interactable = open;
                 if (!open) b.GetComponentInChildren<Text>().text = UIKit.Spaced($"{i:00}  ????");
                 if (first == null) first = b.gameObject;
             }
-            var back = UIKit.Button(list, "Back", () => Stack.Pop(), 52, 24);
+            var back = UIKit.Button(list, "Back", () => Stack.Pop(), 46, 22);
             if (first == null) first = back.gameObject;
             p.gameObject.SetActive(false);
             return p.gameObject;
@@ -294,11 +301,16 @@ namespace LumenWave.UI
             UIKit.GlowText(_line, UIStyle.Accent, 2f);
 
             int secrets = PlayerPrefs.GetInt(UIRoot.SecretsKey, 0);
-            string stats = $"{UIKit.Spaced("TIME")}   {UIKit.FormatTime(GameSession.TotalTime)}\n\n" +
+            int totalSecrets = RunStats.TotalSecrets;
+            string timeLine = $"{UIKit.Spaced("TIME")}   {UIKit.FormatTime(GameSession.TotalTime)}";
+            if (RunStats.LastRunWasNewBest) timeLine += "   <color=#FFD970>" + UIKit.Spaced("NEW BEST") + "</color>";
+            else if (RunStats.BestRun > 0f) timeLine += $"   <color=#7FA6B8>best {UIKit.FormatTime(RunStats.BestRun)}</color>";
+            string stats = timeLine + "\n\n" +
                            $"{UIKit.Spaced("DEATHS")}   {GameSession.Deaths}\n\n" +
-                           $"{UIKit.Spaced("SECRETS")}   {secrets}";
+                           $"{UIKit.Spaced("SECRETS")}   {secrets} / {totalSecrets}";
             var st = UIKit.Label(main, stats, 32, TextAnchor.MiddleCenter, UIStyle.Text, "Stats");
-            UIKit.Place(st.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(900, 220), new Vector2(0.5f, 0.5f));
+            st.supportRichText = true;
+            UIKit.Place(st.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(1100, 220), new Vector2(0.5f, 0.5f));
 
             var buttons = UIKit.Rect(main, "Buttons");
             UIKit.Place(buttons, new Vector2(0.5f, 0.5f), new Vector2(0, -210), new Vector2(440, 150), new Vector2(0.5f, 0.5f));

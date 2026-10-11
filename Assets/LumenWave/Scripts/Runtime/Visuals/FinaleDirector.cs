@@ -126,6 +126,7 @@ namespace LumenWave
             }
             foreach (var w in FindObjectsByType<Wisp>(FindObjectsSortMode.None)) { w.enabled = false; w.gameObject.AddComponent<FinaleCalm>().Init(true); }
             foreach (var m in FindObjectsByType<EchoMoth>(FindObjectsSortMode.None)) { m.enabled = false; m.gameObject.AddComponent<FinaleCalm>().Init(true); }
+            foreach (var f in FindObjectsByType<Flare>(FindObjectsSortMode.None)) { f.ClearBolts(); f.enabled = false; f.gameObject.AddComponent<FinaleCalm>().Init(false); }
         }
 
         void CaptureEnvironment()
