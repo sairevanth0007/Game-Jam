@@ -128,7 +128,7 @@ namespace LumenWave
             heroMat.SetFloat("_RimPower", HeroRimPower);
             heroMat.SetFloat("_RimF0", 0f);
             if (heroMat.HasProperty("_RimStrength")) heroMat.SetFloat("_RimStrength", HeroRimStrength);
-            if (heroMat.HasProperty("_KeyAmbient")) heroMat.SetFloat("_KeyAmbient", 0.08f);
+            if (heroMat.HasProperty("_KeyAmbient")) heroMat.SetFloat("_KeyAmbient", 0.03f);
             if (heroMat.HasProperty("_Ambient")) heroMat.SetColor("_Ambient", HeroAmbient);
             if (heroMat.HasProperty("_FogAmount")) heroMat.SetFloat("_FogAmount", 0.25f);
 
@@ -141,7 +141,16 @@ namespace LumenWave
 
             var hero = UmbraHero.Create(prefab, Visual, this, _ctl, heroMat, eye, halo);
             if (hero == null) { Destroy(heroMat); Destroy(eye); Destroy(halo); return false; }
-            if (_outlineMat != null && UseHeroOutline) hero.Body.sharedMaterials = new[] { heroMat, _outlineMat };
+            if (_outlineMat != null && UseHeroOutline)
+            {
+                // Limbo / Shadow Fight rim: strong and a little wider on the key-light (upper/back) edge,
+                // a faint thin line on the other side so Umbra still reads on dark backgrounds.
+                if (_outlineMat.HasProperty("_Ambient")) _outlineMat.SetFloat("_Ambient", 0.09f);
+                if (_outlineMat.HasProperty("_KeyPower")) _outlineMat.SetFloat("_KeyPower", 5f);
+                if (_outlineMat.HasProperty("_WidthUnlit")) _outlineMat.SetFloat("_WidthUnlit", 0.45f);
+                if (_outlineMat.HasProperty("_Width")) _outlineMat.SetFloat("_Width", 0.028f);
+                hero.Body.sharedMaterials = new[] { heroMat, _outlineMat };
+            }
             Destroy(_bodyMat);
             _bodyMat = heroMat;
             _eyeMat = eye; _haloMat = halo;
@@ -152,8 +161,8 @@ namespace LumenWave
             return true;
         }
 
-        const float HeroRimPower = 4.5f, HeroRimStrength = 0.45f;
-        static readonly Color HeroAmbient = new Color(0.010f, 0.013f, 0.02f);
+        const float HeroRimPower = 5f, HeroRimStrength = 0.22f;
+        static readonly Color HeroAmbient = new Color(0.006f, 0.008f, 0.013f);
         static bool UseHeroOutline = true;
 
         static Mesh PrimitiveMesh(PrimitiveType t)
@@ -441,6 +450,8 @@ namespace LumenWave
             else _ghostTimer = 0f;
         }
 
+        float _keyX = -0.5f;
+
         void HeroLateUpdate(float dt, bool dead, PlayerCommands cmd)
         {
             float t = Time.time;
@@ -452,6 +463,12 @@ namespace LumenWave
             if (dead) _deathTimer += dt;
 
             _hero.LateTick(dt, Visual, _squash, _bodyMat);
+
+            // Key light sits on Umbra's upper-back side; it swings over smoothly when Umbra turns.
+            _keyX = Mathf.MoveTowards(_keyX, -_ctl.Facing * 0.5f, dt * 4f);
+            var key = new Vector4(_keyX, 0.85f, 0f, 0f);
+            _bodyMat.SetVector("_KeyDir", key);
+            if (_outlineMat != null) _outlineMat.SetVector("_KeyDir", key);
 
             // The outline hull would outline the holes of the dissolve: drop it while dissolving.
             if (_outlineMat != null && UseHeroOutline)
@@ -494,16 +511,20 @@ namespace LumenWave
             var ghost = new GameObject("UmbraGhost");
             ghost.layer = Layers.Player;
             ghost.transform.SetPositionAndRotation(m.GetPosition(), m.rotation);
+            ghost.transform.localScale = m.lossyScale;
             ghost.AddComponent<MeshFilter>().sharedMesh = mesh;
             var r = ghost.AddComponent<MeshRenderer>();
-            var mat = new Material(_ghostMatBase);
-            var c = new Color(0.5f, 1.2f, 2.0f, 0.45f);
+            // Rim-only additive afterimage (LumenWave/UmbraGhost); plain transparent fallback.
+            var ghostBase = Resources.Load<Material>("Materials/UmbraGhost");
+            var mat = new Material(ghostBase != null ? ghostBase : _ghostMatBase);
+            var c = ghostBase != null ? new Color(0.4f, 1.2f, 2.2f, 0.8f) : new Color(0.5f, 1.2f, 2.0f, 0.45f);
+            if (ghostBase != null) { mat.SetFloat("_RimPower", 3.2f); mat.SetFloat("_Fill", 0.015f); }
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
             r.sharedMaterial = mat;
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             r.receiveShadows = false;
             var g = ghost.AddComponent<UmbraGhost>();
-            g.Init(mat, c, 0.26f);
+            g.Init(mat, c, 0.25f);
             g.OwnedMesh = mesh;
         }
 

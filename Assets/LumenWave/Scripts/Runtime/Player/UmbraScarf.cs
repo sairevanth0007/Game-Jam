@@ -50,7 +50,7 @@ namespace LumenWave
             tip.layer = gameObject.layer;
             tip.transform.SetParent(transform, false);
             _trail = tip.AddComponent<TrailRenderer>();
-            _trail.time = 0.22f;
+            _trail.time = 0.26f;
             _trail.minVertexDistance = 0.04f;
             _trail.widthCurve = new AnimationCurve(new Keyframe(0f, 0.07f), new Keyframe(1f, 0f));
             _trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -58,8 +58,8 @@ namespace LumenWave
             _trail.alignment = LineAlignment.View;
             _trail.sharedMaterial = MaterialLibrary.Tinted("ParticleAdditive", Color.white);
             var tg = new Gradient();
-            tg.SetKeys(new[] { new GradientColorKey(new Color(0.35f, 0.8f, 1f), 0f), new GradientColorKey(new Color(0.2f, 0.5f, 1f), 1f) },
-                       new[] { new GradientAlphaKey(0.35f, 0f), new GradientAlphaKey(0f, 1f) });
+            tg.SetKeys(new[] { new GradientColorKey(new Color(0.45f, 0.9f, 1f), 0f), new GradientColorKey(new Color(0.25f, 0.55f, 1f), 1f) },
+                       new[] { new GradientAlphaKey(0.6f, 0f), new GradientAlphaKey(0f, 1f) });
             _trail.colorGradient = tg;
             Reset();
         }

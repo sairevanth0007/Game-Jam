@@ -35,7 +35,7 @@ namespace LumenWave
         float _castTimer, _castWeight, _fallTime, _landTime, _hurtTimer, _dissolve, _dissolveTarget;
         int _state = -1;
         bool _wasDead;
-        float _shieldW, _singW;
+        float _shieldW, _singW, _guardW;
         Transform _eyeNear, _eyeFar, _halo;
         Vector3 _eyeLocalNear, _eyeLocalFar, _haloLocal;
         Material _eyeMat, _haloMat;
@@ -228,6 +228,8 @@ namespace LumenWave
             var cmd = _ctl.Current;
             _shieldW = Mathf.MoveTowards(_shieldW, (!dead && cmd.shieldHeld) ? 1f : 0f, dt * 9f);
             _singW = dead ? 0f : Mathf.Clamp01(_rig.Singing);
+            bool guarding = !dead && _state == SIdle && _ctl.Grounded && Mathf.Abs(v.x) < 0.4f;
+            _guardW = Mathf.MoveTowards(_guardW, guarding ? 1f : 0f, dt * (guarding ? 3f : 10f));
         }
 
         void OnAnimatorIK(int layer)
@@ -238,43 +240,60 @@ namespace LumenWave
             int f = _ctl.Facing;
             var root = _rig.transform.position;
 
-            // Feet: plant on the ground when standing still (subtle, stable).
-            if (layer == 0)
+            // Guard stance (idle): crouch a little, narrow the clip's wide front/back stride, fists up.
+            float guard = _guardW * (1f - _shieldW) * (1f - _singW) * (1f - _castWeight);
+            if (layer == 0 && guard > 0.001f)
             {
-                float footW = (!dead && _ctl.Grounded && (_state == SIdle || _state == SLand) && Mathf.Abs(_ctl.Velocity.x) < 1f) ? 1f : 0f;
-                PlantFoot(AvatarIKGoal.LeftFoot, footW, root, H);
-                PlantFoot(AvatarIKGoal.RightFoot, footW, root, H);
+                float breath = Mathf.Sin(Time.time * 2.2f);
+                _anim.bodyPosition += Vector3.down * ((0.045f + 0.006f * breath) * H * guard);
             }
 
-            // Hands: shield brace (both forearms up in front of the face) and singing (arms open wide, raised).
+            // Feet: plant on the ground when standing still (subtle, stable).
+            float footW = (!dead && _ctl.Grounded && (_state == SIdle || _state == SLand) && Mathf.Abs(_ctl.Velocity.x) < 1f) ? 1f : 0f;
+            float narrow = Mathf.Lerp(1f, 0.5f, guard);
+            PlantFoot(AvatarIKGoal.LeftFoot, footW, root, H, narrow, f);
+            PlantFoot(AvatarIKGoal.RightFoot, footW, root, H, narrow, f);
+
+            // Hands: guard (fists in front of the chest), shield brace (forearms up in front of the face) and
+            // singing (arms raised in a V). Weighted blend of the active poses.
             float shield = _shieldW * (1f - _singW);
             float sing = _singW;
-            float handW = Mathf.Max(shield, sing);
+            float handW = Mathf.Max(Mathf.Max(shield, sing), guard * 0.8f);
+            // Near hand = the one closer to the camera: right hand when facing +X (model turned 3/4 to camera).
+            var nearGoal = f > 0 ? AvatarIKGoal.RightHand : AvatarIKGoal.LeftHand;
+            var farGoal = f > 0 ? AvatarIKGoal.LeftHand : AvatarIKGoal.RightHand;
+            var nearHint = f > 0 ? AvatarIKHint.RightElbow : AvatarIKHint.LeftElbow;
+            var farHint = f > 0 ? AvatarIKHint.LeftElbow : AvatarIKHint.RightElbow;
             if (handW > 0.001f)
             {
                 float br = Mathf.Sin(Time.time * 2.6f);
+                float gb = Mathf.Sin(Time.time * 2.2f) * 0.008f;
                 var shieldNear = root + new Vector3(f * 0.30f * H, 0.80f * H, -0.10f * H);
                 var shieldFar = root + new Vector3(f * 0.26f * H, 0.90f * H, 0.08f * H);
                 var singNear = root + new Vector3(f * 0.42f * H, (1.12f + 0.03f * br) * H, -0.2f * H);
                 var singFar = root + new Vector3(-f * 0.36f * H, (1.08f - 0.03f * br) * H, 0.22f * H);
-                // Near hand = the one closer to the camera: right hand when facing +X (model turned 3/4 to camera).
-                var nearGoal = f > 0 ? AvatarIKGoal.RightHand : AvatarIKGoal.LeftHand;
-                var farGoal = f > 0 ? AvatarIKGoal.LeftHand : AvatarIKGoal.RightHand;
-                float sh = shield / Mathf.Max(0.001f, shield + sing);
-                SetHand(nearGoal, Vector3.Lerp(singNear, shieldNear, sh), handW);
-                SetHand(farGoal, Vector3.Lerp(singFar, shieldFar, sh), handW);
-                if (shield > 0.01f)
-                {
-                    _anim.SetIKHintPositionWeight(AvatarIKHint.RightElbow, shield * 0.8f);
-                    _anim.SetIKHintPositionWeight(AvatarIKHint.LeftElbow, shield * 0.8f);
-                    _anim.SetIKHintPosition(f > 0 ? AvatarIKHint.RightElbow : AvatarIKHint.LeftElbow, root + new Vector3(f * 0.30f * H, 0.6f * H, -0.2f * H));
-                    _anim.SetIKHintPosition(f > 0 ? AvatarIKHint.LeftElbow : AvatarIKHint.RightElbow, root + new Vector3(f * 0.24f * H, 0.62f * H, 0.2f * H));
-                }
+                var guardNear = root + new Vector3(f * 0.24f * H, (0.66f + gb) * H, -0.13f * H);
+                var guardFar = root + new Vector3(f * 0.15f * H, (0.73f + gb) * H, 0.1f * H);
+                float g = guard * 0.8f, sum = Mathf.Max(0.001f, shield + sing + g);
+                var pn = (shieldNear * shield + singNear * sing + guardNear * g) / sum;
+                var pf = (shieldFar * shield + singFar * sing + guardFar * g) / sum;
+                SetHand(nearGoal, pn, handW);
+                SetHand(farGoal, pf, handW);
+                // Elbows: down and slightly forward for guard, out in front for the shield brace.
+                float hintW = Mathf.Max(shield * 0.8f, g * 0.7f);
+                var hn = Vector3.Lerp(root + new Vector3(f * 0.08f * H, 0.5f * H, -0.2f * H), root + new Vector3(f * 0.30f * H, 0.6f * H, -0.2f * H), shield / Mathf.Max(0.001f, shield + g));
+                var hf = Vector3.Lerp(root + new Vector3(f * 0.02f * H, 0.52f * H, 0.2f * H), root + new Vector3(f * 0.24f * H, 0.62f * H, 0.2f * H), shield / Mathf.Max(0.001f, shield + g));
+                _anim.SetIKHintPositionWeight(nearHint, hintW);
+                _anim.SetIKHintPositionWeight(farHint, hintW);
+                _anim.SetIKHintPosition(nearHint, hn);
+                _anim.SetIKHintPosition(farHint, hf);
             }
             else
             {
                 SetHand(AvatarIKGoal.LeftHand, Vector3.zero, 0f);
                 SetHand(AvatarIKGoal.RightHand, Vector3.zero, 0f);
+                _anim.SetIKHintPositionWeight(AvatarIKHint.LeftElbow, 0f);
+                _anim.SetIKHintPositionWeight(AvatarIKHint.RightElbow, 0f);
             }
 
             // Head: singing looks up and back (chest opens with it); otherwise a slight look along the motion.
@@ -296,11 +315,14 @@ namespace LumenWave
             if (w > 0f) _anim.SetIKPosition(g, p);
         }
 
-        void PlantFoot(AvatarIKGoal g, float w, Vector3 root, float H)
+        void PlantFoot(AvatarIKGoal g, float w, Vector3 root, float H, float narrow, int f)
         {
             if (w <= 0f) { _anim.SetIKPositionWeight(g, 0f); _anim.SetIKRotationWeight(g, 0f); return; }
             var p = _anim.GetIKPosition(g);
-            float ankle = p.y - root.y;                      // ankle height above the soles in the animated pose
+            // Narrow the stride toward a guard stance (slightly forward of centre so the weight sits over the feet).
+            p.x = root.x + f * 0.02f * H * (1f - narrow) + (p.x - root.x) * narrow;
+            const float AnkleHeight = 0.036f;                // ankle above the soles in the standing pose (fraction of H)
+            float ankle = AnkleHeight * H;
             var from = new Vector3(p.x, root.y + 0.35f * H, p.z);
             if (Physics.Raycast(from, Vector3.down, out var hit, 0.6f * H, _groundMask, QueryTriggerInteraction.Ignore)
                 && Mathf.Abs(hit.point.y - root.y) < 0.18f * H && hit.normal.y > 0.6f)
@@ -310,7 +332,13 @@ namespace LumenWave
                 _anim.SetIKRotationWeight(g, w * 0.5f);
                 _anim.SetIKRotation(g, Quaternion.FromToRotation(Vector3.up, hit.normal) * _anim.GetIKRotation(g));
             }
-            else { _anim.SetIKPositionWeight(g, 0f); _anim.SetIKRotationWeight(g, 0f); }
+            else
+            {
+                // No floor under this foot (ledge edge): keep the narrowed stance at body level.
+                _anim.SetIKPositionWeight(g, w);
+                _anim.SetIKPosition(g, new Vector3(p.x, root.y + ankle, p.z));
+                _anim.SetIKRotationWeight(g, 0f);
+            }
         }
 
         /// <summary>Called by UmbraRig.LateUpdate after the Animator has posed the skeleton.</summary>
@@ -409,7 +437,9 @@ namespace LumenWave
         public Mesh BakeSnapshot(out Matrix4x4 localToWorld)
         {
             var m = new Mesh { name = "UmbraGhostMesh" };
-            Body.BakeMesh(m, true);
+            // useScale=false: vertices come out at world size relative to the renderer (the bones already carry
+            // the model's 69x armature scale); useScale=true would divide it back out. Ghost uses unit scale.
+            Body.BakeMesh(m, false);
             var tr = Body.transform;
             localToWorld = Matrix4x4.TRS(tr.position, tr.rotation, Vector3.one);
             return m;

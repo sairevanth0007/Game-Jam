@@ -26,7 +26,9 @@ Material:
     m_Ints: []
     m_Floats:
     - _Ambient: 0.35
+    - _KeyPower: 2
     - _Width: 0.022
+    - _WidthUnlit: 1
     m_Colors:
     - _KeyDir: {r: -0.45, g: 0.85, b: 0, a: 0}
     - _RimColor: {r: 0.55, g: 0.95, b: 1.4, a: 1}

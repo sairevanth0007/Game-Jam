@@ -11,6 +11,8 @@ Shader "LumenWave/UmbraOutline"
         _Width("Width (world units)", Range(0, 0.1)) = 0.022
         _KeyDir("Key direction", Vector) = (-0.45, 0.85, 0, 0)
         _Ambient("Unlit side brightness", Range(0, 1)) = 0.35
+        _KeyPower("Key falloff exponent", Range(1, 8)) = 2
+        _WidthUnlit("Width factor on the unlit side", Range(0, 1)) = 1
     }
     SubShader
     {
@@ -34,6 +36,8 @@ Shader "LumenWave/UmbraOutline"
                 float _Width;
                 float4 _KeyDir;
                 half _Ambient;
+                half _KeyPower;
+                half _WidthUnlit;
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; };
@@ -47,7 +51,8 @@ Shader "LumenWave/UmbraOutline"
                 // Push out only in the screen plane (X/Y) so the hull doesn't poke toward the camera.
                 float3 push = float3(nWS.xy, 0);
                 float len = max(length(push), 1e-4);
-                pWS += push / len * _Width * saturate(len * 3);
+                float kv = saturate(dot(push.xy / len, normalize(_KeyDir.xy)) * 0.5 + 0.5);
+                pWS += push / len * _Width * saturate(len * 3) * lerp(_WidthUnlit, 1.0, kv);
                 o.positionCS = TransformWorldToHClip(pWS);
                 o.normalWS = nWS;
                 o.fogFactor = ComputeFogFactor(o.positionCS.z);
@@ -57,7 +62,7 @@ Shader "LumenWave/UmbraOutline"
             half4 frag(Varyings i) : SV_Target
             {
                 float k = saturate(dot(normalize(i.normalWS.xy + 1e-4), normalize(_KeyDir.xy)) * 0.5 + 0.5);
-                float lit = _Ambient + (1 - _Ambient) * k * k;
+                float lit = _Ambient + (1 - _Ambient) * pow(k, _KeyPower);
                 half3 col = _RimColor.rgb * lit;
                 col = MixFog(col, i.fogFactor * 0.5 + 0.5);
                 return half4(col, 1);

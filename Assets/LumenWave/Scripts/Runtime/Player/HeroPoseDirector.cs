@@ -124,7 +124,7 @@ namespace LumenWave
             yield return new WaitForSeconds(0.8f);
 
             _cmd.dash = true;
-            yield return new WaitForSeconds(0.06f); yield return Shot("dash");
+            yield return new WaitForSeconds(0.15f); yield return Shot("dash");
             yield return new WaitForSeconds(0.8f);
 
             _cmd.echo = true;
