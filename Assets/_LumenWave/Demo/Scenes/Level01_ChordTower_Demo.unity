@@ -1118,8 +1118,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LightController
   profile: {fileID: 11400000, guid: b9993d0967d12e4469a46c8d1fa3c071, type: 2}
-  style: 1
-  foldPoint: 0.815
+  style: 2
+  foldPoint: 0.1
   zigzagBends: 4
   coilTurns: 3
   coilSpin: 12
@@ -9862,6 +9862,7 @@ GameObject:
   - component: {fileID: 747613535}
   - component: {fileID: 747613538}
   - component: {fileID: 747613536}
+  - component: {fileID: 747613541}
   m_Layer: 0
   m_Name: Shadow Creature
   m_TagString: Untagged
@@ -9995,6 +9996,28 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
+--- !u!114 &747613541
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 747613534}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81cf9d27698e0a5428ad8b82d89439c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LumenWave.Demo.Midi
+  deviceNameContains: iRig
+  leftFirstNote: 60
+  leftSecondNote: 62
+  rightFirstNote: 64
+  rightSecondNote: 65
+  jumpNote: 67
+  chordNoteC: 48
+  chordNoteE: 52
+  chordNoteG: 55
+  logNotes: 1
 --- !u!1 &752150970
 GameObject:
   m_ObjectHideFlags: 0
@@ -11750,7 +11773,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &827076344
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27975,10 +27998,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
+    x: 0.208901
+    y: 0.1875
+    width: 0.58128977
+    height: 0.625
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
