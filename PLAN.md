@@ -54,9 +54,9 @@ Everything lives in `Assets/LumenWave/`. Namespace `LumenWave` (editor: `LumenWa
 
 ## Milestones
 - [x] M0 Setup: branch, URP 3D (Universal Renderer, Forward+), input actions (code), folders, asmdefs, test assemblies, scripts.
-- [ ] M1 Umbra: shader, procedural rig + animation, movement feel (coyote, buffer, variable jump, dash), camera.
-- [ ] M2 Light system: beams, occlusion, inverse square, fog, 4 colour rules, mixing, prisms, mirrors.
-- [ ] M3 Sound powers + resonance + beat clock + procedural audio.
-- [ ] M4 Enemies + levels + checkpoints + HUD + menus + bot playthroughs.
-- [ ] M5 Polish: post FX, particles, sound layers, juice, balancing, screenshot review.
-- [ ] M6 Windows build verified (by 14:00) → MALink → extra polish until ~17:00.
+- [x] M1 Umbra: shader, procedural rig + animation, movement feel (coyote, buffer, variable jump, dash), camera.
+- [x] M2 Light system: beams, occlusion, inverse square, fog, 4 colour rules, mixing, prisms, mirrors.
+- [x] M3 Sound powers + resonance + beat clock + procedural audio.
+- [x] M4 Enemies + levels + checkpoints + HUD + menus + bot playthroughs.
+- [x] M5 Polish: post FX, particles, sound layers, juice, balancing, screenshot review.
+- [x] M6 Windows build verified (by 14:00) → MALink → extra polish until ~17:00.

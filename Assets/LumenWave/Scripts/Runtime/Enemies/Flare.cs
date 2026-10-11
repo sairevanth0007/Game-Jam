@@ -68,6 +68,13 @@ namespace LumenWave
         {
             var dark = MaterialLibrary.Tinted("Lit", new Color(0.03f, 0.03f, 0.04f));
             EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(0, 0, 0.1f), new Vector3(0.9f, 0.9f, 0.6f), dark, "Mount");
+            // Glowing trim on the mount's front face so the lantern reads against a dark sky.
+            var trim = EnemyUtil.Emissive(new Color(0.35f, 0.08f, 0.05f), Col * 1.4f);
+            EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(0, 0.45f, -0.22f), new Vector3(0.96f, 0.06f, 0.04f), trim, "TrimTop");
+            EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(0, -0.45f, -0.22f), new Vector3(0.96f, 0.06f, 0.04f), trim, "TrimBottom");
+            EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(0.45f, 0, -0.22f), new Vector3(0.06f, 0.96f, 0.04f), trim, "TrimRight");
+            EnemyUtil.Part(PrimitiveType.Cube, transform, new Vector3(-0.45f, 0, -0.22f), new Vector3(0.06f, 0.96f, 0.04f), trim, "TrimLeft");
+            EnemyUtil.Halo(transform, new Vector3(0, 0, 0.5f), 2.2f, Col * 0.18f);
             _head = new GameObject("Head").transform;
             _head.SetParent(transform, false);
             EnemyUtil.Part(PrimitiveType.Cylinder, _head, new Vector3(0.35f, 0, 0), new Vector3(0.45f, 0.3f, 0.45f), dark, "Barrel")

@@ -26,3 +26,15 @@
 - Finale: Umbra raises their arms and sings. Six spectrum rings (radii 1:2:3:4:5:6) pulse on the beat, every beam and lamp turns warm white and breathes, enemies calm, the sky turns to dawn, then the ending text appears.
 - *Problem:* a level whose scene isn't in the build silently loaded level 1. *Fix:* `SceneBootstrap.PendingLevelOverride`.
 - **RC1 (02:45):** 108/108 tests pass. The real build autoplays level 1 to completion in 31.6 s with 0 deaths. Release zip is 34.6 MB.
+
+**02:50–04:40 · QA and feel.**
+- Deep QA on the real build:
+  - Audio captured via an `OnAudioFilterRead` tap and analysed in Python. Spectral peaks sit on D just-intonation ratios, the envelope shows the 100 BPM beat, and nothing clips. Added +3.5 dB make-up gain.
+  - Frame times: locked 60 fps.
+  - Scripted menu flow: 23/23 pass. UI label wrapping fixed.
+- Showcase mode to review every power. Fixed the mood picked by level number instead of level data, and the moon draw order.
+- Added fades, level cards, assist mode and the beat indicator.
+- *Problem:* a 100 ms hitch when the finale started. *Cause:* the finale chorus loops were synthesised on the main thread. *Fix:* pre-render them at level load.
+- Flare enemy: mounted lantern firing bolts the shield absorbs (this was in the brief). Its housing was invisible against the night sky, so it got an emissive trim.
+- End screen shows secrets x/total and best time; level select shows per-level bests.
+- RC2 (03:39) and RC3 pushed with verified builds.

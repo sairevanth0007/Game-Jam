@@ -20,3 +20,7 @@ Format: time (Sun 11 Oct 2026) — decision — why.
 - 01:50 — Visuals: a per-level `mood:` header (blue/violet/red/green/gold/dawn) sets the sky, fog and grading.
 - 01:55 — Moved the tutorial message banner from the upper sky to the lower middle so it never hides lamps or sentinels.
 - 01:55 — Windows MCP is still not exposed. "Play the first minute" verification is done with a built-player `-lw-autoplay` mode: the bot plays at 1× and takes screenshots every 5 s.
+- 02:45 — Commit the release zip (about 35 MB) only for verified release candidates (RC1 02:45, RC2 03:39, RC3) to keep repo growth small.
+- 03:05 — Assist mode instead of an easier default difficulty: the bot proves solvability, and assist covers the gap between a bot and human timing.
+- 03:45 — Added the Flare enemy because the brief says the shield blocks *projectiles* and no enemy had any.
+- 04:30 — Deadline met early. Remaining time goes to small, verified polish only; no risky refactors.
