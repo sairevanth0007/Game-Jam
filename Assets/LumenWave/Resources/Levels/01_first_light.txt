@@ -1,0 +1,71 @@
+name: First Light
+intro: Umbra wakes in the dark. Only shadows are safe.
+fog: 0.03
+mood: blue
+theme: forest
+drone: 1
+---
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                      ##
+##                                                                                                                                                                                                                                  E   ##
+##                                                                                                                                                                                                                    ####################
+##                                                                                                                                                                                      C                             ####################
+##                                                                                                                                                                                ====######      ####      ####   #######################
+##                                                                                                                                                                                    ######      ####      ####   #######################
+##                                                                                                                                                                          ====      ######      ##############   #######################
+##                                  C                    ^^^                                ######################                                                                    ######      ##############   #######################
+##                            ###########      #######################                  ##########################                            #####    ####           ====            ######      ##############   #######################
+##  P         #######         ###########      #######################    C         ##############################   C                        #####    ####   C                       ######      ##############   #######################
+#####################   #################      ##############################     ##########################################  ###  ###  ###########    #############                  ######      ##############   #######################
+#####################   #################      ##############################     ##########################################  ###  ###  ###########    #############                  ######      ##############   #######################
+#####################   #################      ##############################     ##########################################^^###^^###^^###########^^^^#############^^^^^^^^^^^^^^^^^^######^^^^^^##############^^^#######################
+---
+tutorial 5.5 3 text={Move}_to_move radius=3
+tutorial 11.5 3 text=Press_{Jump}_to_jump radius=2.5
+bot 12.6 3 do=jump
+bot 19.4 4 do=jump
+tutorial 26.5 3 text=Hold_{Jump}_longer_to_jump_higher radius=2.5
+bot 28.4 3 do=jump t=0.5
+tutorial 38.5 5 text=Jump,_then_{Dash}_in_mid-air_to_cross_wide_gaps radius=2.5
+bot 40.4 5 do=jumpdash t=0.36
+tutorial 53.5 5 text=Shadow_thorns_kill._Jump_over_them. radius=2.5
+bot 55.3 5 do=jump
+orb 66.5 8.2
+bot 65.6 5 do=jump t=0.5
+bot 76.4 3 do=jumpdash t=0.36
+bot 83.4 3 do=jump
+bot 87.4 4 do=jump
+bot 91.4 5 do=jump
+orb 95.5 10
+lamp 36.5 9 color=white radius=6 intensity=0.6
+lamp 106.5 11 color=white radius=7 intensity=0.8
+tutorial 114 6 text=The_hollow_runs_deep._Drop_down. radius=3
+tutorial 124 3 text=Thorns_in_rhythm:_jump,_land,_jump. radius=3
+bot 123.4 3 t=0.45 do=jump
+bot 128.4 3 t=0.45 do=jump
+bot 133.4 3 t=0.45 do=jump
+bot 140.7 3 t=0.45 do=jump
+bot 146.4 5 t=0.45 do=jump
+orb 157.5 9
+tutorial 164 3 text=Climb_the_hanging_ledges. radius=3
+bot 163.4 3 t=0.45 do=jump
+bot 169.4 5 t=0.45 do=jump
+bot 175.4 7 t=0.45 do=jump
+orb 191.5 13
+tutorial 186 9 text=A_long_fall._{Dash}_across_before_it. radius=3
+bot 187.6 9 t=0.22 do=jumpdash
+bot 202.7 7 t=0.45 do=jump
+bot 207.4 9 t=0.45 do=jump
+bot 212.7 9 t=0.45 do=jump

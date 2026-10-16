@@ -13,16 +13,16 @@ TagManager:
   - UI
   - 
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Ground
+  - Player
+  - Shield
+  - Mirror
+  - Prism
+  - Enemy
+  - Bridge
+  - Trigger
+  - Hazard
+  - Crystal
   - 
   - 
   - 

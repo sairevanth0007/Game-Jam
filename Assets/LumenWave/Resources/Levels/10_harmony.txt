@@ -1,0 +1,45 @@
+name: Harmony
+intro: Sing, Umbra. Let every light become music.
+fog: 0.03
+mood: dawn
+theme: dawn
+drone: 10
+---
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                            ##
+##                                                                        E   ##
+##                                ##############################################
+##  P                   ########################################################
+################################################################################
+################################################################################
+################################################################################
+---
+tutorial 12 3 text=The_lights_are_listening... radius=3
+lamp 14.5 10 color=red radius=5 intensity=0.4
+lamp 20.5 11 color=green radius=5 intensity=0.4
+lamp 26.5 10 color=blue radius=5 intensity=0.4
+lamp 32.5 11 color=yellow radius=5 intensity=0.4
+lamp 38.5 10 color=white radius=5 intensity=0.4
+lamp 44.5 11 color=red radius=5 intensity=0.4
+lamp 50.5 10 color=green radius=5 intensity=0.4
+lamp 56.5 11 color=blue radius=5 intensity=0.4
+bot 22.7 3 t=0.45 do=jump
+bot 32.7 4 t=0.45 do=jump
+orb 48.5 10
+tutorial 54 5 text=Every_light_you_feared_was_a_note_waiting_for_a_song. radius=3
+ending 62.5 6 time=11
+bot 62.6 5 t=13 do=wait

@@ -1,0 +1,134 @@
+using UnityEngine;
+
+namespace LumenWave
+{
+    /// <summary>
+    /// A hanging lantern that floods a circular zone with coloured light. Exposure follows the
+    /// inverse-square law from the lamp (with fog), blocked by solid geometry and the shield.
+    /// Green lamps = healing sanctuaries, blue lamps = low-gravity zones.
+    /// </summary>
+    public class AreaLamp : MonoBehaviour
+    {
+        public LightColor color = LightColor.Green;
+        public float radius = 5f;
+        public float intensity = 1f;
+        public bool beatGated;
+        public bool on = true;
+
+        Light _light;
+        MeshRenderer _glow, _zone, _core, _shaft, _halo;
+        MaterialPropertyBlock _mpb;
+        float _flicker;
+
+        public bool IsBeatGated => beatGated || color == LightColor.Yellow;
+
+        void OnEnable() { if (!LightField.Lamps.Contains(this)) LightField.Lamps.Add(this); }
+        void OnDisable() { LightField.Lamps.Remove(this); }
+
+        public void BuildVisuals(bool hanging)
+        {
+            _mpb = new MaterialPropertyBlock();
+            var c = LightMath.DisplayColor(color);
+            var dark = MaterialLibrary.Tinted("Lit", new Color(0.05f, 0.05f, 0.07f));
+            if (hanging)
+            {
+                // Chain up to the ceiling if there is one within reach; otherwise a floating lantern.
+                Physics.SyncTransforms();
+                if (Physics.Raycast(transform.position, Vector3.up, out var hit, 8f, Layers.Mask(Layers.Ground), QueryTriggerInteraction.Ignore))
+                {
+                    float chain = hit.distance - 0.3f;
+                    if (chain > 0.05f)
+                        LightVisuals.Part(PrimitiveType.Cylinder, transform, new Vector3(0, 0.3f + chain * 0.5f, 0), new Vector3(0.05f, chain * 0.5f, 0.05f), dark, "Chain");
+                }
+                else if (Physics.Raycast(transform.position, Vector3.down, out var floor, 16f, Layers.Mask(Layers.Ground), QueryTriggerInteraction.Ignore))
+                {
+                    // No ceiling: a crooked lamp post with an arm, so it reads as a street lantern, not a second moon.
+                    float h = floor.distance + 0.9f;
+                    var postX = -0.75f;
+                    var prefab = Resources.Load<GameObject>("Prefabs/LampPost");
+                    if (prefab != null)
+                    {
+                        var inst = Instantiate(prefab, transform, false);
+                        inst.name = "LampPost";
+                        var post = inst.transform.Find("Post");
+                        if (post != null) { post.localPosition = new Vector3(postX, 0.9f - h * 0.5f, 0.45f); post.localScale = new Vector3(0.12f, h * 0.5f, 0.12f); }
+                        var bse = inst.transform.Find("Base");
+                        if (bse != null) bse.localPosition = new Vector3(postX, 0.9f - h + 0.1f, 0.45f);
+                    }
+                    else
+                    {
+                    LightVisuals.Part(PrimitiveType.Cylinder, transform, new Vector3(postX, 0.9f - h * 0.5f, 0.45f), new Vector3(0.12f, h * 0.5f, 0.12f), dark, "Post");
+                    LightVisuals.Part(PrimitiveType.Cube, transform, new Vector3(postX * 0.5f, 0.9f, 0.45f), new Vector3(0.9f, 0.08f, 0.08f), dark, "Arm");
+                    LightVisuals.Part(PrimitiveType.Cylinder, transform, new Vector3(0, 0.65f, 0.2f), new Vector3(0.04f, 0.2f, 0.04f), dark, "Chain");
+                    LightVisuals.Part(PrimitiveType.Cube, transform, new Vector3(postX, 0.9f - h + 0.1f, 0.45f), new Vector3(0.45f, 0.2f, 0.45f), dark, "Base");
+                    }
+                }
+                LightVisuals.Part(PrimitiveType.Cube, transform, new Vector3(0, 0.38f, 0), new Vector3(0.5f, 0.1f, 0.5f), dark, "Cap");
+            }
+            var lensMat = MaterialLibrary.Tinted("LitEmissive", c * 0.5f, c * 4f);
+            var core = LightVisuals.Part(PrimitiveType.Sphere, transform, Vector3.zero, Vector3.one * 0.45f, lensMat, "Bulb");
+            _core = core.GetComponent<MeshRenderer>();
+            _glow = LightVisuals.Glow(transform, new Vector3(0, 0, -0.3f), 2.2f, c * 1.5f, "Glow");
+            // Faint disc showing the zone of effect — readability over realism.
+            _zone = LightVisuals.Glow(transform, new Vector3(0, 0, 0.6f), radius * 2.2f, c * 0.22f, "Zone");
+            // Soft light cone falling from the lantern + a wide airy halo (cheap additive, purely visual).
+            _shaft = LightVisuals.Shaft(transform, new Vector3(0f, -0.1f, 0.5f), 0.5f, radius * 1.5f, radius * 1.35f, c * 0.16f, "Shaft");
+            _halo = LightVisuals.Glow(transform, new Vector3(0, 0, 0.4f), radius * 1.3f, c * 0.1f, "Halo");
+            // One look per effect: green heal = rising motes, blue low gravity = slow floating specks (in the zone).
+            if (color == LightColor.Green || color == LightColor.Blue)
+            {
+                var motes = LightVisuals.EffectMotes(transform, color, "ZoneMotes");
+                motes.transform.localPosition = new Vector3(0f, -radius * 0.35f, 0.2f);
+                var sh = motes.shape; sh.scale = new Vector3(radius * 1.4f, radius * 0.9f, 0.6f);
+                var em = motes.emission; em.rateOverTime = Mathf.Clamp(radius * 3f, 6f, 24f);
+            }
+            _light = LightVisuals.AddLight(transform, LightType.Point, c, 3f * intensity, radius * 1.6f, "LampLight");
+            _light.transform.localPosition = new Vector3(0, 0, -1.5f);
+            _flicker = Random.value * 10f;
+        }
+
+        void Update()
+        {
+            if (_light == null) return;
+            float level = Level();
+            float wobble = 0.93f + 0.07f * Mathf.Sin((Time.time + _flicker) * 3.1f) * Mathf.Sin((Time.time + _flicker) * 1.7f);
+            var c = LightMath.DisplayColor(color);
+            _light.enabled = level > 0.01f;
+            _light.intensity = 3f * intensity * level * wobble;
+            if (_glow) LightVisuals.SetGlowColor(_glow, _mpb, c * 1.5f * Mathf.Max(0.1f, level) * wobble);
+            if (_zone) LightVisuals.SetGlowColor(_zone, _mpb, c * 0.22f * level);
+            if (_shaft) LightVisuals.SetGlowColor(_shaft, _mpb, c * 0.16f * level * wobble);
+            if (_halo) LightVisuals.SetGlowColor(_halo, _mpb, c * 0.1f * level * wobble);
+        }
+
+        float Level()
+        {
+            if (!on) return 0f;
+            if (!IsBeatGated) return 1f;
+            if (LightField.BeatHot) return 1f;
+            float ph = BeatClock.CurrentPhase;
+            return ph > 0.7f ? Mathf.Lerp(0.1f, 0.4f, (ph - 0.7f) / 0.3f) : 0.08f;
+        }
+
+        public void AddExposure(Vector3 p, bool hot, ref LightExposure e)
+        {
+            if (!on) return;
+            if (IsBeatGated && !hot) return;
+            var lp = transform.position;
+            var to = new Vector3(p.x - lp.x, p.y - lp.y, 0f);
+            float d = to.magnitude;
+            if (d > radius) return;
+            float I = LightField.LampIntensityAt(intensity, d, radius, LightField.FogSigma);
+            if (I <= 0f) return;
+            // Occlusion: solids, crystals, bridges and the shield cast shadows.
+            if (d > 0.3f)
+            {
+                LightField.SyncPhysics();
+                int mask = Layers.Mask(Layers.Ground, Layers.Crystal, Layers.Bridge, Layers.Shield);
+                if (Physics.Raycast(new Vector3(lp.x, lp.y, 0f), to / d, d - 0.05f, mask, QueryTriggerInteraction.Ignore)) return;
+            }
+            if (color == LightColor.Yellow) e.yellowPulse += I;
+            else e.Add(color, I);
+        }
+    }
+}

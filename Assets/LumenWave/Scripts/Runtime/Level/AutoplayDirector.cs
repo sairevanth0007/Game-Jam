@@ -1,0 +1,135 @@
+﻿using System;
+using System.Collections;
+using System.IO;
+using UnityEngine;
+
+namespace LumenWave
+{
+    /// <summary>
+    /// Real-build verification: <c>LumenWave.exe -lw-autoplay &lt;dir&gt; [-lw-autoplay-level N] [-lw-autoplay-seconds 60]</c>
+    /// loads level N, lets the scripted bot play it at normal speed (real beat clock, real rendering, real audio),
+    /// saves a screenshot every ~5 s to &lt;dir&gt;/autoplay_L{N}_{t}.png, logs progress and quits when done.
+    /// </summary>
+    public class AutoplayDirector : MonoBehaviour
+    {
+        public string outDir;
+        public int level = 1;
+        public float seconds = 60f;
+        public float shotInterval = 5f;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Init()
+        {
+            var args = Environment.GetCommandLineArgs();
+            string dir = null; int lvl = 1; float secs = 60f;
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (args[i] == "-lw-autoplay") dir = args[i + 1];
+                else if (args[i] == "-lw-autoplay-level") int.TryParse(args[i + 1], out lvl);
+                else if (args[i] == "-lw-autoplay-seconds") float.TryParse(args[i + 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out secs);
+            }
+            if (dir == null) return;
+            var go = new GameObject("AutoplayDirector");
+            DontDestroyOnLoad(go);
+            var d = go.AddComponent<AutoplayDirector>();
+            d.outDir = dir; d.level = Mathf.Max(1, lvl); d.seconds = Mathf.Max(5f, secs);
+        }
+
+        IEnumerator Start()
+        {
+            Directory.CreateDirectory(outDir);
+            Debug.Log($"[LumenWave] Autoplay: level {level} for {seconds:F0}s -> {outDir}");
+            GameSession.NewRun();
+            GameSession.BotMode = true;
+            SceneFlow.LoadLevel(level);
+
+            float wait = 0f;
+            while ((LevelRuntime.Current == null || LevelRuntime.Current.Player == null) && wait < 15f)
+            {
+                wait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            var rt = LevelRuntime.Current;
+            if (rt == null || rt.Player == null) { Debug.LogError("[LumenWave] Autoplay: level failed to load"); Application.Quit(2); yield break; }
+
+            var body = rt.Player.GetComponent<IPlayerBody>();
+            var bot = BotCommandSource.ForCurrentLevel();
+            if (body != null && bot != null) body.Commands = bot;
+            Time.timeScale = 1f;
+            int deathsBefore = GameSession.Deaths;
+
+            // Event trace so a failing run shows exactly what happened (damage source, failed powers, deaths).
+            var playerT = rt.Player.transform;
+            System.Action<float, LightColor> onDmg = (a, c) => { if (a >= 5f) Debug.Log($"[LumenWave] Autoplay damage {a:F1} {c} at x={playerT.position.x:F1} y={playerT.position.y:F1}"); };
+            System.Action onDied = () => Debug.Log($"[LumenWave] Autoplay DIED at x={playerT.position.x:F1} y={playerT.position.y:F1} last={bot?.LastAction}");
+            System.Action<PowerType> onFail = pw => Debug.Log($"[LumenWave] Autoplay power FAILED {pw} at x={playerT.position.x:F1}");
+            {
+                var cols = UnityEngine.Object.FindObjectsByType<Collider>(FindObjectsSortMode.None);
+                var byName = new System.Collections.Generic.Dictionary<string, int>();
+                foreach (var c in cols) { var k = LayerMask.LayerToName(c.gameObject.layer) + ":" + c.gameObject.name; byName.TryGetValue(k, out var v); byName[k] = v + 1; }
+                var top = new System.Collections.Generic.List<string>();
+                foreach (var kv in byName) if (kv.Value >= 5) top.Add(kv.Key + "=" + kv.Value);
+                Debug.Log($"[LumenWave] Autoplay colliders total={cols.Length} " + string.Join(", ", top));
+            }
+            System.Action<PowerType> onUse = pw => { if (pw == PowerType.Pulse) Debug.Log($"[LumenWave] Autoplay pulse at x={playerT.position.x:F1} y={playerT.position.y:F1} t={Time.time:F2}"); };
+            System.Action onJump = () => Debug.Log($"[LumenWave] Autoplay jump at x={playerT.position.x:F2} t={Time.time:F2}");
+            GameEvents.PlayerDamaged += onDmg; GameEvents.PlayerDied += onDied; GameEvents.PowerFailed += onFail; GameEvents.PowerUsed += onUse; GameEvents.PlayerJumped += onJump;
+
+            float t = 0f, nextShot = 0.5f, nextLog = 0f, finaleShot = -1f;
+            float maxX = rt.Player.transform.position.x;
+            var frameTimes = new System.Collections.Generic.List<float>(8192);
+            while (t < seconds && !rt.Completed)
+            {
+                t += Time.unscaledDeltaTime;
+                if (t > 1f) frameTimes.Add(Time.unscaledDeltaTime);
+                if (t > 1f && Time.unscaledDeltaTime > 0.04f)
+                    Debug.Log($"[LumenWave] Hitch t={t:F2}s dt={Time.unscaledDeltaTime * 1000f:F0}ms x={rt.Player.transform.position.x:F1} last={bot?.LastAction}");
+                var p = rt.Player.transform.position;
+                maxX = Mathf.Max(maxX, p.x);
+                if (t >= nextShot) { Shot(t); nextShot += shotInterval; }
+                // Finale: denser captures so the ending sequence can be reviewed.
+                if (FinaleTrigger.Started) { if (finaleShot < 0f) finaleShot = t + 1f; if (t >= finaleShot) { Shot(t, "finale"); finaleShot += 1.5f; } }
+                if (t >= nextLog)
+                {
+                    Debug.Log($"[LumenWave] Autoplay t={t:F1}s x={p.x:F1} y={p.y:F1} deaths={GameSession.Deaths - deathsBefore} last={bot?.LastAction}");
+                    nextLog += 5f;
+                }
+                yield return null;
+            }
+            if (rt.Completed)
+            {
+                // Let the completion banner show, then capture it.
+                yield return new WaitForSecondsRealtime(1.0f);
+                Shot(t + 1f);
+                if (FinaleTrigger.Started)
+                {
+                    yield return new WaitForSecondsRealtime(1.2f); Shot(t + 2.2f, "finale");
+                }
+            }
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForSecondsRealtime(0.5f);
+            LogFrameStats(frameTimes);
+            GameEvents.PlayerDamaged -= onDmg; GameEvents.PlayerDied -= onDied; GameEvents.PowerFailed -= onFail; GameEvents.PowerUsed -= onUse; GameEvents.PlayerJumped -= onJump;
+            Debug.Log($"[LumenWave] Autoplay DONE level {level} '{rt.Data.Name}': completed={rt.Completed} time={t:F1}s deaths={GameSession.Deaths - deathsBefore} maxX={maxX:F1}/{rt.Data.Width}");
+            bot?.Dispose();
+            Application.Quit(rt.Completed ? 0 : 1);
+        }
+
+        static void LogFrameStats(System.Collections.Generic.List<float> ft)
+        {
+            if (ft.Count == 0) return;
+            float sum = 0f; foreach (var f in ft) sum += f;
+            var sorted = new System.Collections.Generic.List<float>(ft); sorted.Sort();
+            float avg = sum / ft.Count, p95 = sorted[Mathf.Min(sorted.Count - 1, (int)(sorted.Count * 0.95f))], max = sorted[sorted.Count - 1];
+            Debug.Log($"[LumenWave] Autoplay frames={ft.Count} avg={avg * 1000f:F2}ms ({1f / avg:F0} fps) p95={p95 * 1000f:F2}ms max={max * 1000f:F1}ms res={Screen.width}x{Screen.height}");
+        }
+
+        void Shot(float t, string tag = null)
+        {
+            var path = tag == null
+                ? Path.Combine(outDir, $"autoplay_L{level}_{Mathf.RoundToInt(t):000}.png")
+                : Path.Combine(outDir, $"autoplay_L{level}_{tag}_{Mathf.RoundToInt(t * 10f):0000}.png");
+            ScreenCapture.CaptureScreenshot(path);
+        }
+    }
+}
