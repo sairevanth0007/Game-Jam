@@ -58,6 +58,6 @@ Requires **Unity 6000.2.9f1** (URP, Input System) on Windows.
 Code lives in `Assets/LumenWave/Scripts/Runtime/` (by system), levels are ASCII files in `Assets/LumenWave/Resources/Levels/`, and the hand-written URP shaders are in `Assets/LumenWave/Shaders/`.
 
 ## Team & credits
-Team: <names>
+**Team:** Sai Revanth Mulukuledu · Ayush Srivastava · Akashdeep Singh
 
 Made for the Light & Sound Game Jam 2026. Third-party art (Quaternius, Kenney, ambientCG, Poly Haven, GGBotNet fonts) is CC0; full attributions are in [CREDITS.md](CREDITS.md).
