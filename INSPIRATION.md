@@ -76,4 +76,4 @@ A stable, simple way to simulate ropes and cloth using positions only, plus dist
 ### 11. The beat
 Yellow lights and the music share one 100 BPM clock, locked to the audio DSP clock (`BeatClock`), so the visuals and the sound never drift apart.
 
-*(More screenshots: `docs/images/` and `Screenshots/`. They are rendered by the built game itself in screenshot/autoplay mode.)*
+*(The screenshots in `docs/images/` are rendered by the built game itself in screenshot/autoplay mode; `scripts/screenshot.ps1` regenerates them into `Screenshots/`.)*

@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace LumenWave
 {
-    /// <summary>Factories for the level-owned entity types (see PLAN.md).</summary>
+    /// <summary>Factories for the level-owned entity types (exit, checkpoints, crystals, hidden platforms, orbs, ...).</summary>
     public static class LevelEntities
     {
         static readonly Color PortalColor = new Color(0.75f, 0.9f, 1f);
